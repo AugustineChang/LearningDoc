@@ -1,5 +1,6 @@
 #include "TestIntegrator.h"
 #include <iostream>
+#include <string>
 using namespace std;
 
 TestIntegrator::TestIntegrator()
@@ -72,3 +73,29 @@ void TestIntegrator::Test4()
 	}
 	cout << lastInput << ":" << counter << endl;
 }
+
+void TestIntegrator::Test5()
+{
+	SalesData data1 , data2;
+
+	double price;
+	cin >> data1.bookName >> data1.salesNum >> price;
+	data1.salesRevenue = data1.salesNum * price;
+
+	cin >> data2.bookName >> data2.salesNum >> price;
+	data2.salesRevenue = data2.salesNum * price;
+
+	if ( data1.bookName == data2.bookName )
+	{
+		cout << "相同的书，合并两条销售记录" << endl;
+		data1.salesNum += data2.salesNum;
+		data1.salesRevenue += data2.salesRevenue;
+		cout << data1.bookName << " " << data1.salesNum 
+			 << " " << data1.salesRevenue << endl;
+	}
+	else
+	{
+		cout << "不同的书" << endl;
+	}
+}
+

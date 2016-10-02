@@ -6,7 +6,7 @@
 int main()
 {
 	TestIntegrator* ti = new TestIntegrator();
-	ti->Test1();
+	ti->Test5();
 
 	system( "Pause" );
     return 0;
