@@ -29,7 +29,8 @@ popl %edi
 
 3.4
 movsbl %al, (%edx)
+movsbl %al, (%edx)
 movzbl %al, (%edx)
-movzbl %al, (%edx)
-movb %al, (%dl)
-movb %al, (%dl)
+movb %al, (%edx)
+movb %al, (%edx)
+movl %eax, (%edx)
