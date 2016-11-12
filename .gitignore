@@ -1,0 +1,10 @@
+/TestCpp/Debug
+/TestCpp/TestCpp/Debug
+/TestCpp/ich
+/TestCpp/.vs
+*.sdf
+*.sln
+*.db
+*.opendb
+*.vcxproj
+*.fliters

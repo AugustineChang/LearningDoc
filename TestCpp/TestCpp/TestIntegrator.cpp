@@ -1,6 +1,7 @@
 #include "TestIntegrator.h"
 #include <iostream>
 #include <string>
+#include <cctype>
 using namespace std;
 
 TestIntegrator::TestIntegrator()
@@ -53,7 +54,7 @@ void TestIntegrator::Test3()
 
 void TestIntegrator::Test4()
 {
-	int input;
+	/*int input;
 	if ( !( cin >> input ) ) return;
 
 	int lastInput = input;
@@ -71,7 +72,17 @@ void TestIntegrator::Test4()
 			lastInput = input;
 		}
 	}
-	cout << lastInput << ":" << counter << endl;
+	cout << lastInput << ":" << counter << endl;*/
+
+	string s = "Keep out!!!";
+	for ( char &c : s )
+	{
+		if ( !isspace( c ) )
+		{
+			c = 'X';
+		}
+	}
+	cout << s << endl;
 }
 
 void TestIntegrator::Test5()
