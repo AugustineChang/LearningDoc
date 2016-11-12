@@ -7,7 +7,7 @@
 int main( int argc , char *argv[] )
 {
 	//TestIntegrator* ti = new TestIntegrator();
-	//ti->Test4();
+	//ti->Test5();
 
 	std::string str;
 	for ( int i = 1; i < argc; ++i )
