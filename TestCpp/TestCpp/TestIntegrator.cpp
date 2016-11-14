@@ -1,7 +1,7 @@
 #include "TestIntegrator.h"
 #include <iostream>
 #include <string>
-#include <cctype>
+#include <vector>
 using namespace std;
 
 TestIntegrator::TestIntegrator()
@@ -27,6 +27,10 @@ void TestIntegrator::Test1()
 	cin >> a >> b;
 
 	cout << "a+b=" << ( a + b ) << endl;*/
+
+	vector<int> vec = { 1,2,3,4,5 };
+	auto iter = vec.begin();
+	cout << *++iter << endl;
 }
 
 void TestIntegrator::Test2()
@@ -54,7 +58,7 @@ void TestIntegrator::Test3()
 
 void TestIntegrator::Test4()
 {
-	/*int input;
+	int input;
 	if ( !( cin >> input ) ) return;
 
 	int lastInput = input;
@@ -72,17 +76,7 @@ void TestIntegrator::Test4()
 			lastInput = input;
 		}
 	}
-	cout << lastInput << ":" << counter << endl;*/
-
-	string s = "Keep out!!!";
-	for ( char &c : s )
-	{
-		if ( !isspace( c ) )
-		{
-			c = 'X';
-		}
-	}
-	cout << s << endl;
+	cout << lastInput << ":" << counter << endl;
 }
 
 void TestIntegrator::Test5()

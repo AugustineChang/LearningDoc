@@ -3,13 +3,25 @@
 #include <stdlib.h>
 #include <iostream>
 #include "TestIntegrator.h"
+#include "BitArray.h"
 
-int main( int argc , char *argv[] )
+int main()
 {
 	//TestIntegrator* ti = new TestIntegrator();
 	//ti->Test5();
 
 	std::string str;
+	/*BitArray bitArray;
+	bitArray.setValue( 14 , true );
+	bitArray.setValue( 1 , true );
+
+	int len = bitArray.getMaxLen();
+	for ( int i = 0; i < len; i++ )
+	{
+		std::cout << bitArray.getValue( i ) << ' ';
+	}
+	std::cout << std::endl;*/
+	
 	for ( int i = 1; i < argc; ++i )
 	{
 		str += argv[i];
