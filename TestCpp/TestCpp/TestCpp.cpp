@@ -4,13 +4,15 @@
 #include <iostream>
 #include "TestIntegrator.h"
 #include "BitArray.h"
+#include "MyTest.h"
 
-int main()
+void print( int i );
+
+int main( int argc , const char *argv )
 {
 	//TestIntegrator* ti = new TestIntegrator();
 	//ti->Test5();
-
-	std::string str;
+	
 	/*BitArray bitArray;
 	bitArray.setValue( 14 , true );
 	bitArray.setValue( 1 , true );
@@ -22,12 +24,25 @@ int main()
 	}
 	std::cout << std::endl;*/
 	
+	/*std::string str;
 	for ( int i = 1; i < argc; ++i )
 	{
 		str += argv[i];
 	}
 	
-	std::cout << str << std::endl;
+	std::cout << str << std::endl;*/
+
+	MyTest test;
+	test.setNum( 11 );
+
+	MyTest test2;
+	test2.setNum( 22 );
+
+	MyTest test3 = addNum( test , test2 );
+
+	print( test.callFunc( &test2 , &MyTest::getNum ) );
+
+	std::cout << test3.getNum() << std::endl;
 
 	system( "Pause" );
     return 0;
