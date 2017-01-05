@@ -10,8 +10,8 @@ void print( int i );
 
 int main( int argc , const char *argv )
 {
-	//TestIntegrator* ti = new TestIntegrator();
-	//ti->Test5();
+	TestIntegrator* ti = new TestIntegrator();
+	ti->Test6( 5 );
 	
 	/*BitArray bitArray;
 	bitArray.setValue( 14 , true );

@@ -2,7 +2,10 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <functional>
 using namespace std;
+using namespace std::placeholders;
 
 TestIntegrator::TestIntegrator()
 {
@@ -103,4 +106,32 @@ void TestIntegrator::Test5()
 		cout << "不同的书" << endl;
 	}
 }
+
+
+bool isLarger( string str , int size )
+{
+	return str.size() >= size;
+}
+
+void TestIntegrator::Test6( int size )
+{
+	/*vector<int> alist = { 1,2,3,4,5,6 };
+	using iterType = vector<int>::iterator;
+	iterType result = find<iterType , int>( alist.begin() , alist.end() , 4 );
+	if ( result != alist.end() )
+	{
+		cout << *result << endl;
+	}*/
+
+	vector<string> strList = { "aaa","bb","cccc","hhhhhhh","ggggg","d","eeeeeeeee" };
+	/*auto ret = partition( strList.begin() , strList.end() , 
+		[size]( const string &str ) -> bool { return str.size() > size; } );*/
+	auto ret = partition( strList.begin() , strList.end() , bind( isLarger , _1 , size ) );
+	for ( auto i = strList.begin(); i != ret; ++i )
+	{
+		cout << *i << ' ';
+	}
+	cout << endl;
+}
+
 
