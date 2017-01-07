@@ -108,7 +108,7 @@ void TestIntegrator::Test5()
 }
 
 
-bool isLarger( string str , int size )
+bool isLarger( string str , size_t size )
 {
 	return str.size() >= size;
 }

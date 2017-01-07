@@ -5,6 +5,7 @@
 #include "TestIntegrator.h"
 #include "BitArray.h"
 #include "MyTest.h"
+#include "TextQuery.h"
 
 void print( int i );
 
@@ -31,6 +32,11 @@ int main( int argc , const char *argv )
 	}
 	
 	std::cout << str << std::endl;*/
+
+	TextQuery query;
+	query.readFromStream();
+	TextQueryResult result = query.getQueryResult( "is" );
+	result.showQueryResult();
 
 	MyTest test;
 	test.setNum( 11 );
