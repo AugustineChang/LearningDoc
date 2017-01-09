@@ -7,6 +7,7 @@
 #include "BitArray.h"
 #include "MyTest.h"
 #include "TextQuery.h"
+#include "TextQueryResult.h"
 
 void print( int i );
 
