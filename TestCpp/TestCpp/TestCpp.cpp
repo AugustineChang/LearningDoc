@@ -2,6 +2,7 @@
 //
 #include <stdlib.h>
 #include <iostream>
+#include <memory>
 #include "TestIntegrator.h"
 #include "BitArray.h"
 #include "MyTest.h"
@@ -49,6 +50,11 @@ int main( int argc , const char *argv )
 	print( test.callFunc( &test2 , &MyTest::getNum ) );
 
 	std::cout << test3.getNum() << std::endl;
+
+	//auto ptr = test.getVectorPtr();
+	//test.saveInput( ptr );
+	//test.outputVector( ptr );
+	//delete ptr;
 
 	system( "Pause" );
     return 0;

@@ -134,4 +134,3 @@ void TestIntegrator::Test6( int size )
 	cout << endl;
 }
 
-

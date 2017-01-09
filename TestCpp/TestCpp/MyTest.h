@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+
 class MyTest
 {
 public:
@@ -11,9 +13,14 @@ public:
 
 	int callFunc( MyTest *obj , myDelegate func );
 
-	const MyTest &get() const {
+	const MyTest &get() const 
+	{
 		return *this;
 	}
+
+	std::vector<int>* getVectorPtr();
+	void saveInput( std::vector<int>* ptr );
+	void outputVector( std::vector<int>* ptr );
 
 private:
 	int number;
