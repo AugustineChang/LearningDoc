@@ -44,6 +44,7 @@ TextQuery& TextQuery::operator=( const TextQuery &copy )
 	{
 		lineList->push_back( *i );
 	}
+	return *this;
 }
 
 void TextQuery::readFromStream()

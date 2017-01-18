@@ -52,6 +52,13 @@ int main( int argc , const char *argv )
 
 	std::cout << test3.getNum() << std::endl;
 
+	std::string str = "aaa";
+	std::vector<std::string> testVector;
+	testVector.push_back( str );
+	str.append( "bbb" );
+	std::cout << str << std::endl;
+	std::cout << testVector[0] << std::endl;
+
 	//auto ptr = test.getVectorPtr();
 	//test.saveInput( ptr );
 	//test.outputVector( ptr );
