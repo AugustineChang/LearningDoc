@@ -36,6 +36,10 @@ TextQuery::~TextQuery()
 
 TextQuery& TextQuery::operator=( const TextQuery &copy )
 {
+	if ( &copy == this ) return *this;
+
+	isReady = copy.isReady;
+
 	lineList->clear();
 
 	auto start = copy.lineList->begin();
@@ -44,6 +48,25 @@ TextQuery& TextQuery::operator=( const TextQuery &copy )
 	{
 		lineList->push_back( *i );
 	}
+
+	for ( auto i = word2Line.begin(); i != word2Line.end(); ++i )
+	{
+		delete i->second;
+	}
+
+	auto start2 = copy.word2Line.begin();
+	auto end2 = copy.word2Line.end();
+	for ( auto i = start2; i != end2; ++i )
+	{
+		std::set<int> *temp = new std::set<int>();
+		for ( int one : *( i->second ) )
+		{
+			temp->insert( one );
+		}
+
+		word2Line.insert( std::make_pair( i->first , temp ) );
+	}
+
 	return *this;
 }
 
