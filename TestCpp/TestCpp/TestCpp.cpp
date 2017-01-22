@@ -8,13 +8,17 @@
 #include "MyTest.h"
 #include "TextQuery.h"
 #include "TextQueryResult.h"
+#include "Folder.h"
+#include "Message.h"
 
 void print( int i );
 
+void testFolderMessage();
+
 int main( int argc , const char *argv )
 {
-	TestIntegrator* ti = new TestIntegrator();
-	ti->Test6( 5 );
+	/*TestIntegrator* ti = new TestIntegrator();
+	ti->Test6( 5 );*/
 	
 	/*BitArray bitArray;
 	bitArray.setValue( 14 , true );
@@ -35,7 +39,7 @@ int main( int argc , const char *argv )
 	
 	std::cout << str << std::endl;*/
 
-	TextQuery query;
+	/*TextQuery query;
 	query.readFromStream();
 	TextQueryResult result = query.getQueryResult( "is" );
 	result.showQueryResult();
@@ -50,19 +54,21 @@ int main( int argc , const char *argv )
 
 	print( test.callFunc( &test2 , &MyTest::getNum ) );
 
-	std::cout << test3.getNum() << std::endl;
+	std::cout << test3.getNum() << std::endl;*/
 
-	std::string str = "aaa";
+	/*std::string str = "aaa";
 	std::vector<std::string> testVector;
 	testVector.push_back( str );
 	str.append( "bbb" );
 	std::cout << str << std::endl;
-	std::cout << testVector[0] << std::endl;
+	std::cout << testVector[0] << std::endl;*/
 
 	//auto ptr = test.getVectorPtr();
 	//test.saveInput( ptr );
 	//test.outputVector( ptr );
 	//delete ptr;
+
+	testFolderMessage();
 
 	system( "Pause" );
     return 0;
@@ -90,4 +96,46 @@ void print( const int a[10] )
 		std::cout << a[i];
 	}
 	std::cout << std::endl;
+}
+
+
+void testFolderMessage()
+{
+	Message M1( "MessageA" );
+	Message M2( "MessageB" );
+	Message M3( "MessageC" );
+
+	Folder F1;
+	Folder F2;
+	
+	F1.AddToFolder( &M1 );
+	F1.AddToFolder( &M2 );
+	F1.AddToFolder( &M3 );
+	F2.AddToFolder( &M3 );
+
+	std::cout << "F1" << std::endl;
+	F1.ShowAllMessage();
+
+	std::cout << "F2" << std::endl;
+	F2.ShowAllMessage();
+	
+	
+	{
+		Folder F3( F1 );
+		M1.SetMessage( "MessageA//Change" );
+
+		std::cout << "F3" << std::endl;
+		F3.ShowAllMessage();
+
+		M3.showReferenceCount();
+	}
+	
+
+	std::cout << "F1" << std::endl;
+	F1.ShowAllMessage();
+
+	std::cout << "F2" << std::endl;
+	F2.ShowAllMessage();
+
+	M3.showReferenceCount();
 }
