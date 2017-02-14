@@ -2,6 +2,11 @@
 /TestCpp/TestCpp/Debug
 /TestCpp/ipch
 /TestCpp/.vs
+/MyD3D11Project/Debug
+/MyD3D11Project/MyD3D11Project/Debug
+/MyD3D11Project/ipch
+/MyD3D11Project/.vs
+
 *.sdf
 *.sln
 *.db
