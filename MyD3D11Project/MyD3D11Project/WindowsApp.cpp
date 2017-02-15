@@ -1,22 +1,26 @@
-#include <windows.h>
+#include "WindowsApp.h"
 
-HWND ghMainWnd = 0;
+WindowsApp *globalInstance;
+LRESULT CALLBACK WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
+{
+	if ( globalInstance == nullptr )return 0;
+	return globalInstance->MsgProc( hWnd , msg , wParam , lParam );
+}
 
-bool InitWindowsApp( HINSTANCE  instanceHandle , int show );
-LRESULT CALLBACK WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam );
-int MsgLoop();
 
-//int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPreInstance , PSTR pCmdLine , int nShowCmd )
-//{
-//	if ( !InitWindowsApp( hInstance , nShowCmd ) )
-//	{
-//		return 0;
-//	}
-//
-//	return MsgLoop();
-//}
+WindowsApp::WindowsApp( HINSTANCE hinstance , int show )
+	:screenWidth( 1280 ) , screenHeight( 800 ) ,
+	instanceHandle( hinstance ) , showCmd( show )
+{
+	globalInstance = this;
+}
 
-bool InitWindowsApp( HINSTANCE  instanceHandle , int show )
+
+WindowsApp::~WindowsApp()
+{
+}
+
+bool WindowsApp::InitWinApp()
 {
 	WNDCLASS window;
 
@@ -58,19 +62,17 @@ bool InitWindowsApp( HINSTANCE  instanceHandle , int show )
 		return false;
 	}
 
-	ShowWindow( ghMainWnd , show );
+	ShowWindow( ghMainWnd , showCmd );
 	UpdateWindow( ghMainWnd );
 	return true;
 }
 
-
-LRESULT CALLBACK
-WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
+LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
 {
 	switch ( msg )
 	{
 	case WM_LBUTTONDOWN:
-		MessageBox( 0 , L"HelloWorld" , L"Hello" , MB_OK );
+		//MessageBox( 0 , L"HelloWorld" , L"Hello" , MB_OK );
 		return 0;
 
 	case WM_KEYDOWN:
@@ -88,24 +90,21 @@ WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
 	return DefWindowProc( hWnd , msg , wParam , lParam );
 }
 
-int MsgLoop()
+int WindowsApp::MsgLoop()
 {
 	MSG msg = { 0 };
-
-	BOOL bRet = 1;
-	while ( ( bRet = GetMessage( &msg , 0 , 0 , 0 ) ) != 0 )
+	while ( msg.message != WM_QUIT )
 	{
-		if ( bRet == -1 )
-		{
-			MessageBox( 0 , L"Get Message Failed!!!" , 0 , 0 );
-			break;
-		}
-		else
+		// If there are Window messages then process them.
+		if ( PeekMessage( &msg , 0 , 0 , 0 , PM_REMOVE ) )
 		{
 			TranslateMessage( &msg );
 			DispatchMessage( &msg );
 		}
-	}
+		else// Otherwise , do animation / game stuff.
+		{
 
+		}
+	}
 	return (int) msg.wParam;
 }
