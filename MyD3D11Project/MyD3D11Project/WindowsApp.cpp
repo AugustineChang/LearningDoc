@@ -1,4 +1,6 @@
 #include "WindowsApp.h"
+#include <windowsX.h>
+#include <sstream>
 
 WindowsApp *globalInstance;
 LRESULT CALLBACK WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
@@ -9,8 +11,9 @@ LRESULT CALLBACK WndProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
 
 
 WindowsApp::WindowsApp( HINSTANCE hinstance , int show )
-	:screenWidth( 1280 ) , screenHeight( 800 ) ,
-	instanceHandle( hinstance ) , showCmd( show )
+	:screenWidth( 1280 ) , screenHeight( 800 ) , isDraging( false ) ,
+	instanceHandle( hinstance ) , showCmd( show ) ,
+	fpsCount( 0 ) , fpsBaseTime( 0.0f )
 {
 	globalInstance = this;
 }
@@ -31,7 +34,7 @@ bool WindowsApp::InitWinApp()
 	window.hInstance = instanceHandle;
 	window.hIcon = LoadIcon( 0 , IDI_APPLICATION );
 	window.hCursor = LoadCursor( 0 , IDC_ARROW );
-	window.hbrBackground = (HBRUSH) GetStockObject( WHITE_BRUSH );
+	window.hbrBackground = (HBRUSH) GetStockObject( NULL_BRUSH );
 	window.lpszMenuName = 0;
 	window.lpszClassName = L"MyBasicWindow";
 
@@ -67,13 +70,111 @@ bool WindowsApp::InitWinApp()
 	return true;
 }
 
+void WindowsApp::CalcFrameStat()
+{
+	/*
+	//Debug Code
+
+	std::wostringstream ss;
+	ss.setf( std::ios::fixed , std::ios::floatfield );
+	ss.precision( 2 );
+	ss << L"DeltaTime:" << gameTimer.DeltaTime() * 1000 << L"ms";
+	ss << L" TotalTime:" << gameTimer.TotalTime();
+	SetWindowText( ghMainWnd , ss.str().c_str() );
+	*/
+
+	fpsCount++;
+
+	float passedTime = gameTimer.TotalTime() - fpsBaseTime;
+	if ( passedTime >= 1.0f )
+	{
+		float fps = fpsCount / passedTime;
+		float mspf = passedTime / fpsCount * 1000.0f;
+
+		std::wostringstream ss;
+		ss.setf( std::ios::fixed , std::ios::floatfield );
+		ss.precision( 2 );
+		if ( fps > 1000.0f )
+		{
+			ss << L"FPS:" << ( fps / 1000.0f ) << L"K ";
+			ss << L"FrameTime:" << ( mspf * 1000.0f ) << L"us ";
+		}
+		else
+		{
+			ss << L"FPS:" << fps << L" ";
+			ss << L"FrameTime:" << mspf << L"ms ";
+		}
+		SetWindowText( ghMainWnd , ss.str().c_str() );
+
+		fpsCount = 0;
+		fpsBaseTime = gameTimer.TotalTime();
+	}
+}
+
 LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lParam )
 {
 	switch ( msg )
 	{
-	case WM_LBUTTONDOWN:
-		//MessageBox( 0 , L"HelloWorld" , L"Hello" , MB_OK );
+	case WM_ACTIVATE:
+		if ( LOWORD( wParam ) == WA_INACTIVE )
+		{
+			gameTimer.Pause();
+		}
+		else
+		{
+			gameTimer.UnPause();
+		}
 		return 0;
+
+	case WM_SIZE:
+		screenWidth = LOWORD( lParam );
+		screenHeight = HIWORD( lParam );
+
+		if ( wParam == SIZE_MINIMIZED )
+		{
+			gameTimer.Pause();
+		}
+		else if ( gameTimer.isPaused() )
+		{
+			gameTimer.UnPause();
+
+			if ( !isDraging ) OnResize();
+		}
+		return 0;
+
+	case WM_ENTERSIZEMOVE:
+		gameTimer.Pause();
+		isDraging = true;
+		return 0;
+	case WM_EXITSIZEMOVE:
+		gameTimer.UnPause();
+		isDraging = false;
+		OnResize();
+		return 0;
+
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+		OnMouseDown( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
+		return 0;
+
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+		OnMouseUp( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
+		return 0;
+
+	case WM_MOUSEMOVE:
+		OnMouseMove( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
+		return 0;
+
+	case WM_GETMINMAXINFO:
+		( (MINMAXINFO*) lParam )->ptMinTrackSize.x = 200;
+		( (MINMAXINFO*) lParam )->ptMinTrackSize.y = 200;
+		return 0;
+
+	case WM_MENUCHAR:
+		return MAKELRESULT( 0 , MNC_CLOSE );
 
 	case WM_KEYDOWN:
 		if ( wParam == VK_ESCAPE )
@@ -93,17 +194,26 @@ LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lPara
 int WindowsApp::MsgLoop()
 {
 	MSG msg = { 0 };
+	gameTimer.Reset();
+
 	while ( msg.message != WM_QUIT )
 	{
-		// If there are Window messages then process them.
 		if ( PeekMessage( &msg , 0 , 0 , 0 , PM_REMOVE ) )
 		{
 			TranslateMessage( &msg );
 			DispatchMessage( &msg );
 		}
-		else// Otherwise , do animation / game stuff.
+		else
 		{
+			gameTimer.Tick();
 
+			if ( !gameTimer.isPaused() )
+			{
+				CalcFrameStat();
+				UpdateScene( gameTimer.DeltaTime() );
+				DrawScene();
+			}
+			else Sleep( 100 );
 		}
 	}
 	return (int) msg.wParam;

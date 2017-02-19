@@ -1,4 +1,6 @@
-#pragma once
+#ifndef DIRECTX_APP_H
+#define DIRECTX_APP_H
+
 #include "WindowsApp.h"
 
 struct ID3D11Device;
@@ -6,6 +8,7 @@ struct ID3D11DeviceContext;
 struct IDXGISwapChain;
 struct ID3D11RenderTargetView;
 struct ID3D11DepthStencilView;
+struct ID3D11Texture2D;
 
 class DirectXApp : public WindowsApp
 {
@@ -13,7 +16,30 @@ public:
 	DirectXApp( HINSTANCE hinstance , int show );
 	~DirectXApp();
 
-	bool initDirectApp();
+	bool InitDirectApp();
+	void QueryGraphicAdapters();
+
+protected:
+
+	virtual void OnResize() override;
+	virtual void OnMouseDown( WPARAM btnState , int x , int y ) override;
+	virtual void OnMouseMove( WPARAM btnState , int x , int y ) override;
+	virtual void OnMouseUp( WPARAM btnState , int x , int y ) override;
+
+	virtual void UpdateScene( float deltaTime ) override;
+	virtual void DrawScene() override;
+
+protected:
+
+	ID3D11Device *device;
+	ID3D11DeviceContext *immediateContext;
+	IDXGISwapChain *swapChain;
+	ID3D11Texture2D *depthBuffer;
+
+	ID3D11RenderTargetView *backBufferView;
+	ID3D11DepthStencilView *depthBufferView;
+	
+	bool enable4xMSAA;
 
 private:
 
@@ -22,15 +48,9 @@ private:
 	void createSwapChain();
 	void createBackBufferView();
 	void createDepthBufferView();
+	void initImmediateContext();
 
-	ID3D11Device *device;
-	ID3D11DeviceContext *immediateContext;
-	IDXGISwapChain *swapChain;
-
-	bool enable4xMSAA;
 	UINT m4xMsaaQuality;
-
-	ID3D11RenderTargetView *backBufferView;
-	ID3D11DepthStencilView *depthBufferView;
 };
 
+#endif // !DIRECTX_APP_H

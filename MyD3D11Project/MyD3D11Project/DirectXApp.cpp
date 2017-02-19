@@ -1,8 +1,6 @@
 #include "DirectXApp.h"
-#include <assert.h>
-#include <d3d11.h>
-#include "MyMacro.h"
-
+#include "CommonHeader.h"
+#include <sstream>
 
 DirectXApp::DirectXApp( HINSTANCE hinstance , int show )
 	:WindowsApp( hinstance , show ) , enable4xMSAA( true )
@@ -12,9 +10,18 @@ DirectXApp::DirectXApp( HINSTANCE hinstance , int show )
 
 DirectXApp::~DirectXApp()
 {
+	ReleaseCOM( backBufferView );
+	ReleaseCOM( depthBufferView );
+	ReleaseCOM( depthBuffer );
+	ReleaseCOM( swapChain );
+
+	if ( immediateContext )immediateContext->ClearState();
+
+	ReleaseCOM( immediateContext );
+	ReleaseCOM( device );
 }
 
-bool DirectXApp::initDirectApp()
+bool DirectXApp::InitDirectApp()
 {
 	if ( !InitWinApp() ) return false;
 
@@ -23,20 +30,33 @@ bool DirectXApp::initDirectApp()
 	createSwapChain();
 	createBackBufferView();
 	createDepthBufferView();
-
-	immediateContext->OMSetRenderTargets( 1 , &backBufferView , depthBufferView );
-
-	D3D11_VIEWPORT viewport;
-	viewport.TopLeftX = 0.0f;
-	viewport.TopLeftY = 0.0f;
-	viewport.Width = (float) screenWidth;
-	viewport.Height = (float) screenHeight;
-	viewport.MinDepth = 0.0f;
-	viewport.MaxDepth = 1.0f;
-	immediateContext->RSSetViewports( 1 , &viewport );
+	initImmediateContext();
 
 	return true;
 }
+
+void DirectXApp::OnResize()
+{
+	if ( device == nullptr ) return;
+	if ( immediateContext == nullptr ) return;
+	if ( swapChain == nullptr ) return;
+
+	ReleaseCOM( backBufferView );
+	ReleaseCOM( depthBufferView );
+	ReleaseCOM( depthBuffer );
+
+	swapChain->ResizeBuffers( 1 , screenWidth , screenHeight , DXGI_FORMAT_R8G8B8A8_UNORM , 0 );
+	createBackBufferView();
+	createDepthBufferView();
+	initImmediateContext();
+}
+
+void DirectXApp::OnMouseDown( WPARAM btnState , int x , int y ){}
+void DirectXApp::OnMouseMove( WPARAM btnState , int x , int y ){}
+void DirectXApp::OnMouseUp( WPARAM btnState , int x , int y ){}
+
+void DirectXApp::UpdateScene( float deltaTime ){}
+void DirectXApp::DrawScene(){}
 
 bool DirectXApp::createDirectXDevice()
 {
@@ -132,6 +152,7 @@ void DirectXApp::createSwapChain()
 	dxgiAdapter->GetParent( __uuidof( IDXGIFactory ) , (void**) &dxgiFactory );
 
 	HR( dxgiFactory->CreateSwapChain( device , &scd , &swapChain ) );
+	HR( dxgiFactory->MakeWindowAssociation( ghMainWnd , DXGI_MWA_NO_WINDOW_CHANGES ) );
 
 	ReleaseCOM( dxgiDevice );
 	ReleaseCOM( dxgiAdapter );
@@ -171,8 +192,69 @@ void DirectXApp::createDepthBufferView()
 	depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthTexDesc.CPUAccessFlags = 0;
 	depthTexDesc.MiscFlags = 0;
+	
+	HR( device->CreateTexture2D( &depthTexDesc , nullptr , &depthBuffer ) );
+	HR( device->CreateDepthStencilView( depthBuffer , nullptr , &depthBufferView ) );
+}
 
-	ID3D11Texture2D *depthTex;
-	HR( device->CreateTexture2D( &depthTexDesc , nullptr , &depthTex ) );
-	HR( device->CreateDepthStencilView( depthTex , nullptr , &depthBufferView ) );
+void DirectXApp::initImmediateContext()
+{
+	immediateContext->OMSetRenderTargets( 1 , &backBufferView , depthBufferView );
+
+	D3D11_VIEWPORT viewport;
+	viewport.TopLeftX = 0.0f;
+	viewport.TopLeftY = 0.0f;
+	viewport.Width = (float) screenWidth;
+	viewport.Height = (float) screenHeight;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
+	immediateContext->RSSetViewports( 1 , &viewport );
+}
+
+void DirectXApp::QueryGraphicAdapters()
+{
+	IDXGIFactory *dxgiFactory;
+	CreateDXGIFactory( __uuidof( IDXGIFactory ) , (void**) &dxgiFactory );
+
+	std::wostringstream ss;
+	UINT adapterIndex = 0;
+	IDXGIAdapter *adapter;
+	while ( dxgiFactory->EnumAdapters( adapterIndex , &adapter ) != DXGI_ERROR_NOT_FOUND )
+	{
+		LARGE_INTEGER* umdVersion = nullptr;
+		HR( adapter->CheckInterfaceSupport( __uuidof( ID3D10Device ) , umdVersion ) );
+
+		ss << L"Adapter " << adapterIndex << L"\n";
+		ss << L"\tUMDVersion " << umdVersion << L"\n";
+
+		UINT outputIndex = 0;
+		IDXGIOutput *output;
+		while ( adapter->EnumOutputs( outputIndex , &output ) != DXGI_ERROR_NOT_FOUND )
+		{
+			ss << L"\tOutput " << outputIndex << L"\n";
+
+			UINT displayModeNum = 0;
+			DXGI_FORMAT displayFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+			UINT displayFlag = DXGI_ENUM_MODES_INTERLACED;
+
+			HR( output->GetDisplayModeList( displayFormat , 0 , &displayModeNum , nullptr ) );
+			DXGI_MODE_DESC *modeDesc = new DXGI_MODE_DESC[displayModeNum];
+			HR( output->GetDisplayModeList( displayFormat , 0 , &displayModeNum , modeDesc ) );
+
+			for ( UINT index = 0; index < displayModeNum; ++index )
+			{
+				ss << L"\t\tDisplayMode: W=" << modeDesc[index].Width << L" H=" << modeDesc[index].Height
+					<< "RefreshRate=" << modeDesc[index].RefreshRate.Numerator << L"/" << modeDesc[index].RefreshRate.Denominator << L"\n";
+			}
+
+			delete[] modeDesc;
+			++outputIndex;
+		}
+		
+		if ( outputIndex == 0 ) ss << L"\tNo Output" << "\n";
+
+		++adapterIndex;
+	}
+	
+	OutputDebugString( ss.str().c_str() );
 }
