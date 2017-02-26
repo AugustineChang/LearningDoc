@@ -16,7 +16,7 @@ public:
 	DirectXApp( HINSTANCE hinstance , int show );
 	~DirectXApp();
 
-	bool InitDirectApp();
+	virtual bool InitDirectApp();
 	void QueryGraphicAdapters();
 
 protected:

@@ -1,29 +1,29 @@
-cbPerObject
+cbuffer cbPerObject
 {
-	gWVP;
+	float4x4 gWVP;
 };
 
 
 struct VertexIn
 {
-	float3 posL : Position;
-	float4 color : Color;
+	float3 posL : POSITION;
+	float4 color : COLOR;
 };
 
 struct VertexOut
 {
-	float4 posH : SV_Position;
-	float4 color : Color;
+	float4 posH : SV_POSITION;
+	float4 color : COLOR;
 };
 
 
 
-VertexOut VS( VertexIn in )
+VertexOut VS( VertexIn vin )
 {
 	VertexOut vout;
 
-	vout.posH = mul( float4( in.posL , 1.0f ) , gWVP );
-	vout.color = in.color;
+	vout.posH = mul( float4( vin.posL , 1.0f ) , gWVP );
+	vout.color = vin.color;
 
 	return vout;
 }
