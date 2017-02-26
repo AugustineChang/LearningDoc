@@ -5,6 +5,16 @@ using namespace DirectX;
 
 BasicCube::BasicCube() : BasicShape()
 {
+	createObjectMesh();
+}
+
+
+BasicCube::~BasicCube()
+{
+}
+
+void BasicCube::createObjectMesh()
+{
 	XMFLOAT4 whiteFloat;
 	XMStoreFloat4( &whiteFloat , Colors::White );
 	XMFLOAT4 blackFloat;
@@ -49,19 +59,4 @@ BasicCube::BasicCube() : BasicShape()
 		5, 7, 6,
 		4, 5, 6  // down
 	};
-}
-
-
-BasicCube::~BasicCube()
-{
-}
-
-const std::vector<CustomVertex>& BasicCube::getVertices() const
-{
-	return vertices;
-}
-
-const std::vector<unsigned int>& BasicCube::getIndices() const
-{
-	return indices;
 }

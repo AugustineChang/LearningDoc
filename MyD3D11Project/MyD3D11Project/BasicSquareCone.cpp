@@ -5,6 +5,16 @@ using namespace DirectX;
 
 BasicSquareCone::BasicSquareCone() : BasicShape()
 {
+	createObjectMesh();
+}
+
+
+BasicSquareCone::~BasicSquareCone()
+{
+}
+
+void BasicSquareCone::createObjectMesh()
+{
 	XMFLOAT4 redFloat;
 	XMStoreFloat4( &redFloat , Colors::Red );
 	XMFLOAT4 greenFloat;
@@ -34,20 +44,4 @@ BasicSquareCone::BasicSquareCone() : BasicShape()
 		2, 3, 1,
 		3, 0, 1 // down
 	};
-
-}
-
-
-BasicSquareCone::~BasicSquareCone()
-{
-}
-
-const std::vector<CustomVertex>& BasicSquareCone::getVertices() const
-{
-	return vertices;
-}
-
-const std::vector<unsigned int>& BasicSquareCone::getIndices() const
-{
-	return indices;
 }

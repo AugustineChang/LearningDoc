@@ -164,6 +164,10 @@ LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lPara
 		OnMouseUp( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
 		return 0;
 
+	case WM_MOUSEWHEEL:
+		OnMouseWheel( GET_WHEEL_DELTA_WPARAM( wParam ) );
+		return 0;
+
 	case WM_MOUSEMOVE:
 		OnMouseMove( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
 		return 0;

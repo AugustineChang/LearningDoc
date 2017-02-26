@@ -17,15 +17,22 @@ public:
 
 	void buildWorldMatrix();
 
-	virtual const std::vector<CustomVertex>& getVertices() const = 0;
-	virtual const std::vector<unsigned int>& getIndices() const = 0;
+	const std::vector<CustomVertex>& getVertices() const;
+	const std::vector<unsigned int>& getIndices() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
 	DirectX::XMFLOAT3 Scale;
 	DirectX::XMMATRIX getWorldMatrix() const;
 
+	unsigned int indexStart;
+	unsigned int indexSize;
+	unsigned int indexBase;
+
 protected:
+
+	virtual void createObjectMesh() = 0;
+
 	std::vector<CustomVertex> vertices;
 	std::vector<unsigned int> indices;
 

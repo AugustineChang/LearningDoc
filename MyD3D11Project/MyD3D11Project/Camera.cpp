@@ -9,7 +9,7 @@ nearPlane( 1.0f ) , farPlane( 300.0f )
 	XMStoreFloat4x4( &world2View , identityMaxtrix );
 	XMStoreFloat4x4( &view2Proj , identityMaxtrix );
 
-	XMVECTOR camPos = XMVectorSet( 0.0f , 0.0f , -5.0f , 1.0f );
+	XMVECTOR camPos = XMVectorSet( 0.0f , 0.0f , 0.0f , 1.0f );
 	XMStoreFloat4( &Position , camPos );
 
 	XMVECTOR camRot = XMVectorSet( 0.0f , 0.0f , 0.0f , 0.0f );

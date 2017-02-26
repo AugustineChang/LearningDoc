@@ -35,6 +35,16 @@ void BasicShape::buildWorldMatrix( )
 	XMStoreFloat4x4( &obj2World , temp );
 }
 
+const std::vector<CustomVertex>& BasicShape::getVertices() const
+{
+	return vertices;
+}
+
+const std::vector<unsigned int>& BasicShape::getIndices() const
+{
+	return indices;
+}
+
 DirectX::XMMATRIX BasicShape::getWorldMatrix() const
 {
 	return XMLoadFloat4x4( &obj2World );

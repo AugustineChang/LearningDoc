@@ -17,6 +17,7 @@ public:
 	virtual void OnMouseDown( WPARAM btnState , int x , int y ) = 0;
 	virtual void OnMouseMove( WPARAM btnState , int x , int y ) = 0;
 	virtual void OnMouseUp( WPARAM btnState , int x , int y ) = 0;
+	virtual void OnMouseWheel( int zDelta ) = 0;
 
 	virtual void UpdateScene( float deltaTime ) = 0;
 	virtual void DrawScene() = 0;

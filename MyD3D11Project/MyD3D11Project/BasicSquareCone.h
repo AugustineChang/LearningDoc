@@ -8,7 +8,8 @@ public:
 	BasicSquareCone();
 	~BasicSquareCone();
 
-	virtual const std::vector<CustomVertex>& getVertices() const override;
-	virtual const std::vector<unsigned int>& getIndices() const override;
+protected:
+
+	virtual void createObjectMesh() override;
 };
 

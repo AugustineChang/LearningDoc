@@ -1,17 +1,37 @@
 #include "SimpleScene.h"
 #include "CommonHeader.h"
+#include "BasicCube.h"
+#include "BasicSquareCone.h"
+#include "SimpleTerrain.h"
+#include "Cylinder.h"
+#include "Sphere.h"
+#include "GeoSphere.h"
 #include <fstream>
-#include <vector>
 using namespace DirectX;
 
 
 SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
-	:DirectXApp( hinstance , show ) , moveSpeed( 0.1f )
+	:DirectXApp( hinstance , show ) , moveSpeed( 0.1f ) , 
+	radius( 5.0f ) , zoomSpeed( 0.005f ) , rotSpeed( 1.0f )
 {
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	squareCone.Position.x = 2.5f;
+	/*BasicCube *cube = new BasicCube();
+	renderList.push_back( cube );
+
+	BasicSquareCone *squareCone = new BasicSquareCone();
+	squareCone->Position.y = 1.5f;
+	renderList.push_back( squareCone );
+
+	SimpleTerrain *terrain = new SimpleTerrain();
+	renderList.push_back( terrain );*/
+
+	//Cylinder *cylinder = new Cylinder();
+	//renderList.push_back( cylinder );
+
+	GeoSphere *sphere = new GeoSphere();
+	renderList.push_back( sphere );
 }
 
 
@@ -22,6 +42,12 @@ SimpleScene::~SimpleScene()
 	ReleaseCOM( inputLayout );
 	ReleaseCOM( effect );
 	ReleaseCOM( rasterState );
+
+	for ( BasicShape *shape : renderList )
+	{
+		delete shape;
+	}
+	renderList.clear();
 }
 
 bool SimpleScene::InitDirectApp()
@@ -32,12 +58,20 @@ bool SimpleScene::InitDirectApp()
 	createInputLayout();
 	createObjects();
 
+	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
 	return true;
 }
 
 void SimpleScene::UpdateScene( float deltaTime )
 {
+	/*BasicShape &squareCone = *renderList[1];
+
+	squareCone.Rotation.y += rotSpeed * deltaTime;
+
+	float twoPI = SimpleMath::PI * 2.0f;
+	if ( squareCone.Rotation.y > twoPI )squareCone.Rotation.y -= twoPI;*/
+
 }
 
 void SimpleScene::DrawScene()
@@ -55,19 +89,16 @@ void SimpleScene::DrawScene()
 
 	immediateContext->RSSetState( rasterState );
 	
-	cube.buildWorldMatrix();
-	squareCone.buildWorldMatrix();
+	for ( BasicShape *shape : renderList )
+	{
+		shape->buildWorldMatrix();
+	}
 	camera.buildViewMatrix();
 
-	UINT indexSize = cube.getIndices().size();
-	UINT indexStart = 0;
-	UINT indexBase = 0;
-	renderObject( cube , indexSize , indexStart , indexBase );
-
-	indexStart = indexSize;
-	indexBase = cube.getVertices().size();
-	indexSize = squareCone.getIndices().size();
-	renderObject( squareCone , indexSize , indexStart , indexBase );
+	for ( BasicShape *shape : renderList )
+	{
+		renderObject( *shape , shape->indexSize , shape->indexStart , shape->indexBase );
+	}
 
 	HR( swapChain->Present( 0 , 0 ) );
 }
@@ -97,9 +128,9 @@ void SimpleScene::OnMouseMove( WPARAM btnState , int x , int y )
 		camera.Rotation.y += deltaX;
 		camera.Rotation.x = SimpleMath::Clamp<float>( camera.Rotation.x + deltaY , -SimpleMath::PI / 2 + 0.01f , SimpleMath::PI / 2 - 0.01f );
 
-		camera.Position.x = 5.0f * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.z = 5.0f * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.y = 5.0f * sinf( camera.Rotation.x );
+		camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
+		camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
+		camera.Position.y = radius * sinf( camera.Rotation.x );
 
 		lastMousePos.x = x;
 		lastMousePos.y = y;
@@ -109,6 +140,15 @@ void SimpleScene::OnMouseMove( WPARAM btnState , int x , int y )
 void SimpleScene::OnMouseUp( WPARAM btnState , int x , int y )
 {
 	ReleaseCapture();
+}
+
+void SimpleScene::OnMouseWheel( int zDelta )
+{
+	radius -= zDelta * zoomSpeed;
+
+	camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
+	camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
+	camera.Position.y = radius * sinf( camera.Rotation.x );
 }
 
 void SimpleScene::createInputLayout()
@@ -233,32 +273,26 @@ void SimpleScene::createEffectAtBuildtime()
 
 void SimpleScene::createObjects()
 {
-	std::vector<CustomVertex> vlist1 = cube.getVertices();
-	std::vector<UINT> ilist1 = cube.getIndices();
-
-	std::vector<CustomVertex> vlist2 = squareCone.getVertices();
-	std::vector<UINT> ilist2 = squareCone.getIndices();
-
 	std::vector<CustomVertex> gvlist;
-	for ( CustomVertex vertex : vlist1 )
-	{
-		gvlist.push_back( vertex );
-	}
-	for ( CustomVertex vertex : vlist2 )
-	{
-		gvlist.push_back( vertex );
-	}
-
 	std::vector<UINT> gilist;
-	for ( UINT index : ilist1 )
+	for ( BasicShape *shape : renderList )
 	{
-		gilist.push_back( index );
-	}
-	for ( UINT index : ilist2 )
-	{
-		gilist.push_back( index );
+		createGlobalBuffer( gvlist , gilist , *shape );
 	}
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );
 	createIndexBuffer( &gilist[0] , gilist.size() );
+}
+
+void SimpleScene::createGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
+{
+	std::vector<CustomVertex> vlist = shape.getVertices();
+	std::vector<UINT> ilist = shape.getIndices();
+
+	shape.indexSize = ilist.size();
+	shape.indexStart = gIBuffer.size();
+	shape.indexBase = gVBuffer.size();
+
+	gVBuffer.insert( gVBuffer.end() , vlist.begin() , vlist.end() );
+	gIBuffer.insert( gIBuffer.end() , ilist.begin() , ilist.end() );
 }

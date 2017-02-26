@@ -14,3 +14,9 @@ public:
 	static const float PI;
 };
 
+template<typename T>
+struct Point
+{
+	T x;
+	T y;
+};
