@@ -1,5 +1,5 @@
 #include "DirectXApp.h"
-#include "CommonHeader.h"
+#include "../Utilities/CommonHeader.h"
 #include <sstream>
 
 DirectXApp::DirectXApp( HINSTANCE hinstance , int show )

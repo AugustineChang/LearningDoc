@@ -1,5 +1,5 @@
 #include "Sphere.h"
-#include "CommonHeader.h"
+#include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 

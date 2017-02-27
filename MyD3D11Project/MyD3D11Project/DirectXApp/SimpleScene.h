@@ -38,7 +38,6 @@ private:
 	float moveSpeed;
 	float radius;
 	float zoomSpeed;
-	float rotSpeed;
 
 protected:
 

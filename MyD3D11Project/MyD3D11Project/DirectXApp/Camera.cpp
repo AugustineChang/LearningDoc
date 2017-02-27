@@ -1,5 +1,5 @@
 #include "Camera.h"
-#include "CommonHeader.h"
+#include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 Camera::Camera() : fovAngle( SimpleMath::PI / 3.0f ) ,

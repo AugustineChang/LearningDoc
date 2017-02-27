@@ -1,5 +1,5 @@
 #include "SimpleTerrain.h"
-#include "CommonHeader.h"
+#include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 
@@ -10,6 +10,11 @@ SimpleTerrain::SimpleTerrain()
 	createObjectMesh();
 }
 
+SimpleTerrain::SimpleTerrain( const Point<unsigned int> &vert , const Point<float> &size )
+	: verticesDim( vert ) , terrainSize( size )
+{
+}
+
 
 SimpleTerrain::~SimpleTerrain()
 {
@@ -17,8 +22,18 @@ SimpleTerrain::~SimpleTerrain()
 
 void SimpleTerrain::createObjectMesh()
 {
-	UINT vertexNum = verticesDim.x * verticesDim.y;
-	UINT triangleNum = 2 * ( verticesDim.x - 1 )*( verticesDim.y - 1 );
+	createBasicPlane();
+
+	for ( CustomVertex &vertex : vertices )
+	{
+		vertex.Pos.y = getHeight( vertex.Pos.x , vertex.Pos.z , 0.0f );
+	}
+}
+
+void SimpleTerrain::createBasicPlane()
+{
+	//UINT vertexNum = verticesDim.x * verticesDim.y;
+	//UINT triangleNum = 2 * ( verticesDim.x - 1 )*( verticesDim.y - 1 );
 
 	float gridX = terrainSize.x / ( verticesDim.x - 1 );
 	float gridY = terrainSize.y / ( verticesDim.y - 1 );
@@ -32,9 +47,7 @@ void SimpleTerrain::createObjectMesh()
 		{
 			CustomVertex one;
 
-			float yPos = 0.3f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
-
-			one.Pos = XMFLOAT3( x * gridX - halfSizeX , yPos , z * gridY - halfSizeY );
+			one.Pos = XMFLOAT3( x * gridX - halfSizeX , 0.0f , z * gridY - halfSizeY );
 			one.Color = XMFLOAT4( x * gridX / terrainSize.x , 0.0f , z * gridY / terrainSize.y , 1.0f );
 
 			vertices.push_back( one );
@@ -62,4 +75,9 @@ void SimpleTerrain::createObjectMesh()
 			indices.push_back( nextRowNextIndex );
 		}
 	}
+}
+
+float SimpleTerrain::getHeight( float x , float z , float time ) const
+{
+	return 0.3f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
 }

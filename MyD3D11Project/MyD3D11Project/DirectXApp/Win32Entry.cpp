@@ -1,6 +1,7 @@
 #include "SimpleScene.h"
+#include "WaveScene.h"
 #include <crtdbg.h>
-#include "Utilities.h"
+#include "../Utilities/Utilities.h"
 
 int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPrevInstance , LPSTR lpCmdLine , int nShowCmd )
 {
@@ -9,11 +10,17 @@ int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPrevInstance , LPSTR lpCmdL
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-	SimpleScene testApp( hInstance , nShowCmd );
+	//SimpleScene testApp( hInstance , nShowCmd );
+
+	//if ( !testApp.InitDirectApp() ) return 0;
+
+	////testApp.QueryGraphicAdapters();
+
+	//return testApp.MsgLoop();
+
+	WaveScene testApp( hInstance , nShowCmd );
 
 	if ( !testApp.InitDirectApp() ) return 0;
-
-	//testApp.QueryGraphicAdapters();
 
 	return testApp.MsgLoop();
 }

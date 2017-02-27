@@ -1,7 +1,7 @@
 #ifndef DIRECTX_APP_H
 #define DIRECTX_APP_H
 
-#include "WindowsApp.h"
+#include "../Utilities/WindowsApp.h"
 
 struct ID3D11Device;
 struct ID3D11DeviceContext;

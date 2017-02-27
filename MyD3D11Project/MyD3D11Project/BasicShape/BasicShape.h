@@ -16,6 +16,7 @@ public:
 	~BasicShape();
 
 	void buildWorldMatrix();
+	virtual void UpdateObject( float DeltaTime ){}
 
 	const std::vector<CustomVertex>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;

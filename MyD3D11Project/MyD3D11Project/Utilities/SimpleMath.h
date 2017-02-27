@@ -9,6 +9,18 @@ public:
 		return value < min ? min : ( value > max ? max : value );
 	}
 
+	// Returns random float in [0, 1).
+	static float RandF()
+	{
+		return (float) ( rand() ) / (float) RAND_MAX;
+	}
+
+	// Returns random float in [a, b).
+	static float RandF( float a , float b )
+	{
+		return a + RandF()*( b - a );
+	}
+
 public:
 
 	static const float PI;

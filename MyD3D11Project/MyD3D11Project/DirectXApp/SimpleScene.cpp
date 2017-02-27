@@ -1,37 +1,42 @@
 #include "SimpleScene.h"
-#include "CommonHeader.h"
-#include "BasicCube.h"
-#include "BasicSquareCone.h"
-#include "SimpleTerrain.h"
-#include "Cylinder.h"
-#include "Sphere.h"
-#include "GeoSphere.h"
+#include "../Utilities/CommonHeader.h"
+#include "../BasicShape/BasicCube.h"
+#include "../BasicShape/BasicSquareCone.h"
+#include "../BasicShape/SimpleTerrain.h"
+#include "../BasicShape/Cylinder.h"
+#include "../BasicShape/Sphere.h"
+#include "../BasicShape/GeoSphere.h"
+#include "../BasicShape/SimpleMesh.h"
 #include <fstream>
 using namespace DirectX;
 
 
 SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	:DirectXApp( hinstance , show ) , moveSpeed( 0.1f ) , 
-	radius( 5.0f ) , zoomSpeed( 0.005f ) , rotSpeed( 1.0f )
+	radius( 5.0f ) , zoomSpeed( 0.005f )
 {
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	/*BasicCube *cube = new BasicCube();
-	renderList.push_back( cube );
+	//BasicCube *cube = new BasicCube();
+	//renderList.push_back( cube );
 
 	BasicSquareCone *squareCone = new BasicSquareCone();
-	squareCone->Position.y = 1.5f;
+	squareCone->Position.x = 1.5f;
 	renderList.push_back( squareCone );
 
-	SimpleTerrain *terrain = new SimpleTerrain();
-	renderList.push_back( terrain );*/
+	//SimpleTerrain *terrain = new SimpleTerrain();
+	//renderList.push_back( terrain );
 
 	//Cylinder *cylinder = new Cylinder();
 	//renderList.push_back( cylinder );
 
 	GeoSphere *sphere = new GeoSphere();
 	renderList.push_back( sphere );
+
+	SimpleMesh *mesh = new SimpleMesh();
+	mesh->Position.y = 1.5f;
+	renderList.push_back( mesh );
 }
 
 
@@ -57,6 +62,7 @@ bool SimpleScene::InitDirectApp()
 	createEffectAtBuildtime();
 	createInputLayout();
 	createObjects();
+	createRenderState();
 
 	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
@@ -65,13 +71,10 @@ bool SimpleScene::InitDirectApp()
 
 void SimpleScene::UpdateScene( float deltaTime )
 {
-	/*BasicShape &squareCone = *renderList[1];
-
-	squareCone.Rotation.y += rotSpeed * deltaTime;
-
-	float twoPI = SimpleMath::PI * 2.0f;
-	if ( squareCone.Rotation.y > twoPI )squareCone.Rotation.y -= twoPI;*/
-
+	for ( BasicShape *shape : renderList )
+	{
+		shape->UpdateObject( deltaTime );
+	}
 }
 
 void SimpleScene::DrawScene()
@@ -99,6 +102,8 @@ void SimpleScene::DrawScene()
 	{
 		renderObject( *shape , shape->indexSize , shape->indexStart , shape->indexBase );
 	}
+
+
 
 	HR( swapChain->Present( 0 , 0 ) );
 }
@@ -200,9 +205,9 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 
 void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart, UINT indexBase )
 {
-	XMMATRIX tempW = basicObj.getWorldMatrix();
-	XMMATRIX tempV = camera.getViewMatrix();
-	XMMATRIX tempP = camera.getProjectMatrix();
+	CXMMATRIX tempW = basicObj.getWorldMatrix();
+	CXMMATRIX tempV = camera.getViewMatrix();
+	CXMMATRIX tempP = camera.getProjectMatrix();
 	XMMATRIX tempWVP = tempW * tempV * tempP;
 	effectWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
 
@@ -220,7 +225,7 @@ void SimpleScene::createRenderState()
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;

@@ -1,9 +1,9 @@
 #include "BasicSquareCone.h"
-#include "CommonHeader.h"
+#include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 
-BasicSquareCone::BasicSquareCone() : BasicShape()
+BasicSquareCone::BasicSquareCone() : BasicShape() , rotSpeed( 1.0f )
 {
 	createObjectMesh();
 }
@@ -11,6 +11,14 @@ BasicSquareCone::BasicSquareCone() : BasicShape()
 
 BasicSquareCone::~BasicSquareCone()
 {
+}
+
+void BasicSquareCone::UpdateObject( float DeltaTime )
+{
+	Rotation.y += rotSpeed * DeltaTime;
+
+	float twoPI = SimpleMath::PI * 2.0f;
+	if ( Rotation.y > twoPI ) Rotation.y -= twoPI;
 }
 
 void BasicSquareCone::createObjectMesh()
