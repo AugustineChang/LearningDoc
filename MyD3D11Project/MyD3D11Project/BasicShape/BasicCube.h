@@ -1,7 +1,6 @@
 #pragma once
 #include "BasicShape.h"
 
-
 class BasicCube :public BasicShape
 {
 public:

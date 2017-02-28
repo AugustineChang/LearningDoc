@@ -42,22 +42,28 @@ bool WaveScene::InitDirectApp()
 void WaveScene::UpdateScene( float deltaTime )
 {
 	wave->UpdateObject( deltaTime );
+	UINT len = wave->getVertices().size();
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HR( immediateContext->Map( waveVB , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
-	CustomVertex *vert = reinterpret_cast<CustomVertex *>( mappedData.pData );
-	UINT len = wave->getVertices().size();
+	HR( immediateContext->Map( waveVB[0] , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
+	XMFLOAT3 *vert = reinterpret_cast<XMFLOAT3 *>( mappedData.pData );
 	for ( UINT i = 0; i < len; ++i )
 	{
-		vert[i].Pos = wave->getVertices()[i].Pos;
-
-		float yPos = vert[i].Pos.y;
-		float color = ( yPos + 1.0f ) / 2.0f;
-
-		vert[i].Pos = wave->getVertices()[i].Pos;
-		vert[i].Color = XMFLOAT4( 0.2f , 1.0f - color , color , 1.0f );
+		vert[i] = wave->getVertices()[i].Pos;
 	}
-	immediateContext->Unmap( waveVB , 0 );
+	immediateContext->Unmap( waveVB[0] , 0 );
+
+	D3D11_MAPPED_SUBRESOURCE mappedData2;
+	HR( immediateContext->Map( waveVB[1] , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData2 ) );
+	XMFLOAT4 *vert2 = reinterpret_cast<XMFLOAT4 *>( mappedData2.pData );
+	for ( UINT i = 0; i < len; ++i )
+	{
+		float yPos = wave->getVertices()[i].Pos.y;
+		float color = ( yPos + 1.0f ) / 6.0f;
+
+		vert2[i] = XMFLOAT4( 0.2f , 1.0f - color , color , 1.0f );
+	}
+	immediateContext->Unmap( waveVB[1] , 0 );
 }
 
 void WaveScene::DrawScene()
@@ -68,11 +74,10 @@ void WaveScene::DrawScene()
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	UINT stride = sizeof( CustomVertex );
-	UINT offset = 0;
-	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
+	UINT stride[2] = { sizeof( XMFLOAT3 ),sizeof( XMFLOAT4 ) };
+	UINT offset[2] = { 0,0 };
+	immediateContext->IASetVertexBuffers( 0 , 2 , &waveVB[0] , &stride[0] , &offset[0] );
 	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
-
 	immediateContext->RSSetState( rasterState );
 	
 	wave->buildWorldMatrix();
@@ -149,9 +154,25 @@ void WaveScene::createInputLayout()
 	D3D11_INPUT_ELEMENT_DESC descList[] =
 	{
 		{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
-		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
+		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,1,0,D3D11_INPUT_PER_VERTEX_DATA,0}
 	};
-	
+	/*D3D11_INPUT_ELEMENT_DESC descList[] =
+	{
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 }
+	};*/
+
+
+	/*D3D11_INPUT_ELEMENT_DESC descList2[] =
+	{
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "TANGENT",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "TEXCOORD",0,DXGI_FORMAT_R32G32B32_FLOAT,0,36,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "TEXCOORD",1,DXGI_FORMAT_R32G32B32_FLOAT,0,48,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,60,D3D11_INPUT_PER_VERTEX_DATA,0 }
+	};*/
+
 	effectTech = effect->GetTechniqueByName( "SimpleTech" );
 	D3DX11_PASS_DESC passDesc;
 	effectTech->GetPassByIndex( 0 )->GetDesc( &passDesc );
@@ -159,10 +180,11 @@ void WaveScene::createInputLayout()
 	HR( device->CreateInputLayout( descList , 2 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
 
-void WaveScene::CreateWavesBuffer( const CustomVertex *vertices , UINT vertexNum , const UINT *indices , UINT indexNum )
+template<typename T>
+void WaveScene::createVertexBuffer( const T *vertices , UINT vertexNum , ID3D11Buffer *&vertexBuffer )
 {
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof( CustomVertex ) * vertexNum;
+	bufferDesc.ByteWidth = sizeof( T ) * vertexNum;
 	bufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
@@ -172,20 +194,23 @@ void WaveScene::CreateWavesBuffer( const CustomVertex *vertices , UINT vertexNum
 	D3D11_SUBRESOURCE_DATA initData;
 	initData.pSysMem = vertices;
 
-	HR( device->CreateBuffer( &bufferDesc , &initData , &waveVB ) );
+	HR( device->CreateBuffer( &bufferDesc , &initData , &vertexBuffer ) );
+}
 
-	D3D11_BUFFER_DESC bufferDesc2;
-	bufferDesc2.ByteWidth = sizeof( UINT ) * indexNum;
-	bufferDesc2.Usage = D3D11_USAGE_IMMUTABLE;
-	bufferDesc2.BindFlags = D3D11_BIND_INDEX_BUFFER;
-	bufferDesc2.CPUAccessFlags = 0;
-	bufferDesc2.MiscFlags = 0;
-	bufferDesc2.StructureByteStride = 0;
+void WaveScene::createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer )
+{
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth = sizeof( UINT ) * indexNum;
+	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.StructureByteStride = 0;
 
-	D3D11_SUBRESOURCE_DATA initData2;
-	initData2.pSysMem = indices;
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = indices;
 
-	HR( device->CreateBuffer( &bufferDesc2 , &initData2 , &waveIB ) );
+	HR( device->CreateBuffer( &bufferDesc , &initData , &indexBuffer ) );
 }
 
 void WaveScene::createRenderState()
@@ -247,5 +272,21 @@ void WaveScene::createObjects()
 {
 	std::vector<CustomVertex> vlist = wave->getVertices();
 	std::vector<UINT> ilist = wave->getIndices();
-	CreateWavesBuffer( &vlist[0] , vlist.size() , &ilist[0] , ilist.size() );
+	
+
+	std::vector<XMFLOAT3> vertex_Pos;
+	std::vector<XMFLOAT4> vertex_Col;
+
+	for ( const CustomVertex& vert : vlist )
+	{
+		vertex_Pos.push_back( vert.Pos );
+		vertex_Col.push_back( vert.Color );
+	}
+
+	UINT vertSize = vlist.size();
+
+	//createVertexBuffer<CustomVertex>( &vlist[0] , vertSize , waveVB );
+	createVertexBuffer<XMFLOAT3>( &vertex_Pos[0] , vertSize , waveVB[0] );
+	createVertexBuffer<XMFLOAT4>( &vertex_Col[0] , vertSize , waveVB[1] );
+	createIndexBuffer( &ilist[0] , ilist.size() , waveIB );
 }

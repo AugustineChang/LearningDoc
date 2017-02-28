@@ -18,12 +18,12 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	//BasicCube *cube = new BasicCube();
-	//renderList.push_back( cube );
+	BasicCube *cube = new BasicCube();
+	renderList.push_back( cube );
 
-	BasicSquareCone *squareCone = new BasicSquareCone();
-	squareCone->Position.x = 1.5f;
-	renderList.push_back( squareCone );
+	//BasicSquareCone *squareCone = new BasicSquareCone();
+	//squareCone->Position.x = 1.5f;
+	//renderList.push_back( squareCone );
 
 	//SimpleTerrain *terrain = new SimpleTerrain();
 	//renderList.push_back( terrain );
@@ -31,12 +31,12 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	//Cylinder *cylinder = new Cylinder();
 	//renderList.push_back( cylinder );
 
-	GeoSphere *sphere = new GeoSphere();
-	renderList.push_back( sphere );
+	//GeoSphere *sphere = new GeoSphere();
+	//renderList.push_back( sphere );
 
-	SimpleMesh *mesh = new SimpleMesh();
-	mesh->Position.y = 1.5f;
-	renderList.push_back( mesh );
+	//SimpleMesh *mesh = new SimpleMesh();
+	//mesh->Position.y = 1.5f;
+	//renderList.push_back( mesh );
 }
 
 
@@ -85,11 +85,13 @@ void SimpleScene::DrawScene()
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	UINT stride = sizeof( CustomVertex );
-	UINT offset = 0;
-	immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
-	immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
-
+	if ( renderList.size() > 0 )
+	{
+		UINT stride = sizeof( CustomVertex );
+		UINT offset = 0;
+		immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
+		immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
+	}
 	immediateContext->RSSetState( rasterState );
 	
 	for ( BasicShape *shape : renderList )
@@ -102,8 +104,6 @@ void SimpleScene::DrawScene()
 	{
 		renderObject( *shape , shape->indexSize , shape->indexStart , shape->indexBase );
 	}
-
-
 
 	HR( swapChain->Present( 0 , 0 ) );
 }
@@ -164,17 +164,18 @@ void SimpleScene::createInputLayout()
 		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
 	};
 	
-	effectTech = effect->GetTechniqueByName( "SimpleTech" );
+	effectTech = effect->GetTechniqueByName( "ColorTech" );
 	D3DX11_PASS_DESC passDesc;
 	effectTech->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 2 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
 
-void SimpleScene::createVertexBuffer( const CustomVertex *vertices , UINT vertexNum )
+template<typename T>
+void SimpleScene::createVertexBuffer( const T *vertices , UINT vertexNum )
 {
 	D3D11_BUFFER_DESC bufferDesc;
-	bufferDesc.ByteWidth = sizeof( CustomVertex ) * vertexNum;
+	bufferDesc.ByteWidth = sizeof( T ) * vertexNum;
 	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
 	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
@@ -210,6 +211,7 @@ void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UI
 	CXMMATRIX tempP = camera.getProjectMatrix();
 	XMMATRIX tempWVP = tempW * tempV * tempP;
 	effectWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
+	effectTime->SetFloat( gameTimer.TotalTime() );
 
 	D3DX11_TECHNIQUE_DESC techDesc;
 	effectTech->GetDesc( &techDesc );
@@ -229,7 +231,7 @@ void SimpleScene::createRenderState()
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;
-	
+
 	device->CreateRasterizerState( &rsDesc , &rasterState );
 }
 
@@ -262,7 +264,7 @@ void SimpleScene::createEffectAtRuntime()
 
 void SimpleScene::createEffectAtBuildtime()
 {
-	std::ifstream fs( "FX/SimpleShader.fxo" , std::ios::binary );
+	std::ifstream fs( "FX/color.fxo" , std::ios::binary );
 	assert( fs );
 
 	fs.seekg( 0 , std::ios_base::end );
@@ -274,10 +276,13 @@ void SimpleScene::createEffectAtBuildtime()
 
 	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
 	effectWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	effectTime = effect->GetVariableByName( "gTime" )->AsScalar();
 }
 
 void SimpleScene::createObjects()
 {
+	if ( renderList.size() <= 0 ) return;
+
 	std::vector<CustomVertex> gvlist;
 	std::vector<UINT> gilist;
 	for ( BasicShape *shape : renderList )

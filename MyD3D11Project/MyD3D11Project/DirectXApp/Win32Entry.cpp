@@ -18,6 +18,9 @@ int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPrevInstance , LPSTR lpCmdL
 
 	//return testApp.MsgLoop();
 
+
+
+
 	WaveScene testApp( hInstance , nShowCmd );
 
 	if ( !testApp.InitDirectApp() ) return 0;

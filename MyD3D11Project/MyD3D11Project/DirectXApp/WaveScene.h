@@ -5,6 +5,7 @@
 #include <vector>
 
 struct CustomVertex;
+struct ID3D11Buffer;
 
 class WaveScene : public DirectXApp
 {
@@ -40,14 +41,17 @@ private:
 protected:
 
 	void createObjects();
-	void CreateWavesBuffer( const CustomVertex *vertices , UINT vertexNum , const UINT *indices , UINT indexNum );
-	
+	void createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer );
+
+	template<typename T>
+	void createVertexBuffer( const T *vertices , UINT vertexNum , ID3D11Buffer *&vertexBuffer );
+
 	Camera camera;
 	class WaveTerrain *wave;
 
 	struct ID3D11InputLayout* inputLayout;
-	struct ID3D11Buffer *waveVB;
-	struct ID3D11Buffer *waveIB;
+	ID3D11Buffer *waveVB[2];
+	ID3D11Buffer *waveIB;
 	struct ID3D11RasterizerState *rasterState;
 	struct ID3DX11Effect *effect;
 	struct ID3DX11EffectTechnique *effectTech;

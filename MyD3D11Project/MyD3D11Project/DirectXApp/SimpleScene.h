@@ -43,7 +43,9 @@ protected:
 
 	void createObjects();
 	void createGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
-	void createVertexBuffer( const CustomVertex *vertices , UINT vertexNum );
+	
+	template<typename T>
+	void createVertexBuffer( const T *vertices , UINT vertexNum );
 	void createIndexBuffer( const UINT *indices , UINT indexNum );
 	void renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase );
 	
@@ -56,4 +58,5 @@ protected:
 	struct ID3DX11Effect *effect;
 	struct ID3DX11EffectTechnique *effectTech;
 	struct ID3DX11EffectMatrixVariable *effectWVP;
+	struct ID3DX11EffectScalarVariable *effectTime;
 };
