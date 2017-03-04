@@ -21,9 +21,9 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCube *cube = new BasicCube();
 	renderList.push_back( cube );
 
-	//BasicSquareCone *squareCone = new BasicSquareCone();
-	//squareCone->Position.x = 1.5f;
-	//renderList.push_back( squareCone );
+	BasicSquareCone *squareCone = new BasicSquareCone();
+	squareCone->Position.z = 3.0f;
+	renderList.push_back( squareCone );
 
 	//SimpleTerrain *terrain = new SimpleTerrain();
 	//renderList.push_back( terrain );
@@ -33,6 +33,10 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 
 	//GeoSphere *sphere = new GeoSphere();
 	//renderList.push_back( sphere );
+
+	Sphere *sphere = new Sphere();
+	sphere->Position.x = 3;
+	renderList.push_back( sphere );
 
 	//SimpleMesh *mesh = new SimpleMesh();
 	//mesh->Position.y = 1.5f;
@@ -100,6 +104,11 @@ void SimpleScene::DrawScene()
 	}
 	camera.buildViewMatrix();
 
+	efDirLight->SetRawValue( &dirLight , 0 , sizeof( DirectionalLight ) );
+	//efPointLight->SetRawValue( &pointLight , 0 , sizeof( PointLight ) );
+	//efSpotLight->SetRawValue( &spotLight , 0 , sizeof( SpotLight ) );
+	efCameraPos->SetRawValue( &camera.Position , 0 , sizeof( XMFLOAT3 ) );
+
 	for ( BasicShape *shape : renderList )
 	{
 		renderObject( *shape , shape->indexSize , shape->indexStart , shape->indexBase );
@@ -161,10 +170,10 @@ void SimpleScene::createInputLayout()
 	D3D11_INPUT_ELEMENT_DESC descList[] =
 	{
 		{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
-		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
+		{"NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
 	};
 	
-	effectTech = effect->GetTechniqueByName( "ColorTech" );
+	effectTech = effect->GetTechniqueByName( "LightTech" );
 	D3DX11_PASS_DESC passDesc;
 	effectTech->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
@@ -210,8 +219,13 @@ void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UI
 	CXMMATRIX tempV = camera.getViewMatrix();
 	CXMMATRIX tempP = camera.getProjectMatrix();
 	XMMATRIX tempWVP = tempW * tempV * tempP;
-	effectWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
-	effectTime->SetFloat( gameTimer.TotalTime() );
+
+	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
+	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
+	efWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
+	efWorld->SetMatrix( reinterpret_cast<const float*>( &tempW ) );
+	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &inverseTransposeW ) );
+	efMaterial->SetRawValue( &basicObj.getMaterial() , 0 , sizeof( CustomMaterial ) );
 
 	D3DX11_TECHNIQUE_DESC techDesc;
 	effectTech->GetDesc( &techDesc );
@@ -227,7 +241,7 @@ void SimpleScene::createRenderState()
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;
@@ -259,12 +273,12 @@ void SimpleScene::createEffectAtRuntime()
 			L"D3DX11CompileFromFile" , true );
 	}
 
-	effectWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
 }
 
 void SimpleScene::createEffectAtBuildtime()
 {
-	std::ifstream fs( "FX/color.fxo" , std::ios::binary );
+	std::ifstream fs( "FX/LightShader.fxo" , std::ios::binary );
 	assert( fs );
 
 	fs.seekg( 0 , std::ios_base::end );
@@ -275,8 +289,15 @@ void SimpleScene::createEffectAtBuildtime()
 	fs.close();
 
 	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
-	effectWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
-	effectTime = effect->GetVariableByName( "gTime" )->AsScalar();
+	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	efWorld = effect->GetVariableByName( "gWorld" )->AsMatrix();
+	efWorldNorm = effect->GetVariableByName( "gWorldNormal" )->AsMatrix();
+	efMaterial = effect->GetVariableByName( "gMaterial" );
+
+	efDirLight = effect->GetVariableByName( "gDirectLight" );
+	efPointLight = effect->GetVariableByName( "gPointLight" );
+	efSpotLight = effect->GetVariableByName( "gSpotLight" );
+	efCameraPos = effect->GetVariableByName( "gCameraPosW" )->AsVector();
 }
 
 void SimpleScene::createObjects()

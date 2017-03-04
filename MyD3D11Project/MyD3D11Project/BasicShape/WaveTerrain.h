@@ -12,6 +12,7 @@ public:
 
 protected:
 
+	virtual void computeNormal() override;
 	virtual void createObjectMesh() override;
 	void UpdateDisturb( float DeltaTime );
 	virtual float getHeight( float x , float z , float time ) const override;

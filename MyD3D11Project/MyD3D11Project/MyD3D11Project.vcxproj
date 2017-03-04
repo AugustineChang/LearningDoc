@@ -103,6 +103,10 @@
     <PostBuildEvent>
       <Command>copy $(ProjectDir)FX\*.fxo $(TargetDir)FX\</Command>
     </PostBuildEvent>
+    <FxCompile>
+      <ShaderType>
+      </ShaderType>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -192,6 +196,7 @@
     <ClInclude Include="BasicShape\BasicCube.h" />
     <ClInclude Include="BasicShape\BasicShape.h" />
     <ClInclude Include="BasicShape\BasicSquareCone.h" />
+    <ClInclude Include="DirectXApp\Lights.h" />
     <ClInclude Include="DirectXApp\Camera.h" />
     <ClInclude Include="BasicShape\Cylinder.h" />
     <ClInclude Include="DirectXApp\DirectXApp.h" />
@@ -218,6 +223,18 @@
   <ItemGroup>
     <Text Include="Models\car.txt" />
     <Text Include="Models\skull.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FX\LightShader.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FX\Lights.fx">
+      <FileType>Document</FileType>
+    </None>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

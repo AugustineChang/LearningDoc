@@ -28,6 +28,8 @@ void SimpleTerrain::createObjectMesh()
 	{
 		vertex.Pos.y = getHeight( vertex.Pos.x , vertex.Pos.z , 0.0f );
 	}
+
+	computeNormal();
 }
 
 void SimpleTerrain::createBasicPlane()
@@ -40,6 +42,8 @@ void SimpleTerrain::createBasicPlane()
 	float halfSizeX = terrainSize.x * 0.5f;
 	float halfSizeY = terrainSize.y * 0.5f;
 
+	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+
 	//generate Vertices
 	for ( UINT z = 0; z < verticesDim.y; ++z )
 	{
@@ -48,7 +52,7 @@ void SimpleTerrain::createBasicPlane()
 			CustomVertex one;
 
 			one.Pos = XMFLOAT3( x * gridX - halfSizeX , 0.0f , z * gridY - halfSizeY );
-			one.Color = XMFLOAT4( x * gridX / terrainSize.x , 0.0f , z * gridY / terrainSize.y , 1.0f );
+			one.Normal = zero;
 
 			vertices.push_back( one );
 		}

@@ -173,12 +173,18 @@
     <ClInclude Include="DirectXApp\WaveScene.h">
       <Filter>头文件\DX11Apps</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXApp\Lights.h">
+      <Filter>头文件\DX11Apps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\color.fx">
       <Filter>FX</Filter>
     </CustomBuild>
     <CustomBuild Include="FX\SimpleShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\LightShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -189,5 +195,10 @@
     <Text Include="Models\skull.txt">
       <Filter>Models</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FX\Lights.fx">
+      <Filter>FX</Filter>
+    </None>
   </ItemGroup>
 </Project>

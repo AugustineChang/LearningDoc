@@ -28,13 +28,13 @@ void Cylinder::createObjectMesh()
 	//top vertex
 	CustomVertex top;
 	top.Pos = XMFLOAT3( 0.0f , halfHeight , 0.0f );
-	top.Color = XMFLOAT4( 0.0f , 0.0f , 1.0f , 1.0f );
+	top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 	vertices.push_back( top );
 
 	//bottom vertex
 	CustomVertex bottom;
 	bottom.Pos = XMFLOAT3( 0.0f , -halfHeight , 0.0f );
-	bottom.Color = XMFLOAT4( 0.0f , 1.0f , 0.0f , 1.0f );
+	bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 	vertices.push_back( bottom );
 
 	//side index
@@ -82,6 +82,8 @@ void Cylinder::createObjectMesh()
 		indices.push_back( nextIndex );
 		indices.push_back( bottomIndex );
 	}
+
+	computeNormal();
 }
 
 void Cylinder::generateCicle( float radius , float yPos )
@@ -93,7 +95,7 @@ void Cylinder::generateCicle( float radius , float yPos )
 	{
 		CustomVertex one;
 		one.Pos = XMFLOAT3( radius * cosf( deltaAngle*i ) , yPos , radius * sinf( deltaAngle*i ) );
-		one.Color = XMFLOAT4( 0.0f , 1.0f - ( yPos + halfHeight ) / height , ( yPos + halfHeight ) / height , 1.0f );
+		one.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		vertices.push_back( one );
 	}
 

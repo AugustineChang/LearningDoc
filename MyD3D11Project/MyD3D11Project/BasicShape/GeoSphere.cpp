@@ -5,6 +5,8 @@ using namespace DirectX;
 
 GeoSphere::GeoSphere() : radius( 2.0f ) , tesselTimes( 2 )
 {
+	material.specular.w = 1.0f;
+
 	createObjectMesh();
 }
 
@@ -15,22 +17,24 @@ GeoSphere::~GeoSphere()
 
 void GeoSphere::createObjectMesh()
 {
+	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+
 	const float X = 0.525731f;
 	const float Z = 0.850651f;
 	vertices =
 	{
-		{ XMFLOAT3( -X, 0.0f, Z ), XMFLOAT4( -X, 0.0f, Z , 1.0f ) },
-		{ XMFLOAT3( X, 0.0f, Z ), XMFLOAT4( X, 0.0f, Z , 1.0f ) },
-		{ XMFLOAT3( -X, 0.0f, -Z ), XMFLOAT4( -X, 0.0f, Z , 1.0f ) },
-		{ XMFLOAT3( X, 0.0f, -Z ), XMFLOAT4( X, 0.0f, -Z , 1.0f ) },
-		{ XMFLOAT3( 0.0f, Z, X ), XMFLOAT4( 0.0f, Z, X , 1.0f ) },
-		{ XMFLOAT3( 0.0f, Z, -X ), XMFLOAT4( 0.0f, Z, -X , 1.0f ) },
-		{ XMFLOAT3( 0.0f, -Z, X ), XMFLOAT4( 0.0f, -Z, X , 1.0f ) },
-		{ XMFLOAT3( 0.0f, -Z, -X ), XMFLOAT4( 0.0f, -Z, -X , 1.0f ) },
-		{ XMFLOAT3( Z, X, 0.0f ), XMFLOAT4( Z, X, 0.0f, 1.0f ) }, 
-		{ XMFLOAT3( -Z, X, 0.0f ), XMFLOAT4( -Z, X, 0.0f, 1.0f ) },
-		{ XMFLOAT3( Z, -X, 0.0f ), XMFLOAT4( Z, -X, 0.0f, 1.0f ) },
-		{ XMFLOAT3( -Z, -X, 0.0f ), XMFLOAT4( -Z, X, 0.0f, 1.0f ) }
+		{ XMFLOAT3( -X, 0.0f, Z ), zero },
+		{ XMFLOAT3( X, 0.0f, Z ), zero },
+		{ XMFLOAT3( -X, 0.0f, -Z ), zero },
+		{ XMFLOAT3( X, 0.0f, -Z ), zero },
+		{ XMFLOAT3( 0.0f, Z, X ), zero },
+		{ XMFLOAT3( 0.0f, Z, -X ), zero },
+		{ XMFLOAT3( 0.0f, -Z, X ), zero },
+		{ XMFLOAT3( 0.0f, -Z, -X ), zero },
+		{ XMFLOAT3( Z, X, 0.0f ), zero },
+		{ XMFLOAT3( -Z, X, 0.0f ), zero },
+		{ XMFLOAT3( Z, -X, 0.0f ), zero },
+		{ XMFLOAT3( -Z, -X, 0.0f ), zero }
 	};
 	indices =
 	{
@@ -57,6 +61,8 @@ void GeoSphere::createObjectMesh()
 
 		XMStoreFloat3( &vertices[i].Pos , temp );
 	}
+
+	computeNormal();
 }
 
 void GeoSphere::doTessllation()
@@ -72,6 +78,8 @@ void GeoSphere::doTessllation()
 	// /      \/     \
 	//v0------m2------v2
 
+	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+
 	UINT triangleNum = indices.size() / 3;
 	for ( UINT i = 0; i < triangleNum; ++i )
 	{
@@ -82,14 +90,17 @@ void GeoSphere::doTessllation()
 		CustomVertex v0 = vertices[v0Index];
 		CustomVertex v1 = vertices[v1Index];
 		CustomVertex v2 = vertices[v2Index];
+		v0.Normal = zero;
+		v1.Normal = zero;
+		v2.Normal = zero;
 
 		//add vertices
 		UINT m0Index = vertices.size();
 		UINT m1Index = m0Index + 1;
 		UINT m2Index = m0Index + 2;
-		vertices.push_back( { float3Mid( v0.Pos , v1.Pos ),float4Mid( v0.Color,v1.Color ) } );//m0
-		vertices.push_back( { float3Mid( v1.Pos , v2.Pos ),float4Mid( v1.Color,v2.Color ) } );//m1
-		vertices.push_back( { float3Mid( v0.Pos , v2.Pos ),float4Mid( v0.Color,v2.Color ) } );//m2
+		vertices.push_back( { float3Mid( v0.Pos , v1.Pos ),zero } );//m0
+		vertices.push_back( { float3Mid( v1.Pos , v2.Pos ),zero } );//m1
+		vertices.push_back( { float3Mid( v0.Pos , v2.Pos ),zero } );//m2
 
 		//add indices
 		indices.push_back( m0Index );

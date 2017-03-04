@@ -1,4 +1,7 @@
 #pragma once
+#include <DirectXMath.h>
+#include <stdlib.h>
+
 class SimpleMath
 {
 public:
@@ -19,6 +22,31 @@ public:
 	static float RandF( float a , float b )
 	{
 		return a + RandF()*( b - a );
+	}
+
+	inline static DirectX::XMFLOAT4 Add( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
+	{
+		return DirectX::XMFLOAT4( a.x + b.x , a.y + b.y , a.z + b.z , a.w + b.w );
+	}
+
+	inline static DirectX::XMFLOAT4 Sub( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
+	{
+		return DirectX::XMFLOAT4( a.x - b.x , a.y - b.y , a.z - b.z , a.w - b.w );
+	}
+
+	inline static DirectX::XMFLOAT4 Mul( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
+	{
+		return DirectX::XMFLOAT4( a.x * b.x , a.y * b.y , a.z * b.z , a.w * b.w );
+	}
+
+	inline static DirectX::XMFLOAT4 Mul( const DirectX::XMFLOAT4 &a , float scale )
+	{
+		return DirectX::XMFLOAT4( a.x * scale , a.y * scale , a.z * scale , a.w * scale );
+	}
+
+	inline static DirectX::XMFLOAT4 Div( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
+	{
+		return DirectX::XMFLOAT4( a.x / b.x , a.y / b.y , a.z / b.z , a.w / b.w );
 	}
 
 public:

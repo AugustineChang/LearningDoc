@@ -5,6 +5,8 @@ using namespace DirectX;
 
 Sphere::Sphere() : stackCount( 17 ) , sliceCount( 20 ) , radius( 2.0f )
 {
+	material.specular.w = 3.0f;
+
 	createObjectMesh();
 }
 
@@ -27,13 +29,13 @@ void Sphere::createObjectMesh()
 	//top vertex
 	CustomVertex top;
 	top.Pos = XMFLOAT3( 0.0f , radius , 0.0f );
-	top.Color = XMFLOAT4( 0.0f , 1.0f , 0.0f , 1.0f );
+	top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 	vertices.push_back( top );
 
 	//bottom vertex
 	CustomVertex bottom;
 	bottom.Pos = XMFLOAT3( 0.0f , -radius , 0.0f );
-	bottom.Color = XMFLOAT4( 0.0f , 0.0f , 1.0f , 1.0f );
+	bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 	vertices.push_back( bottom );
 
 	//side index
@@ -81,11 +83,14 @@ void Sphere::createObjectMesh()
 		indices.push_back( nextIndex );
 		indices.push_back( bottomIndex );
 	}
+
+	computeNormal();
 }
 
 void Sphere::generateCicle( float vAngle )
 {
 	float deltaHAngle = 2.0f * SimpleMath::PI / sliceCount;
+	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
@@ -96,7 +101,7 @@ void Sphere::generateCicle( float vAngle )
 		one.Pos = XMFLOAT3( radius * sinf( vAngle ) * cosf( hAngle ) ,
 						   radius * cosf( vAngle ) ,
 						   radius * sinf( vAngle ) * sinf( hAngle ) );
-		one.Color = XMFLOAT4( 0.0f , ( one.Pos.y / radius + 1 )*0.5f , ( -one.Pos.y / radius + 1 )*0.5f , 1.0f );
+		one.Normal = zero;
 
 		vertices.push_back( one );
 	}

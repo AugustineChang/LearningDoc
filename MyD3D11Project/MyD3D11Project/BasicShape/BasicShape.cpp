@@ -14,6 +14,10 @@ BasicShape::BasicShape()
 
 	XMVECTOR objScale = XMVectorSet( 1.0f , 1.0f , 1.0f , 0.0f );
 	XMStoreFloat3( &Scale , objScale );
+
+	material.ambient = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
+	material.diffuse = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
+	material.specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 5.0f );
 }
 
 BasicShape::~BasicShape()
@@ -45,7 +49,48 @@ const std::vector<unsigned int>& BasicShape::getIndices() const
 	return indices;
 }
 
+const CustomMaterial& BasicShape::getMaterial() const
+{
+	return material;
+}
+
 DirectX::XMMATRIX BasicShape::getWorldMatrix() const
 {
 	return XMLoadFloat4x4( &obj2World );
+}
+
+void BasicShape::computeNormal()
+{
+	unsigned int indexNum = indices.size();
+	unsigned int triangleNum = indexNum / 3;
+	for ( unsigned int i = 0; i < triangleNum; ++i )
+	{
+		unsigned int i0 = indices[i * 3];
+		unsigned int i1 = indices[i * 3 + 1];
+		unsigned int i2 = indices[i * 3 + 2];
+
+		XMVECTOR v0 = XMLoadFloat3( &vertices[i0].Pos );
+		XMVECTOR v1 = XMLoadFloat3( &vertices[i1].Pos );
+		XMVECTOR v2 = XMLoadFloat3( &vertices[i2].Pos );
+
+		XMVECTOR u = v1 - v0;
+		XMVECTOR v = v2 - v0;
+		XMVECTOR normal = XMVector3Cross( u , v );
+
+		XMVECTOR originNor = XMLoadFloat3( &vertices[i0].Normal );
+		XMStoreFloat3( &vertices[i0].Normal , originNor + normal );
+		originNor = XMLoadFloat3( &vertices[i1].Normal );
+		XMStoreFloat3( &vertices[i1].Normal , originNor + normal );
+		originNor = XMLoadFloat3( &vertices[i2].Normal );
+		XMStoreFloat3( &vertices[i2].Normal , originNor + normal );
+	}
+
+	unsigned int vertexNum = vertices.size();
+	for ( unsigned int i = 0; i < vertexNum; ++i )
+	{
+		XMVECTOR normal = XMLoadFloat3( &vertices[i].Normal );
+		normal = XMVector3Normalize( normal );
+		XMStoreFloat3( &vertices[i].Normal , normal );
+	}
+		
 }

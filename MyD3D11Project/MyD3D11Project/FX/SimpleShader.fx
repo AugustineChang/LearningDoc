@@ -7,7 +7,7 @@ cbuffer cbPerObject
 struct VertexIn
 {
 	float3 posL : POSITION;
-	float4 color : COLOR;
+	float3 normal : NORMAL;
 };
 
 struct VertexOut
@@ -23,7 +23,7 @@ VertexOut VS( VertexIn vin )
 	VertexOut vout;
 
 	vout.posH = mul( float4( vin.posL , 1.0f ) , gWVP );
-	vout.color = vin.color;
+	vout.color = float4( vin.normal , 1.0f );
 
 	return vout;
 }

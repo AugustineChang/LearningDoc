@@ -35,8 +35,7 @@ void SimpleMesh::createObjectMesh()
 	for ( UINT i = 0; i < vertCount; ++i )
 	{
 		fin >> vertices[i].Pos.x >> vertices[i].Pos.y >> vertices[i].Pos.z;
-		fin >> vertices[i].Color.x >> vertices[i].Color.y >> vertices[i].Color.z;
-		vertices[i].Color.w = 1.0f;
+		fin >> vertices[i].Normal.x >> vertices[i].Normal.y >> vertices[i].Normal.z;
 	}
 
 	fin >> ignore >> ignore >> ignore;

@@ -45,25 +45,14 @@ void WaveScene::UpdateScene( float deltaTime )
 	UINT len = wave->getVertices().size();
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HR( immediateContext->Map( waveVB[0] , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
-	XMFLOAT3 *vert = reinterpret_cast<XMFLOAT3 *>( mappedData.pData );
+	HR( immediateContext->Map( waveVB , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
+	CustomVertex *vert = reinterpret_cast<CustomVertex *>( mappedData.pData );
 	for ( UINT i = 0; i < len; ++i )
 	{
-		vert[i] = wave->getVertices()[i].Pos;
+		vert[i].Pos = wave->getVertices()[i].Pos;
+		vert[i].Normal = wave->getVertices()[i].Normal;
 	}
-	immediateContext->Unmap( waveVB[0] , 0 );
-
-	D3D11_MAPPED_SUBRESOURCE mappedData2;
-	HR( immediateContext->Map( waveVB[1] , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData2 ) );
-	XMFLOAT4 *vert2 = reinterpret_cast<XMFLOAT4 *>( mappedData2.pData );
-	for ( UINT i = 0; i < len; ++i )
-	{
-		float yPos = wave->getVertices()[i].Pos.y;
-		float color = ( yPos + 1.0f ) / 6.0f;
-
-		vert2[i] = XMFLOAT4( 0.2f , 1.0f - color , color , 1.0f );
-	}
-	immediateContext->Unmap( waveVB[1] , 0 );
+	immediateContext->Unmap( waveVB , 0 );
 }
 
 void WaveScene::DrawScene()
@@ -74,20 +63,29 @@ void WaveScene::DrawScene()
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	UINT stride[2] = { sizeof( XMFLOAT3 ),sizeof( XMFLOAT4 ) };
-	UINT offset[2] = { 0,0 };
-	immediateContext->IASetVertexBuffers( 0 , 2 , &waveVB[0] , &stride[0] , &offset[0] );
+	UINT stride = sizeof( CustomVertex );
+	UINT offset = 0;
+	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
 	immediateContext->RSSetState( rasterState );
 	
 	wave->buildWorldMatrix();
 	camera.buildViewMatrix();
 
+	efDirLight->SetRawValue( &dirLight , 0 , sizeof( DirectionalLight ) );
+	efCameraPos->SetRawValue( &camera.Position , 0 , sizeof( XMFLOAT3 ) );
+
 	CXMMATRIX tempW = wave->getWorldMatrix();
 	CXMMATRIX tempV = camera.getViewMatrix();
 	CXMMATRIX tempP = camera.getProjectMatrix();
 	XMMATRIX tempWVP = tempW * tempV * tempP;
-	effectWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
+
+	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
+	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
+	efWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
+	efWorld->SetMatrix( reinterpret_cast<const float*>( &tempW ) );
+	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &inverseTransposeW ) );
+	efMaterial->SetRawValue( &wave->getMaterial() , 0 , sizeof( CustomMaterial ) );
 
 	D3DX11_TECHNIQUE_DESC techDesc;
 	effectTech->GetDesc( &techDesc );
@@ -154,14 +152,8 @@ void WaveScene::createInputLayout()
 	D3D11_INPUT_ELEMENT_DESC descList[] =
 	{
 		{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
-		{"COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,1,0,D3D11_INPUT_PER_VERTEX_DATA,0}
+		{"NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
 	};
-	/*D3D11_INPUT_ELEMENT_DESC descList[] =
-	{
-		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 }
-	};*/
-
 
 	/*D3D11_INPUT_ELEMENT_DESC descList2[] =
 	{
@@ -173,7 +165,7 @@ void WaveScene::createInputLayout()
 		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,60,D3D11_INPUT_PER_VERTEX_DATA,0 }
 	};*/
 
-	effectTech = effect->GetTechniqueByName( "SimpleTech" );
+	effectTech = effect->GetTechniqueByName( "LightTech" );
 	D3DX11_PASS_DESC passDesc;
 	effectTech->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
@@ -217,7 +209,7 @@ void WaveScene::createRenderState()
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;
@@ -249,12 +241,12 @@ void WaveScene::createEffectAtRuntime()
 			L"D3DX11CompileFromFile" , true );
 	}
 
-	effectWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
 }
 
 void WaveScene::createEffectAtBuildtime()
 {
-	std::ifstream fs( "FX/SimpleShader.fxo" , std::ios::binary );
+	std::ifstream fs( "FX/LightShader.fxo" , std::ios::binary );
 	assert( fs );
 
 	fs.seekg( 0 , std::ios_base::end );
@@ -265,28 +257,20 @@ void WaveScene::createEffectAtBuildtime()
 	fs.close();
 
 	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
-	effectWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
+	efWorld = effect->GetVariableByName( "gWorld" )->AsMatrix();
+	efWorldNorm = effect->GetVariableByName( "gWorldNormal" )->AsMatrix();
+	efMaterial = effect->GetVariableByName( "gMaterial" );
+
+	efDirLight = effect->GetVariableByName( "gDirectLight" );
+	efCameraPos = effect->GetVariableByName( "gCameraPosW" )->AsVector();
 }
 
 void WaveScene::createObjects()
 {
 	std::vector<CustomVertex> vlist = wave->getVertices();
 	std::vector<UINT> ilist = wave->getIndices();
-	
 
-	std::vector<XMFLOAT3> vertex_Pos;
-	std::vector<XMFLOAT4> vertex_Col;
-
-	for ( const CustomVertex& vert : vlist )
-	{
-		vertex_Pos.push_back( vert.Pos );
-		vertex_Col.push_back( vert.Color );
-	}
-
-	UINT vertSize = vlist.size();
-
-	//createVertexBuffer<CustomVertex>( &vlist[0] , vertSize , waveVB );
-	createVertexBuffer<XMFLOAT3>( &vertex_Pos[0] , vertSize , waveVB[0] );
-	createVertexBuffer<XMFLOAT4>( &vertex_Col[0] , vertSize , waveVB[1] );
+	createVertexBuffer<CustomVertex>( &vlist[0] , vlist.size() , waveVB );
 	createIndexBuffer( &ilist[0] , ilist.size() , waveIB );
 }

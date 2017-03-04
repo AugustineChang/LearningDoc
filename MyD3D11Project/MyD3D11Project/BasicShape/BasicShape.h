@@ -5,7 +5,14 @@
 struct CustomVertex
 {
 	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT4 Color;
+	DirectX::XMFLOAT3 Normal;
+};
+
+struct CustomMaterial
+{
+	DirectX::XMFLOAT4 ambient;
+	DirectX::XMFLOAT4 diffuse;
+	DirectX::XMFLOAT4 specular;// w = SpecPower
 };
 
 class BasicShape
@@ -20,6 +27,7 @@ public:
 
 	const std::vector<CustomVertex>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;
+	const CustomMaterial& getMaterial() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
@@ -33,7 +41,9 @@ public:
 protected:
 
 	virtual void createObjectMesh() = 0;
+	virtual void computeNormal();
 
+	CustomMaterial material;
 	std::vector<CustomVertex> vertices;
 	std::vector<unsigned int> indices;
 
