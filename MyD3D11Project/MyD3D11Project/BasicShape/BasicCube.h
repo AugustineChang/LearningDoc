@@ -10,5 +10,6 @@ public:
 protected:
 
 	virtual void createObjectMesh() override;
+	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 };
 

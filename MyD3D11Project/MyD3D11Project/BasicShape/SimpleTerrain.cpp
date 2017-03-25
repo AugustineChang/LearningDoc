@@ -1,4 +1,5 @@
 #include "SimpleTerrain.h"
+#include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
@@ -18,6 +19,11 @@ SimpleTerrain::SimpleTerrain( const Point<unsigned int> &vert , const Point<floa
 
 SimpleTerrain::~SimpleTerrain()
 {
+}
+
+void SimpleTerrain::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/water1.dds" , &texture , &textureView );
 }
 
 void SimpleTerrain::createObjectMesh()
@@ -43,6 +49,8 @@ void SimpleTerrain::createBasicPlane()
 	float halfSizeY = terrainSize.y * 0.5f;
 
 	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+	float du = 1.0f / verticesDim.x;
+	float dv = 1.0f / verticesDim.y;
 
 	//generate Vertices
 	for ( UINT z = 0; z < verticesDim.y; ++z )
@@ -53,6 +61,7 @@ void SimpleTerrain::createBasicPlane()
 
 			one.Pos = XMFLOAT3( x * gridX - halfSizeX , 0.0f , z * gridY - halfSizeY );
 			one.Normal = zero;
+			one.TexCoord = XMFLOAT2( x * du , z * dv );
 
 			vertices.push_back( one );
 		}

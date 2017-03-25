@@ -6,6 +6,7 @@ struct CustomVertex
 {
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT3 Normal;
+	DirectX::XMFLOAT2 TexCoord;
 };
 
 struct CustomMaterial
@@ -14,6 +15,9 @@ struct CustomMaterial
 	DirectX::XMFLOAT4 diffuse;
 	DirectX::XMFLOAT4 specular;// w = SpecPower
 };
+
+struct ID3D11Resource;
+struct ID3D11ShaderResourceView;
 
 class BasicShape
 {
@@ -24,10 +28,12 @@ public:
 
 	void buildWorldMatrix();
 	virtual void UpdateObject( float DeltaTime ){}
+	virtual void createObjectTexture( struct ID3D11Device *device ){};
 
 	const std::vector<CustomVertex>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;
 	const CustomMaterial& getMaterial() const;
+	ID3D11ShaderResourceView* getTexture() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
@@ -46,6 +52,9 @@ protected:
 	CustomMaterial material;
 	std::vector<CustomVertex> vertices;
 	std::vector<unsigned int> indices;
+
+	ID3D11Resource *texture;
+	ID3D11ShaderResourceView *textureView;
 
 	DirectX::XMFLOAT4X4 obj2World;
 };

@@ -167,6 +167,7 @@
     <ClCompile Include="DirectXApp\Camera.cpp" />
     <ClCompile Include="BasicShape\Cylinder.cpp" />
     <ClCompile Include="DirectXApp\DirectXApp.cpp" />
+    <ClCompile Include="DirectXApp\ShaderEffect.cpp" />
     <ClCompile Include="DirectXApp\WaveScene.cpp" />
     <ClCompile Include="Utilities\GameTimer.cpp" />
     <ClCompile Include="BasicShape\GeoSphere.cpp" />
@@ -200,6 +201,7 @@
     <ClInclude Include="DirectXApp\Camera.h" />
     <ClInclude Include="BasicShape\Cylinder.h" />
     <ClInclude Include="DirectXApp\DirectXApp.h" />
+    <ClInclude Include="DirectXApp\ShaderEffect.h" />
     <ClInclude Include="DirectXApp\WaveScene.h" />
     <ClInclude Include="Utilities\GameTimer.h" />
     <ClInclude Include="Utilities\CommonHeader.h" />
@@ -225,7 +227,7 @@
     <Text Include="Models\skull.txt" />
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="FX\LightShader.fx">
+    <CustomBuild Include="FX\LitShader.fx">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
@@ -235,6 +237,15 @@
     <None Include="FX\Lights.fx">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Textures\darkbrick.bmp" />
+    <Image Include="Textures\darkbrickdxt1.dds" />
+    <Image Include="Textures\grass.dds" />
+    <Image Include="Textures\water1.dds" />
+    <Image Include="Textures\water2.dds" />
+    <Image Include="Textures\WoodCrate01.dds" />
+    <Image Include="Textures\WoodCrate02.dds" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,5 @@
 #include "BasicSquareCone.h"
+#include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
@@ -21,32 +22,37 @@ void BasicSquareCone::UpdateObject( float DeltaTime )
 	if ( Rotation.y > twoPI ) Rotation.y -= twoPI;
 }
 
+void BasicSquareCone::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/WoodCrate02.dds" , &texture , &textureView );
+}
+
 void BasicSquareCone::createObjectMesh()
 {
 	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 
 	vertices =
 	{
-		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero }, // forward
+		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero , XMFLOAT2( 1.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero , XMFLOAT2( 0.0f,0.0f ) },
+		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero , XMFLOAT2( 0.5f,1.0f ) }, // forward
 
-		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero },
-		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero },
-		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero }, // backward
+		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 0.0f,0.0f ) },
+		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 1.0f,0.0f ) },
+		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero , XMFLOAT2( 0.5f,1.0f ) }, // backward
 
-		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero }, // left
+		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 0.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero , XMFLOAT2( 1.0f,0.0f ) },
+		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero , XMFLOAT2( 0.5f,1.0f ) }, // left
 
-		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero },
-		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero }, // right
+		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 0.0f,0.0f ) },
+		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero , XMFLOAT2( 1.0f,0.0f ) },
+		{ XMFLOAT3( 0.0f,2.0f,0.0f ), zero , XMFLOAT2( 0.5f,1.0f ) }, // right
 
-		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero },
-		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero } // down
+		{ XMFLOAT3( 1.0f,0.0f,1.0f ), zero , XMFLOAT2( 1.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,0.0f,1.0f ), zero , XMFLOAT2( 0.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 0.0f,1.0f ) },
+		{ XMFLOAT3( 1.0f,0.0f,-1.0f ), zero , XMFLOAT2( 1.0f,1.0f ) } // down
 	};
 
 	indices =

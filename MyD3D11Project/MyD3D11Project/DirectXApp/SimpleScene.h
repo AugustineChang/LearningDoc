@@ -2,7 +2,8 @@
 #include "DirectXApp.h"
 #include "Camera.h"
 #include "Lights.h"
-#include <DirectXMath.h>
+#include "ShaderEffect.h"
+
 #include <vector>
 
 struct CustomVertex;
@@ -29,8 +30,6 @@ private:
 
 	void createInputLayout();
 	void createRenderState();
-	void createEffectAtRuntime();
-	void createEffectAtBuildtime();
 	
 	std::vector<class BasicShape*> renderList;
 
@@ -51,6 +50,7 @@ protected:
 	void renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase );
 	
 	Camera camera;
+	ShaderEffect effect;
 	DirectionalLight dirLight;
 	PointLight pointLight;
 	SpotLight spotLight;
@@ -59,15 +59,4 @@ protected:
 	struct ID3D11Buffer *vertexBuffer;
 	struct ID3D11Buffer *indexBuffer;
 	struct ID3D11RasterizerState *rasterState;
-	struct ID3DX11Effect *effect;
-	struct ID3DX11EffectTechnique *effectTech;
-	struct ID3DX11EffectMatrixVariable *efWVP;
-	struct ID3DX11EffectMatrixVariable *efWorld;
-	struct ID3DX11EffectMatrixVariable *efWorldNorm;
-	struct ID3DX11EffectVariable *efMaterial;
-
-	struct ID3DX11EffectVariable *efDirLight;
-	struct ID3DX11EffectVariable *efPointLight;
-	struct ID3DX11EffectVariable *efSpotLight;
-	struct ID3DX11EffectVectorVariable *efCameraPos;
 };

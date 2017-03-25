@@ -49,6 +49,11 @@ public:
 		return DirectX::XMFLOAT4( a.x / b.x , a.y / b.y , a.z / b.z , a.w / b.w );
 	}
 
+	inline static DirectX::XMFLOAT2 Div( const DirectX::XMFLOAT2 &a , const DirectX::XMFLOAT2 &b )
+	{
+		return DirectX::XMFLOAT2( a.x / b.x , a.y / b.y );
+	}
+
 public:
 
 	static const float PI;

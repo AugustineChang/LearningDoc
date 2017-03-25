@@ -10,16 +10,16 @@ int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPrevInstance , LPSTR lpCmdL
 	_CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-	SimpleScene testApp( hInstance , nShowCmd );
-
-	if ( !testApp.InitDirectApp() ) return 0;
-
-	return testApp.MsgLoop();
-
-
-	/*WaveScene testApp( hInstance , nShowCmd );
+	/*SimpleScene testApp( hInstance , nShowCmd );
 
 	if ( !testApp.InitDirectApp() ) return 0;
 
 	return testApp.MsgLoop();*/
+
+
+	WaveScene testApp( hInstance , nShowCmd );
+
+	if ( !testApp.InitDirectApp() ) return 0;
+
+	return testApp.MsgLoop();
 }

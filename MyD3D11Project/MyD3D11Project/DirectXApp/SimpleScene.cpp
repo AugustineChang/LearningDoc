@@ -7,7 +7,6 @@
 #include "../BasicShape/Sphere.h"
 #include "../BasicShape/GeoSphere.h"
 #include "../BasicShape/SimpleMesh.h"
-#include <fstream>
 using namespace DirectX;
 
 
@@ -49,7 +48,6 @@ SimpleScene::~SimpleScene()
 	ReleaseCOM( vertexBuffer );
 	ReleaseCOM( indexBuffer );
 	ReleaseCOM( inputLayout );
-	ReleaseCOM( effect );
 	ReleaseCOM( rasterState );
 
 	for ( BasicShape *shape : renderList )
@@ -63,7 +61,7 @@ bool SimpleScene::InitDirectApp()
 {
 	if ( !DirectXApp::InitDirectApp() ) return false;
 
-	createEffectAtBuildtime();
+	effect.createEffectAtBuildtime( device );
 	createInputLayout();
 	createObjects();
 	createRenderState();
@@ -103,11 +101,7 @@ void SimpleScene::DrawScene()
 		shape->buildWorldMatrix();
 	}
 	camera.buildViewMatrix();
-
-	efDirLight->SetRawValue( &dirLight , 0 , sizeof( DirectionalLight ) );
-	//efPointLight->SetRawValue( &pointLight , 0 , sizeof( PointLight ) );
-	//efSpotLight->SetRawValue( &spotLight , 0 , sizeof( SpotLight ) );
-	efCameraPos->SetRawValue( &camera.Position , 0 , sizeof( XMFLOAT3 ) );
+	effect.UpdateSceneEffect( &camera , &dirLight , &pointLight , &spotLight );
 
 	for ( BasicShape *shape : renderList )
 	{
@@ -169,15 +163,15 @@ void SimpleScene::createInputLayout()
 {
 	D3D11_INPUT_ELEMENT_DESC descList[] =
 	{
-		{"POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
-		{"NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0}
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 }
 	};
 	
-	effectTech = effect->GetTechniqueByName( "LightTech" );
 	D3DX11_PASS_DESC passDesc;
-	effectTech->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
-	HR( device->CreateInputLayout( descList , 2 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
+	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
 
 template<typename T>
@@ -215,23 +209,22 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 
 void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart, UINT indexBase )
 {
-	CXMMATRIX tempW = basicObj.getWorldMatrix();
-	CXMMATRIX tempV = camera.getViewMatrix();
-	CXMMATRIX tempP = camera.getProjectMatrix();
+	XMMATRIX &tempW = basicObj.getWorldMatrix();
+	XMMATRIX &tempV = camera.getViewMatrix();
+	XMMATRIX &tempP = camera.getProjectMatrix();
 	XMMATRIX tempWVP = tempW * tempV * tempP;
 
 	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
 	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
-	efWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
-	efWorld->SetMatrix( reinterpret_cast<const float*>( &tempW ) );
-	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &inverseTransposeW ) );
-	efMaterial->SetRawValue( &basicObj.getMaterial() , 0 , sizeof( CustomMaterial ) );
+	XMMATRIX identityMat = XMMatrixIdentity();
+
+	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , identityMat , &basicObj );
 
 	D3DX11_TECHNIQUE_DESC techDesc;
-	effectTech->GetDesc( &techDesc );
+	effect.getEffectTech()->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )
 	{
-		effectTech->GetPassByIndex( i )->Apply( 0 , immediateContext );
+		effect.getEffectTech()->GetPassByIndex( i )->Apply( 0 , immediateContext );
 		
 		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
 	}
@@ -249,57 +242,6 @@ void SimpleScene::createRenderState()
 	device->CreateRasterizerState( &rsDesc , &rasterState );
 }
 
-void SimpleScene::createEffectAtRuntime()
-{
-	DWORD shaderFlag = 0;
-#if defined(DEBUG) | defined(_DEBUG)
-	shaderFlag |= D3D10_SHADER_DEBUG;
-	shaderFlag |= D3D10_SHADER_SKIP_OPTIMIZATION;
-#endif
-	
-	ID3D10Blob *compilationMsgs;
-	HRESULT hr = D3DX11CompileEffectFromFile( L"SimpleShader.fx" , 0 , 0 , shaderFlag , 0 , device , &effect , &compilationMsgs );
-
-	// compilationMsgs can store errors or warnings.
-	if ( compilationMsgs != 0 )
-	{
-		MessageBoxA( 0 , (char*) compilationMsgs->GetBufferPointer() , 0 , 0 );
-		ReleaseCOM( compilationMsgs );
-	}
-
-	if ( FAILED( hr ) )
-	{
-		DXTrace( __FILEW__ , (DWORD) __LINE__ , hr ,
-			L"D3DX11CompileFromFile" , true );
-	}
-
-	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
-}
-
-void SimpleScene::createEffectAtBuildtime()
-{
-	std::ifstream fs( "FX/LightShader.fxo" , std::ios::binary );
-	assert( fs );
-
-	fs.seekg( 0 , std::ios_base::end );
-	size_t size = (size_t) fs.tellg();
-	fs.seekg( 0 , std::ios_base::beg );
-	std::vector<char> compiledShader( size );
-	fs.read( &compiledShader[0] , size );
-	fs.close();
-
-	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
-	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
-	efWorld = effect->GetVariableByName( "gWorld" )->AsMatrix();
-	efWorldNorm = effect->GetVariableByName( "gWorldNormal" )->AsMatrix();
-	efMaterial = effect->GetVariableByName( "gMaterial" );
-
-	efDirLight = effect->GetVariableByName( "gDirectLight" );
-	efPointLight = effect->GetVariableByName( "gPointLight" );
-	efSpotLight = effect->GetVariableByName( "gSpotLight" );
-	efCameraPos = effect->GetVariableByName( "gCameraPosW" )->AsVector();
-}
-
 void SimpleScene::createObjects()
 {
 	if ( renderList.size() <= 0 ) return;
@@ -309,6 +251,8 @@ void SimpleScene::createObjects()
 	for ( BasicShape *shape : renderList )
 	{
 		createGlobalBuffer( gvlist , gilist , *shape );
+
+		shape->createObjectTexture( device );
 	}
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );

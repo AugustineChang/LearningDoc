@@ -71,6 +71,7 @@ fxgroup
                 // -------------------- ----- ------ -------- -------- ------- ------
                 // POSITION                 0   xyz         0     NONE   float   xyz 
                 // NORMAL                   0   xyz         1     NONE   float   xyz 
+                // TEXCOORD                 0   xy          2     NONE   float       
                 //
                 //
                 // Output signature:
@@ -96,12 +97,13 @@ fxgroup
                 // Initial variable locations:
                 //   v0.x <- vin.posL.x; v0.y <- vin.posL.y; v0.z <- vin.posL.z; 
                 //   v1.x <- vin.normalL.x; v1.y <- vin.normalL.y; v1.z <- vin.normalL.z; 
+                //   v2.x <- vin.texcoord.x; v2.y <- vin.texcoord.y; 
                 //   o3.x <- <VS return value>.color.x; o3.y <- <VS return value>.color.y; o3.z <- <VS return value>.color.z; o3.w <- <VS return value>.color.w; 
                 //   o2.x <- <VS return value>.normalW.x; o2.y <- <VS return value>.normalW.y; o2.z <- <VS return value>.normalW.z; 
                 //   o1.x <- <VS return value>.posW.x; o1.y <- <VS return value>.posW.y; o1.z <- <VS return value>.posW.z; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 40 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
+                #line 43 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[0].xyzw  // r1.x <- vout.posH.x
@@ -109,21 +111,21 @@ fxgroup
                 dp4 r1.z, r0.xyzw, cb0[2].xyzw  // r1.z <- vout.posH.z
                 dp4 r1.w, r0.xyzw, cb0[3].xyzw  // r1.w <- vout.posH.w
                 
-                #line 41
+                #line 44
                 dp4 r2.x, r0.xyzw, cb0[4].xyzw  // r2.x <- vout.posW.x
                 dp4 r2.y, r0.xyzw, cb0[5].xyzw  // r2.y <- vout.posW.y
                 dp4 r2.z, r0.xyzw, cb0[6].xyzw  // r2.z <- vout.posW.z
                 
-                #line 42
+                #line 45
                 dp3 r0.x, v1.xyzx, cb0[8].xyzx  // r0.x <- vout.normalW.x
                 dp3 r0.y, v1.xyzx, cb0[9].xyzx  // r0.y <- vout.normalW.y
                 dp3 r0.z, v1.xyzx, cb0[10].xyzx  // r0.z <- vout.normalW.z
                 
-                #line 43
+                #line 46
                 mov r3.xyz, v1.xyzx  // r3.x <- vout.color.x; r3.y <- vout.color.y; r3.z <- vout.color.z
                 mov r3.w, l(1.000000)  // r3.w <- vout.color.w
                 
-                #line 45
+                #line 48
                 mov o0.xyzw, r1.xyzw
                 mov o3.xyzw, r3.xyzw
                 mov o1.xyz, r2.xyzx
@@ -245,28 +247,28 @@ fxgroup
                 //   v3.x <- v2p.color.x; v3.y <- v2p.color.y; v3.z <- v2p.color.z; v3.w <- v2p.color.w; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 51 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
+                #line 54 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
                 dp3 r0.x, v2.xyzx, v2.xyzx
                 rsq r0.x, r0.x
                 mul r0.xyz, r0.xxxx, v2.xyzx  // r0.x <- v2p.normalW.x; r0.y <- v2p.normalW.y; r0.z <- v2p.normalW.z
                 
-                #line 52
+                #line 55
                 mov r1.xyz, -v1.xyzx
                 add r1.xyz, r1.xyzx, cb0[15].xyzx
                 dp3 r0.w, r1.xyzx, r1.xyzx
                 rsq r0.w, r0.w
                 mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- viewW.x; r1.y <- viewW.y; r1.z <- viewW.z
                 
-                #line 54
+                #line 57
                 mov r2.xyz, l(0,0,0,0)  // r2.x <- diffuse.x; r2.y <- diffuse.y; r2.z <- diffuse.z
                 
-                #line 55
+                #line 58
                 mov r3.xyz, l(0,0,0,0)  // r3.x <- specular.x; r3.y <- specular.y; r3.z <- specular.z
                 
-                #line 56
+                #line 59
                 mov r4.xyz, l(0,0,0,0)  // r4.x <- ambient.x; r4.y <- ambient.y; r4.z <- ambient.z
                 
-                #line 60
+                #line 63
                 nop 
                 mov r5.xyz, cb0[0].xyzx
                 mov r6.xyz, cb0[1].xyzx
@@ -319,21 +321,21 @@ fxgroup
                 mul r5.xyz, r1.wwww, r5.xyzx
                 mul r5.xyz, r0.wwww, r5.xyzx  // r5.x <- specular.x; r5.y <- specular.y; r5.z <- specular.z
                 
-                #line 60 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
+                #line 63 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
                 mov r7.xyz, r7.xyzx  // r7.x <- D.x; r7.y <- D.y; r7.z <- D.z
                 mov r5.xyz, r5.xyzx  // r5.x <- S.x; r5.y <- S.y; r5.z <- S.z
                 mov r6.xyz, r6.xyzx  // r6.x <- A.x; r6.y <- A.y; r6.z <- A.z
                 
-                #line 61
+                #line 64
                 add r2.xyz, r2.xyzx, r7.xyzx
                 
-                #line 62
+                #line 65
                 add r3.xyz, r3.xyzx, r5.xyzx
                 
-                #line 63
+                #line 66
                 add r4.xyz, r4.xyzx, r6.xyzx
                 
-                #line 65
+                #line 68
                 nop 
                 mov r5.xyz, cb0[4].xyzx
                 mov r6.xyz, cb0[5].xyzx
@@ -424,21 +426,21 @@ fxgroup
                   mul r16.xyz, r0.wwww, r5.xyzx  // r16.x <- specular.x; r16.y <- specular.y; r16.z <- specular.z
                 endif 
                 
-                #line 65 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
+                #line 68 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
                 mov r15.xyz, r15.xyzx  // r15.x <- D.x; r15.y <- D.y; r15.z <- D.z
                 mov r16.xyz, r16.xyzx  // r16.x <- S.x; r16.y <- S.y; r16.z <- S.z
                 mov r17.xyz, r17.xyzx  // r17.x <- A.x; r17.y <- A.y; r17.z <- A.z
                 
-                #line 66
+                #line 69
                 add r2.xyz, r2.xyzx, r15.xyzx
                 
-                #line 67
+                #line 70
                 add r3.xyz, r3.xyzx, r16.xyzx
                 
-                #line 68
+                #line 71
                 add r4.xyz, r4.xyzx, r17.xyzx
                 
-                #line 70
+                #line 73
                 nop 
                 mov r5.xyz, cb0[9].xyzx
                 mov r6.xyz, cb0[10].xyzx
@@ -542,21 +544,21 @@ fxgroup
                   mul r18.xyz, r0.wwww, r7.xyzx  // r18.x <- ambient.x; r18.y <- ambient.y; r18.z <- ambient.z
                 endif 
                 
-                #line 70 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
+                #line 73 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LightShader.fx"
                 mov r16.xyz, r16.xyzx  // r16.x <- D.x; r16.y <- D.y; r16.z <- D.z
                 mov r17.xyz, r17.xyzx  // r17.x <- S.x; r17.y <- S.y; r17.z <- S.z
                 mov r18.xyz, r18.xyzx  // r18.x <- A.x; r18.y <- A.y; r18.z <- A.z
                 
-                #line 71
+                #line 74
                 add r0.xyz, r2.xyzx, r16.xyzx  // r0.x <- diffuse.x; r0.y <- diffuse.y; r0.z <- diffuse.z
                 
-                #line 72
+                #line 75
                 add r1.xyz, r3.xyzx, r17.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
                 
-                #line 73
+                #line 76
                 add r2.xyz, r4.xyzx, r18.xyzx  // r2.x <- ambient.x; r2.y <- ambient.y; r2.z <- ambient.z
                 
-                #line 75
+                #line 78
                 add r0.xyz, r0.xyzx, r1.xyzx
                 add o0.xyz, r2.xyzx, r0.xyzx
                 mov o0.w, cb1[13].w

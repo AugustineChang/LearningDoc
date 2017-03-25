@@ -40,6 +40,9 @@
     <Filter Include="Models">
       <UniqueIdentifier>{0057fd48-0cad-4188-9aad-5a078e267b45}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Textures">
+      <UniqueIdentifier>{4464c4f9-ff6c-4813-88d5-678cf8a7b8d5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Common\DDSTextureLoader.cpp">
@@ -100,6 +103,9 @@
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\WaveScene.cpp">
+      <Filter>源文件\DX11Apps</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectXApp\ShaderEffect.cpp">
       <Filter>源文件\DX11Apps</Filter>
     </ClCompile>
   </ItemGroup>
@@ -176,6 +182,9 @@
     <ClInclude Include="DirectXApp\Lights.h">
       <Filter>头文件\DX11Apps</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXApp\ShaderEffect.h">
+      <Filter>头文件\DX11Apps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\color.fx">
@@ -184,7 +193,7 @@
     <CustomBuild Include="FX\SimpleShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
-    <CustomBuild Include="FX\LightShader.fx">
+    <CustomBuild Include="FX\LitShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -200,5 +209,28 @@
     <None Include="FX\Lights.fx">
       <Filter>FX</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Textures\darkbrick.bmp">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\darkbrickdxt1.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\WoodCrate01.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\WoodCrate02.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\water2.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\grass.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\water1.dds">
+      <Filter>Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

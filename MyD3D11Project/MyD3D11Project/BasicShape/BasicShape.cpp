@@ -1,4 +1,5 @@
 #include "BasicShape.h"
+#include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 BasicShape::BasicShape()
@@ -22,7 +23,8 @@ BasicShape::BasicShape()
 
 BasicShape::~BasicShape()
 {
-
+	ReleaseCOM( textureView );
+	ReleaseCOM( texture );
 }
 
 void BasicShape::buildWorldMatrix( )
@@ -52,6 +54,11 @@ const std::vector<unsigned int>& BasicShape::getIndices() const
 const CustomMaterial& BasicShape::getMaterial() const
 {
 	return material;
+}
+
+ID3D11ShaderResourceView* BasicShape::getTexture() const
+{
+	return textureView;
 }
 
 DirectX::XMMATRIX BasicShape::getWorldMatrix() const

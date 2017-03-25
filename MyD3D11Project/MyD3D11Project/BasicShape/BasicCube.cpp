@@ -1,13 +1,12 @@
 #include "BasicCube.h"
-#include "../Utilities/CommonHeader.h"
+#include "DDSTextureLoader.h"
 using namespace DirectX;
 
 
-BasicCube::BasicCube() : BasicShape()
+BasicCube::BasicCube()
 {
 	createObjectMesh();
 }
-
 
 BasicCube::~BasicCube()
 {
@@ -19,35 +18,35 @@ void BasicCube::createObjectMesh()
 
 	vertices =
 	{
-		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero },//up
+		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) },//up
 
-		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero },//forward
+		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) },//forward
 
-		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero },
-		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero },//back
+		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) },//back
 
-		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero },//left
+		{ XMFLOAT3( -1.0f,1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) },//left
 
-		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero },
-		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero },
-		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero },
-		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero },//right
+		{ XMFLOAT3( 1.0f,1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) },//right
 
-		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero },
-		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero },
-		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero }//down
+		{ XMFLOAT3( 1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,1.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,-1.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) }//down
 	};
 
 	indices =
@@ -72,4 +71,9 @@ void BasicCube::createObjectMesh()
 	};
 
 	computeNormal();
+}
+
+void BasicCube::createObjectTexture( ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/darkbrickdxt1.dds" , &texture , &textureView );
 }

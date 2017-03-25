@@ -9,6 +9,7 @@ public:
 	~BasicSquareCone();
 
 	virtual void UpdateObject( float DeltaTime ) override;
+	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 
 protected:
 

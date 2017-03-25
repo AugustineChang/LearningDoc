@@ -7,7 +7,7 @@ struct DirectionalLight
 {
 	DirectionalLight()
 	{
-		diffuseColor = DirectX::XMFLOAT4( 0.3686f , 0.8784f , 0.8901f , 1.0f );
+		diffuseColor = DirectX::XMFLOAT4( 0.8f , 0.8f , 0.8f , 1.0f );
 		ambientColor = SimpleMath::Mul( diffuseColor , 0.3f );
 		specularColor = SimpleMath::Mul( diffuseColor , 0.5f );
 

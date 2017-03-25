@@ -1,4 +1,5 @@
 #include "Sphere.h"
+#include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
@@ -30,12 +31,14 @@ void Sphere::createObjectMesh()
 	CustomVertex top;
 	top.Pos = XMFLOAT3( 0.0f , radius , 0.0f );
 	top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+	top.TexCoord = XMFLOAT2( 0.0f , 0.0f );
 	vertices.push_back( top );
 
 	//bottom vertex
 	CustomVertex bottom;
 	bottom.Pos = XMFLOAT3( 0.0f , -radius , 0.0f );
 	bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+	bottom.TexCoord = XMFLOAT2( 0.0f , 1.0f );
 	vertices.push_back( bottom );
 
 	//side index
@@ -87,6 +90,11 @@ void Sphere::createObjectMesh()
 	computeNormal();
 }
 
+void Sphere::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/WoodCrate01.dds" , &texture , &textureView );
+}
+
 void Sphere::generateCicle( float vAngle )
 {
 	float deltaHAngle = 2.0f * SimpleMath::PI / sliceCount;
@@ -102,6 +110,7 @@ void Sphere::generateCicle( float vAngle )
 						   radius * cosf( vAngle ) ,
 						   radius * sinf( vAngle ) * sinf( hAngle ) );
 		one.Normal = zero;
+		one.TexCoord = SimpleMath::Div( XMFLOAT2( hAngle , vAngle ) , XMFLOAT2( 2.0f*SimpleMath::PI , SimpleMath::PI ) );
 
 		vertices.push_back( one );
 	}
