@@ -61,6 +61,11 @@ ID3D11ShaderResourceView* BasicShape::getTexture() const
 	return textureView;
 }
 
+ID3D11ShaderResourceView* BasicShape::getAlphaTexture() const
+{
+	return alphaTextureView;
+}
+
 DirectX::XMMATRIX BasicShape::getWorldMatrix() const
 {
 	return XMLoadFloat4x4( &obj2World );

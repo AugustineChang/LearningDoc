@@ -55,6 +55,9 @@ protected:
 	PointLight pointLight;
 	SpotLight spotLight;
 
+	//DirectX::XMMATRIX rotMatrix;
+	//float rotAngle;
+
 	struct ID3D11InputLayout* inputLayout;
 	struct ID3D11Buffer *vertexBuffer;
 	struct ID3D11Buffer *indexBuffer;

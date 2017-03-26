@@ -18,6 +18,7 @@ cbuffer cbPerObject
 };
 
 Texture2D diffuseTex;
+Texture2D diffuseAlphaTex;
 SamplerState linearSampler
 {
 	Filter = MIN_MAG_MIP_LINEAR;
@@ -66,6 +67,8 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ) : SV
 	{
 		// Sample texture.
 		texCol = diffuseTex.Sample( linearSampler , v2p.tex );
+		//float4 texAlphaCol = diffuseAlphaTex.Sample( linearSampler , v2p.tex );
+		//texCol = texCol * texAlphaCol;
 	}
 
 	if ( isLit )

@@ -92,13 +92,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Common\DirectXTK\Inc;$(ProjectDir)..\Common;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;Effects11d.lib;dxgi.lib;dxguid.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Common;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>d3d11.lib;D3DCompiler.lib;Effects11d.lib;dxgi.lib;dxguid.lib;DirectXTKd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Common\DirectXTK;$(ProjectDir)..\Common;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>copy $(ProjectDir)FX\*.fxo $(TargetDir)FX\</Command>
@@ -159,7 +159,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\Common\DDSTextureLoader.cpp" />
     <ClCompile Include="..\Common\dxerr.cpp" />
     <ClCompile Include="BasicShape\BasicCube.cpp" />
     <ClCompile Include="BasicShape\BasicShape.cpp" />
@@ -190,8 +189,26 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h" />
-    <ClInclude Include="..\Common\DDSTextureLoader.h" />
     <ClInclude Include="..\Common\DirectXMesh.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\Audio.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\CommonStates.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\DDSTextureLoader.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\DirectXHelpers.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\Effects.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\GamePad.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\GeometricPrimitive.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\GraphicsMemory.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\Keyboard.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\Model.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\Mouse.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\PrimitiveBatch.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\ScreenGrab.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\SimpleMath.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\SpriteBatch.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\SpriteFont.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\VertexTypes.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\WICTextureLoader.h" />
+    <ClInclude Include="..\Common\DirectXTK\Inc\XboxDDSTextureLoader.h" />
     <ClInclude Include="..\Common\dxerr.h" />
     <ClInclude Include="..\Common\scoped.h" />
     <ClInclude Include="BasicShape\BasicCube.h" />
@@ -234,6 +251,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Common\DirectXTK\Inc\SimpleMath.inl" />
     <None Include="FX\Lights.fx">
       <FileType>Document</FileType>
     </None>
@@ -241,6 +259,128 @@
   <ItemGroup>
     <Image Include="Textures\darkbrick.bmp" />
     <Image Include="Textures\darkbrickdxt1.dds" />
+    <Image Include="Textures\FireAnim\Fire001.bmp" />
+    <Image Include="Textures\FireAnim\Fire002.bmp" />
+    <Image Include="Textures\FireAnim\Fire003.bmp" />
+    <Image Include="Textures\FireAnim\Fire004.bmp" />
+    <Image Include="Textures\FireAnim\Fire005.bmp" />
+    <Image Include="Textures\FireAnim\Fire006.bmp" />
+    <Image Include="Textures\FireAnim\Fire007.bmp" />
+    <Image Include="Textures\FireAnim\Fire008.bmp" />
+    <Image Include="Textures\FireAnim\Fire009.bmp" />
+    <Image Include="Textures\FireAnim\Fire010.bmp" />
+    <Image Include="Textures\FireAnim\Fire011.bmp" />
+    <Image Include="Textures\FireAnim\Fire012.bmp" />
+    <Image Include="Textures\FireAnim\Fire013.bmp" />
+    <Image Include="Textures\FireAnim\Fire014.bmp" />
+    <Image Include="Textures\FireAnim\Fire015.bmp" />
+    <Image Include="Textures\FireAnim\Fire016.bmp" />
+    <Image Include="Textures\FireAnim\Fire017.bmp" />
+    <Image Include="Textures\FireAnim\Fire018.bmp" />
+    <Image Include="Textures\FireAnim\Fire019.bmp" />
+    <Image Include="Textures\FireAnim\Fire020.bmp" />
+    <Image Include="Textures\FireAnim\Fire021.bmp" />
+    <Image Include="Textures\FireAnim\Fire022.bmp" />
+    <Image Include="Textures\FireAnim\Fire023.bmp" />
+    <Image Include="Textures\FireAnim\Fire024.bmp" />
+    <Image Include="Textures\FireAnim\Fire025.bmp" />
+    <Image Include="Textures\FireAnim\Fire026.bmp" />
+    <Image Include="Textures\FireAnim\Fire027.bmp" />
+    <Image Include="Textures\FireAnim\Fire028.bmp" />
+    <Image Include="Textures\FireAnim\Fire029.bmp" />
+    <Image Include="Textures\FireAnim\Fire030.bmp" />
+    <Image Include="Textures\FireAnim\Fire031.bmp" />
+    <Image Include="Textures\FireAnim\Fire032.bmp" />
+    <Image Include="Textures\FireAnim\Fire033.bmp" />
+    <Image Include="Textures\FireAnim\Fire034.bmp" />
+    <Image Include="Textures\FireAnim\Fire035.bmp" />
+    <Image Include="Textures\FireAnim\Fire036.bmp" />
+    <Image Include="Textures\FireAnim\Fire037.bmp" />
+    <Image Include="Textures\FireAnim\Fire038.bmp" />
+    <Image Include="Textures\FireAnim\Fire039.bmp" />
+    <Image Include="Textures\FireAnim\Fire040.bmp" />
+    <Image Include="Textures\FireAnim\Fire041.bmp" />
+    <Image Include="Textures\FireAnim\Fire042.bmp" />
+    <Image Include="Textures\FireAnim\Fire043.bmp" />
+    <Image Include="Textures\FireAnim\Fire044.bmp" />
+    <Image Include="Textures\FireAnim\Fire045.bmp" />
+    <Image Include="Textures\FireAnim\Fire046.bmp" />
+    <Image Include="Textures\FireAnim\Fire047.bmp" />
+    <Image Include="Textures\FireAnim\Fire048.bmp" />
+    <Image Include="Textures\FireAnim\Fire049.bmp" />
+    <Image Include="Textures\FireAnim\Fire050.bmp" />
+    <Image Include="Textures\FireAnim\Fire051.bmp" />
+    <Image Include="Textures\FireAnim\Fire052.bmp" />
+    <Image Include="Textures\FireAnim\Fire053.bmp" />
+    <Image Include="Textures\FireAnim\Fire054.bmp" />
+    <Image Include="Textures\FireAnim\Fire055.bmp" />
+    <Image Include="Textures\FireAnim\Fire056.bmp" />
+    <Image Include="Textures\FireAnim\Fire057.bmp" />
+    <Image Include="Textures\FireAnim\Fire058.bmp" />
+    <Image Include="Textures\FireAnim\Fire059.bmp" />
+    <Image Include="Textures\FireAnim\Fire060.bmp" />
+    <Image Include="Textures\FireAnim\Fire061.bmp" />
+    <Image Include="Textures\FireAnim\Fire062.bmp" />
+    <Image Include="Textures\FireAnim\Fire063.bmp" />
+    <Image Include="Textures\FireAnim\Fire064.bmp" />
+    <Image Include="Textures\FireAnim\Fire065.bmp" />
+    <Image Include="Textures\FireAnim\Fire066.bmp" />
+    <Image Include="Textures\FireAnim\Fire067.bmp" />
+    <Image Include="Textures\FireAnim\Fire068.bmp" />
+    <Image Include="Textures\FireAnim\Fire069.bmp" />
+    <Image Include="Textures\FireAnim\Fire070.bmp" />
+    <Image Include="Textures\FireAnim\Fire071.bmp" />
+    <Image Include="Textures\FireAnim\Fire072.bmp" />
+    <Image Include="Textures\FireAnim\Fire073.bmp" />
+    <Image Include="Textures\FireAnim\Fire074.bmp" />
+    <Image Include="Textures\FireAnim\Fire075.bmp" />
+    <Image Include="Textures\FireAnim\Fire076.bmp" />
+    <Image Include="Textures\FireAnim\Fire077.bmp" />
+    <Image Include="Textures\FireAnim\Fire078.bmp" />
+    <Image Include="Textures\FireAnim\Fire079.bmp" />
+    <Image Include="Textures\FireAnim\Fire080.bmp" />
+    <Image Include="Textures\FireAnim\Fire081.bmp" />
+    <Image Include="Textures\FireAnim\Fire082.bmp" />
+    <Image Include="Textures\FireAnim\Fire083.bmp" />
+    <Image Include="Textures\FireAnim\Fire084.bmp" />
+    <Image Include="Textures\FireAnim\Fire085.bmp" />
+    <Image Include="Textures\FireAnim\Fire086.bmp" />
+    <Image Include="Textures\FireAnim\Fire087.bmp" />
+    <Image Include="Textures\FireAnim\Fire088.bmp" />
+    <Image Include="Textures\FireAnim\Fire089.bmp" />
+    <Image Include="Textures\FireAnim\Fire090.bmp" />
+    <Image Include="Textures\FireAnim\Fire091.bmp" />
+    <Image Include="Textures\FireAnim\Fire092.bmp" />
+    <Image Include="Textures\FireAnim\Fire093.bmp" />
+    <Image Include="Textures\FireAnim\Fire094.bmp" />
+    <Image Include="Textures\FireAnim\Fire095.bmp" />
+    <Image Include="Textures\FireAnim\Fire096.bmp" />
+    <Image Include="Textures\FireAnim\Fire097.bmp" />
+    <Image Include="Textures\FireAnim\Fire098.bmp" />
+    <Image Include="Textures\FireAnim\Fire099.bmp" />
+    <Image Include="Textures\FireAnim\Fire100.bmp" />
+    <Image Include="Textures\FireAnim\Fire101.bmp" />
+    <Image Include="Textures\FireAnim\Fire102.bmp" />
+    <Image Include="Textures\FireAnim\Fire103.bmp" />
+    <Image Include="Textures\FireAnim\Fire104.bmp" />
+    <Image Include="Textures\FireAnim\Fire105.bmp" />
+    <Image Include="Textures\FireAnim\Fire106.bmp" />
+    <Image Include="Textures\FireAnim\Fire107.bmp" />
+    <Image Include="Textures\FireAnim\Fire108.bmp" />
+    <Image Include="Textures\FireAnim\Fire109.bmp" />
+    <Image Include="Textures\FireAnim\Fire110.bmp" />
+    <Image Include="Textures\FireAnim\Fire111.bmp" />
+    <Image Include="Textures\FireAnim\Fire112.bmp" />
+    <Image Include="Textures\FireAnim\Fire113.bmp" />
+    <Image Include="Textures\FireAnim\Fire114.bmp" />
+    <Image Include="Textures\FireAnim\Fire115.bmp" />
+    <Image Include="Textures\FireAnim\Fire116.bmp" />
+    <Image Include="Textures\FireAnim\Fire117.bmp" />
+    <Image Include="Textures\FireAnim\Fire118.bmp" />
+    <Image Include="Textures\FireAnim\Fire119.bmp" />
+    <Image Include="Textures\FireAnim\Fire120.bmp" />
+    <Image Include="Textures\flare.dds" />
+    <Image Include="Textures\flarealpha.dds" />
     <Image Include="Textures\grass.dds" />
     <Image Include="Textures\water1.dds" />
     <Image Include="Textures\water2.dds" />

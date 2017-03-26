@@ -43,11 +43,17 @@
     <Filter Include="Textures">
       <UniqueIdentifier>{4464c4f9-ff6c-4813-88d5-678cf8a7b8d5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Textures\FireAnim">
+      <UniqueIdentifier>{0701ec20-926a-461a-b227-e15be3f6ab86}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common\DirectXTK">
+      <UniqueIdentifier>{a9b31b73-10b2-47c4-9231-4b70e3abfbd7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Common\DirectXTK\Inc">
+      <UniqueIdentifier>{3c6d68ec-b818-4ae2-aca6-88ca231806af}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Common\DDSTextureLoader.cpp">
-      <Filter>Common</Filter>
-    </ClCompile>
     <ClCompile Include="..\Common\dxerr.cpp">
       <Filter>Common</Filter>
     </ClCompile>
@@ -111,9 +117,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h">
-      <Filter>Common</Filter>
-    </ClInclude>
-    <ClInclude Include="..\Common\DDSTextureLoader.h">
       <Filter>Common</Filter>
     </ClInclude>
     <ClInclude Include="..\Common\DirectXMesh.h">
@@ -185,6 +188,63 @@
     <ClInclude Include="DirectXApp\ShaderEffect.h">
       <Filter>头文件\DX11Apps</Filter>
     </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\Audio.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\CommonStates.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\DDSTextureLoader.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\DirectXHelpers.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\Effects.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\GamePad.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\GeometricPrimitive.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\GraphicsMemory.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\Keyboard.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\Model.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\Mouse.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\PrimitiveBatch.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\ScreenGrab.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\SimpleMath.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\SpriteBatch.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\SpriteFont.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\VertexTypes.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\WICTextureLoader.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Common\DirectXTK\Inc\XboxDDSTextureLoader.h">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\color.fx">
@@ -209,6 +269,9 @@
     <None Include="FX\Lights.fx">
       <Filter>FX</Filter>
     </None>
+    <None Include="..\Common\DirectXTK\Inc\SimpleMath.inl">
+      <Filter>Common\DirectXTK\Inc</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="Textures\darkbrick.bmp">
@@ -231,6 +294,372 @@
     </Image>
     <Image Include="Textures\water1.dds">
       <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\flare.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\flarealpha.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire001.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire002.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire003.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire004.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire005.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire006.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire007.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire008.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire009.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire010.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire011.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire012.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire013.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire014.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire015.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire016.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire017.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire018.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire019.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire020.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire021.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire022.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire023.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire024.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire025.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire026.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire027.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire028.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire029.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire030.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire031.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire032.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire033.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire034.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire035.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire036.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire037.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire038.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire039.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire040.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire041.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire042.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire043.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire044.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire045.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire046.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire047.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire048.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire049.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire050.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire051.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire052.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire053.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire054.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire055.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire056.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire057.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire058.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire059.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire060.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire061.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire062.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire063.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire064.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire065.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire066.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire067.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire068.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire069.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire070.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire071.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire072.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire073.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire074.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire075.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire076.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire077.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire078.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire079.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire080.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire081.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire082.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire083.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire084.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire085.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire086.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire087.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire088.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire089.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire090.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire091.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire092.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire093.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire094.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire095.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire096.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire097.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire098.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire099.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire100.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire101.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire102.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire103.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire104.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire105.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire106.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire107.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire108.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire109.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire110.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire111.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire112.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire113.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire114.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire115.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire116.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire117.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire118.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire119.bmp">
+      <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\FireAnim\Fire120.bmp">
+      <Filter>Textures\FireAnim</Filter>
     </Image>
   </ItemGroup>
 </Project>

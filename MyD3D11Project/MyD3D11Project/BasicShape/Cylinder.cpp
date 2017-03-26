@@ -1,4 +1,5 @@
 #include "Cylinder.h"
+#include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
@@ -26,16 +27,25 @@ void Cylinder::createObjectMesh()
 	}
 
 	//top vertex
-	CustomVertex top;
-	top.Pos = XMFLOAT3( 0.0f , halfHeight , 0.0f );
-	top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
-	vertices.push_back( top );
+	float deltaAngle = 2.0f * SimpleMath::PI / sliceCount;
+	for ( UINT i = 0; i < sliceCount; ++i )
+	{
+		CustomVertex top;
+		top.Pos = XMFLOAT3( 0.0f , halfHeight , 0.0f );
+		top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+		top.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 0.0f );
+		vertices.push_back( top );
+	}
 
 	//bottom vertex
-	CustomVertex bottom;
-	bottom.Pos = XMFLOAT3( 0.0f , -halfHeight , 0.0f );
-	bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
-	vertices.push_back( bottom );
+	for ( UINT i = 0; i < sliceCount; ++i )
+	{
+		CustomVertex bottom;
+		bottom.Pos = XMFLOAT3( 0.0f , -halfHeight , 0.0f );
+		bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+		bottom.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 1.0f );
+		vertices.push_back( bottom );
+	}
 
 	//side index
 	for ( UINT circle = 0; circle < stackCount - 1; ++circle )
@@ -60,11 +70,11 @@ void Cylinder::createObjectMesh()
 	}
 
 	//top index
-	UINT topIndex = vertices.size() - 2;
 	for ( UINT vert = 0; vert < sliceCount; ++vert )
 	{
 		UINT curIndex = ( stackCount - 1 )*( sliceCount + 1 ) + vert;
 		UINT nextIndex = curIndex + 1;
+		UINT topIndex = vertices.size() - sliceCount * 2 + vert;
 
 		indices.push_back( curIndex );
 		indices.push_back( topIndex );
@@ -72,11 +82,11 @@ void Cylinder::createObjectMesh()
 	}
 
 	//bottom index
-	UINT bottomIndex = vertices.size() - 1;
 	for ( UINT vert = 0; vert < sliceCount; ++vert )
 	{
 		UINT curIndex = vert;
 		UINT nextIndex = curIndex + 1;
+		UINT bottomIndex = vertices.size() - sliceCount + vert;
 
 		indices.push_back( curIndex );
 		indices.push_back( nextIndex );
@@ -84,6 +94,11 @@ void Cylinder::createObjectMesh()
 	}
 
 	computeNormal();
+}
+
+void Cylinder::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/grass.dds" , &texture , &textureView );
 }
 
 void Cylinder::generateCicle( float radius , float yPos )
@@ -96,10 +111,13 @@ void Cylinder::generateCicle( float radius , float yPos )
 		CustomVertex one;
 		one.Pos = XMFLOAT3( radius * cosf( deltaAngle*i ) , yPos , radius * sinf( deltaAngle*i ) );
 		one.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+		one.TexCoord.x = ( i * deltaAngle ) / ( SimpleMath::PI * 2 );
+		one.TexCoord.y = 1 - ( ( yPos + halfHeight + topRadius ) / ( topRadius + height + bottomRadius ) );
 		vertices.push_back( one );
 	}
 
 	//duplicate first
 	UINT size = vertices.size();
 	vertices.push_back( vertices[size - sliceCount] );
+	vertices[size].TexCoord.x = 1.0f;
 }

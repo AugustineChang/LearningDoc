@@ -27,8 +27,9 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	//SimpleTerrain *terrain = new SimpleTerrain();
 	//renderList.push_back( terrain );
 
-	//Cylinder *cylinder = new Cylinder();
-	//renderList.push_back( cylinder );
+	Cylinder *cylinder = new Cylinder();
+	cylinder->Position.y = 2.0f;
+	renderList.push_back( cylinder );
 
 	//GeoSphere *sphere = new GeoSphere();
 	//renderList.push_back( sphere );
@@ -77,6 +78,10 @@ void SimpleScene::UpdateScene( float deltaTime )
 	{
 		shape->UpdateObject( deltaTime );
 	}
+
+	/*rotAngle += deltaTime * 0.1f;
+	rotMatrix = XMMatrixTranslation( -0.5f , -0.5f , 0.0f ) * 
+		XMMatrixRotationZ( rotAngle ) * XMMatrixTranslation( 0.5f , 0.5f , 0.0f );*/
 }
 
 void SimpleScene::DrawScene()

@@ -64,6 +64,7 @@ void ShaderEffect::createEffectAtBuildtime( ID3D11Device *device )
 
 	efMaterial = effect->GetVariableByName( "gMaterial" );
 	efTexture = effect->GetVariableByName( "diffuseTex" )->AsShaderResource();
+	efAlphaTexture = effect->GetVariableByName( "diffuseAlphaTex" )->AsShaderResource();
 
 	efDirLight = effect->GetVariableByName( "gDirectLight" );
 	efPointLight = effect->GetVariableByName( "gPointLight" );
@@ -90,11 +91,8 @@ void ShaderEffect::UpdateObjectEffect( XMMATRIX &maxtrixWVP , XMMATRIX &toWorld 
 
 	efMaterial->SetRawValue( &( obj->getMaterial() ) , 0 , sizeof( CustomMaterial ) );
 
-	ID3D11ShaderResourceView *texture = obj->getTexture();
-	if ( texture )
-	{
-		efTexture->SetResource( texture );
-	}
+	efTexture->SetResource( obj->getTexture() );
+	efAlphaTexture->SetResource( obj->getAlphaTexture() );
 }
 
 ID3DX11EffectTechnique * ShaderEffect::getEffectTech()

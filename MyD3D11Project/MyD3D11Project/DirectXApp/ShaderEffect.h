@@ -27,6 +27,7 @@ private:
 
 	struct ID3DX11EffectVariable *efMaterial;
 	struct ID3DX11EffectShaderResourceVariable* efTexture;
+	struct ID3DX11EffectShaderResourceVariable* efAlphaTexture;
 
 	struct ID3DX11EffectVariable *efDirLight;
 	struct ID3DX11EffectVariable *efPointLight;

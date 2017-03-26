@@ -21,9 +21,10 @@ cbuffer cbPerObject
 }
 
 //
-// 2 local object(s)
+// 3 local object(s)
 //
 Texture2D diffuseTex;
+Texture2D diffuseAlphaTex;
 SamplerState linearSampler
 {
     Filter   = uint(MIN_MAG_MIP_LINEAR /* 21 */);
@@ -120,7 +121,7 @@ fxgroup
                 //   o1.x <- <VS return value>.posW.x; o1.y <- <VS return value>.posW.y; o1.z <- <VS return value>.posW.z; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 52 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 53 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[0].xyzw  // r1.x <- vout.posH.x
@@ -128,27 +129,27 @@ fxgroup
                 dp4 r1.z, r0.xyzw, cb0[2].xyzw  // r1.z <- vout.posH.z
                 dp4 r1.w, r0.xyzw, cb0[3].xyzw  // r1.w <- vout.posH.w
                 
-                #line 53
+                #line 54
                 dp4 r2.x, r0.xyzw, cb0[4].xyzw  // r2.x <- vout.posW.x
                 dp4 r2.y, r0.xyzw, cb0[5].xyzw  // r2.y <- vout.posW.y
                 dp4 r2.z, r0.xyzw, cb0[6].xyzw  // r2.z <- vout.posW.z
                 
-                #line 54
+                #line 55
                 dp3 r0.x, v1.xyzx, cb0[8].xyzx  // r0.x <- vout.normalW.x
                 dp3 r0.y, v1.xyzx, cb0[9].xyzx  // r0.y <- vout.normalW.y
                 dp3 r0.z, v1.xyzx, cb0[10].xyzx  // r0.z <- vout.normalW.z
                 
-                #line 55
+                #line 56
                 mov r3.xyz, v1.xyzx  // r3.x <- vout.color.x; r3.y <- vout.color.y; r3.z <- vout.color.z
                 mov r3.w, l(1.000000)  // r3.w <- vout.color.w
                 
-                #line 56
+                #line 57
                 mov r4.xy, v2.xyxx
                 mov r4.zw, l(0,0,0,1.000000)
                 dp4 r5.x, r4.xyzw, cb0[12].xyzw  // r5.x <- vout.tex.x
                 dp4 r5.y, r4.xyzw, cb0[13].xyzw  // r5.y <- vout.tex.y
                 
-                #line 58
+                #line 59
                 mov o0.xyzw, r1.xyzw
                 mov o3.xyzw, r3.xyzw
                 mov o1.xyz, r2.xyzx
@@ -278,32 +279,32 @@ fxgroup
                 //   v4.x <- v2p.tex.x; v4.y <- v2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 68 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 69 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 sample_indexable(texture2d)(float,float,float,float) r0.xyz, v4.xyxx, t0.xyzw, s0
                 mov r0.xyz, r0.xyzx  // r0.x <- texCol.x; r0.y <- texCol.y; r0.z <- texCol.z
                 
-                #line 73
+                #line 76
                 dp3 r0.w, v2.xyzx, v2.xyzx
                 rsq r0.w, r0.w
                 mul r1.xyz, r0.wwww, v2.xyzx  // r1.x <- v2p.normalW.x; r1.y <- v2p.normalW.y; r1.z <- v2p.normalW.z
                 
-                #line 74
+                #line 77
                 mov r2.xyz, -v1.xyzx
                 add r2.xyz, r2.xyzx, cb0[15].xyzx
                 dp3 r0.w, r2.xyzx, r2.xyzx
                 rsq r0.w, r0.w
                 mul r2.xyz, r0.wwww, r2.xyzx  // r2.x <- viewW.x; r2.y <- viewW.y; r2.z <- viewW.z
                 
-                #line 76
+                #line 79
                 mov r3.xyz, l(0,0,0,0)  // r3.x <- diffuse.x; r3.y <- diffuse.y; r3.z <- diffuse.z
                 
-                #line 77
+                #line 80
                 mov r4.xyz, l(0,0,0,0)  // r4.x <- specular.x; r4.y <- specular.y; r4.z <- specular.z
                 
-                #line 78
+                #line 81
                 mov r5.xyz, l(0,0,0,0)  // r5.x <- ambient.x; r5.y <- ambient.y; r5.z <- ambient.z
                 
-                #line 81
+                #line 84
                 nop 
                 mov r6.xyz, cb0[0].xyzx
                 mov r7.xyz, cb0[1].xyzx
@@ -356,21 +357,21 @@ fxgroup
                 mul r6.xyz, r1.wwww, r6.xyzx
                 mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
                 
-                #line 81 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 84 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r8.xyz, r8.xyzx  // r8.x <- D.x; r8.y <- D.y; r8.z <- D.z
                 mov r6.xyz, r6.xyzx  // r6.x <- S.x; r6.y <- S.y; r6.z <- S.z
                 mov r7.xyz, r7.xyzx  // r7.x <- A.x; r7.y <- A.y; r7.z <- A.z
                 
-                #line 82
+                #line 85
                 add r3.xyz, r3.xyzx, r8.xyzx
                 
-                #line 83
+                #line 86
                 add r4.xyz, r4.xyzx, r6.xyzx
                 
-                #line 84
+                #line 87
                 add r5.xyz, r5.xyzx, r7.xyzx
                 
-                #line 86
+                #line 89
                 nop 
                 mov r6.xyz, cb0[4].xyzx
                 mov r7.xyz, cb0[5].xyzx
@@ -461,21 +462,21 @@ fxgroup
                   mul r17.xyz, r0.wwww, r6.xyzx  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
                 endif 
                 
-                #line 86 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 89 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r16.xyz, r16.xyzx  // r16.x <- D.x; r16.y <- D.y; r16.z <- D.z
                 mov r17.xyz, r17.xyzx  // r17.x <- S.x; r17.y <- S.y; r17.z <- S.z
                 mov r18.xyz, r18.xyzx  // r18.x <- A.x; r18.y <- A.y; r18.z <- A.z
                 
-                #line 87
+                #line 90
                 add r3.xyz, r3.xyzx, r16.xyzx
                 
-                #line 88
+                #line 91
                 add r4.xyz, r4.xyzx, r17.xyzx
                 
-                #line 89
+                #line 92
                 add r5.xyz, r5.xyzx, r18.xyzx
                 
-                #line 91
+                #line 94
                 nop 
                 mov r6.xyz, cb0[9].xyzx
                 mov r7.xyz, cb0[10].xyzx
@@ -579,29 +580,29 @@ fxgroup
                   mul r19.xyz, r0.wwww, r8.xyzx  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
                 endif 
                 
-                #line 91 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 94 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r17.xyz, r17.xyzx  // r17.x <- D.x; r17.y <- D.y; r17.z <- D.z
                 mov r18.xyz, r18.xyzx  // r18.x <- S.x; r18.y <- S.y; r18.z <- S.z
                 mov r19.xyz, r19.xyzx  // r19.x <- A.x; r19.y <- A.y; r19.z <- A.z
                 
-                #line 92
+                #line 95
                 add r1.xyz, r3.xyzx, r17.xyzx  // r1.x <- diffuse.x; r1.y <- diffuse.y; r1.z <- diffuse.z
                 
-                #line 93
+                #line 96
                 add r2.xyz, r4.xyzx, r18.xyzx  // r2.x <- specular.x; r2.y <- specular.y; r2.z <- specular.z
                 
-                #line 94
+                #line 97
                 add r3.xyz, r5.xyzx, r19.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
                 
-                #line 96
+                #line 99
                 add r1.xyz, r1.xyzx, r3.xyzx
                 mul r0.xyz, r0.xyzx, r1.xyzx
                 add r0.xyz, r2.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
                 
-                #line 97
+                #line 100
                 mov r0.w, cb1[17].w  // r0.w <- litColor.w
                 
-                #line 98
+                #line 101
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
@@ -693,7 +694,7 @@ fxgroup
                 //   o1.x <- <VS return value>.posW.x; o1.y <- <VS return value>.posW.y; o1.z <- <VS return value>.posW.z; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 52 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 53 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[0].xyzw  // r1.x <- vout.posH.x
@@ -701,27 +702,27 @@ fxgroup
                 dp4 r1.z, r0.xyzw, cb0[2].xyzw  // r1.z <- vout.posH.z
                 dp4 r1.w, r0.xyzw, cb0[3].xyzw  // r1.w <- vout.posH.w
                 
-                #line 53
+                #line 54
                 dp4 r2.x, r0.xyzw, cb0[4].xyzw  // r2.x <- vout.posW.x
                 dp4 r2.y, r0.xyzw, cb0[5].xyzw  // r2.y <- vout.posW.y
                 dp4 r2.z, r0.xyzw, cb0[6].xyzw  // r2.z <- vout.posW.z
                 
-                #line 54
+                #line 55
                 dp3 r0.x, v1.xyzx, cb0[8].xyzx  // r0.x <- vout.normalW.x
                 dp3 r0.y, v1.xyzx, cb0[9].xyzx  // r0.y <- vout.normalW.y
                 dp3 r0.z, v1.xyzx, cb0[10].xyzx  // r0.z <- vout.normalW.z
                 
-                #line 55
+                #line 56
                 mov r3.xyz, v1.xyzx  // r3.x <- vout.color.x; r3.y <- vout.color.y; r3.z <- vout.color.z
                 mov r3.w, l(1.000000)  // r3.w <- vout.color.w
                 
-                #line 56
+                #line 57
                 mov r4.xy, v2.xyxx
                 mov r4.zw, l(0,0,0,1.000000)
                 dp4 r5.x, r4.xyzw, cb0[12].xyzw  // r5.x <- vout.tex.x
                 dp4 r5.y, r4.xyzw, cb0[13].xyzw  // r5.y <- vout.tex.y
                 
-                #line 58
+                #line 59
                 mov o0.xyzw, r1.xyzw
                 mov o3.xyzw, r3.xyzw
                 mov o1.xyz, r2.xyzx
@@ -846,31 +847,31 @@ fxgroup
                 //   v4.x <- v2p.tex.x; v4.y <- v2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 64 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 65 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyz, l(1.000000,1.000000,1.000000,0)  // r0.x <- texCol.x; r0.y <- texCol.y; r0.z <- texCol.z
                 
-                #line 73
+                #line 76
                 dp3 r0.w, v2.xyzx, v2.xyzx
                 rsq r0.w, r0.w
                 mul r1.xyz, r0.wwww, v2.xyzx  // r1.x <- v2p.normalW.x; r1.y <- v2p.normalW.y; r1.z <- v2p.normalW.z
                 
-                #line 74
+                #line 77
                 mov r2.xyz, -v1.xyzx
                 add r2.xyz, r2.xyzx, cb0[15].xyzx
                 dp3 r0.w, r2.xyzx, r2.xyzx
                 rsq r0.w, r0.w
                 mul r2.xyz, r0.wwww, r2.xyzx  // r2.x <- viewW.x; r2.y <- viewW.y; r2.z <- viewW.z
                 
-                #line 76
+                #line 79
                 mov r3.xyz, l(0,0,0,0)  // r3.x <- diffuse.x; r3.y <- diffuse.y; r3.z <- diffuse.z
                 
-                #line 77
+                #line 80
                 mov r4.xyz, l(0,0,0,0)  // r4.x <- specular.x; r4.y <- specular.y; r4.z <- specular.z
                 
-                #line 78
+                #line 81
                 mov r5.xyz, l(0,0,0,0)  // r5.x <- ambient.x; r5.y <- ambient.y; r5.z <- ambient.z
                 
-                #line 81
+                #line 84
                 nop 
                 mov r6.xyz, cb0[0].xyzx
                 mov r7.xyz, cb0[1].xyzx
@@ -923,21 +924,21 @@ fxgroup
                 mul r6.xyz, r1.wwww, r6.xyzx
                 mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
                 
-                #line 81 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 84 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r8.xyz, r8.xyzx  // r8.x <- D.x; r8.y <- D.y; r8.z <- D.z
                 mov r6.xyz, r6.xyzx  // r6.x <- S.x; r6.y <- S.y; r6.z <- S.z
                 mov r7.xyz, r7.xyzx  // r7.x <- A.x; r7.y <- A.y; r7.z <- A.z
                 
-                #line 82
+                #line 85
                 add r3.xyz, r3.xyzx, r8.xyzx
                 
-                #line 83
+                #line 86
                 add r4.xyz, r4.xyzx, r6.xyzx
                 
-                #line 84
+                #line 87
                 add r5.xyz, r5.xyzx, r7.xyzx
                 
-                #line 86
+                #line 89
                 nop 
                 mov r6.xyz, cb0[4].xyzx
                 mov r7.xyz, cb0[5].xyzx
@@ -1028,21 +1029,21 @@ fxgroup
                   mul r17.xyz, r0.wwww, r6.xyzx  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
                 endif 
                 
-                #line 86 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 89 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r16.xyz, r16.xyzx  // r16.x <- D.x; r16.y <- D.y; r16.z <- D.z
                 mov r17.xyz, r17.xyzx  // r17.x <- S.x; r17.y <- S.y; r17.z <- S.z
                 mov r18.xyz, r18.xyzx  // r18.x <- A.x; r18.y <- A.y; r18.z <- A.z
                 
-                #line 87
+                #line 90
                 add r3.xyz, r3.xyzx, r16.xyzx
                 
-                #line 88
+                #line 91
                 add r4.xyz, r4.xyzx, r17.xyzx
                 
-                #line 89
+                #line 92
                 add r5.xyz, r5.xyzx, r18.xyzx
                 
-                #line 91
+                #line 94
                 nop 
                 mov r6.xyz, cb0[9].xyzx
                 mov r7.xyz, cb0[10].xyzx
@@ -1146,29 +1147,29 @@ fxgroup
                   mul r19.xyz, r0.wwww, r8.xyzx  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
                 endif 
                 
-                #line 91 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 94 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r17.xyz, r17.xyzx  // r17.x <- D.x; r17.y <- D.y; r17.z <- D.z
                 mov r18.xyz, r18.xyzx  // r18.x <- S.x; r18.y <- S.y; r18.z <- S.z
                 mov r19.xyz, r19.xyzx  // r19.x <- A.x; r19.y <- A.y; r19.z <- A.z
                 
-                #line 92
+                #line 95
                 add r1.xyz, r3.xyzx, r17.xyzx  // r1.x <- diffuse.x; r1.y <- diffuse.y; r1.z <- diffuse.z
                 
-                #line 93
+                #line 96
                 add r2.xyz, r4.xyzx, r18.xyzx  // r2.x <- specular.x; r2.y <- specular.y; r2.z <- specular.z
                 
-                #line 94
+                #line 97
                 add r3.xyz, r5.xyzx, r19.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
                 
-                #line 96
+                #line 99
                 add r1.xyz, r1.xyzx, r3.xyzx
                 mul r0.xyz, r0.xyzx, r1.xyzx
                 add r0.xyz, r2.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
                 
-                #line 97
+                #line 100
                 mov r0.w, cb1[17].w  // r0.w <- litColor.w
                 
-                #line 98
+                #line 101
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
@@ -1260,7 +1261,7 @@ fxgroup
                 //   o1.x <- <VS return value>.posW.x; o1.y <- <VS return value>.posW.y; o1.z <- <VS return value>.posW.z; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 52 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 53 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[0].xyzw  // r1.x <- vout.posH.x
@@ -1268,27 +1269,27 @@ fxgroup
                 dp4 r1.z, r0.xyzw, cb0[2].xyzw  // r1.z <- vout.posH.z
                 dp4 r1.w, r0.xyzw, cb0[3].xyzw  // r1.w <- vout.posH.w
                 
-                #line 53
+                #line 54
                 dp4 r2.x, r0.xyzw, cb0[4].xyzw  // r2.x <- vout.posW.x
                 dp4 r2.y, r0.xyzw, cb0[5].xyzw  // r2.y <- vout.posW.y
                 dp4 r2.z, r0.xyzw, cb0[6].xyzw  // r2.z <- vout.posW.z
                 
-                #line 54
+                #line 55
                 dp3 r0.x, v1.xyzx, cb0[8].xyzx  // r0.x <- vout.normalW.x
                 dp3 r0.y, v1.xyzx, cb0[9].xyzx  // r0.y <- vout.normalW.y
                 dp3 r0.z, v1.xyzx, cb0[10].xyzx  // r0.z <- vout.normalW.z
                 
-                #line 55
+                #line 56
                 mov r3.xyz, v1.xyzx  // r3.x <- vout.color.x; r3.y <- vout.color.y; r3.z <- vout.color.z
                 mov r3.w, l(1.000000)  // r3.w <- vout.color.w
                 
-                #line 56
+                #line 57
                 mov r4.xy, v2.xyxx
                 mov r4.zw, l(0,0,0,1.000000)
                 dp4 r5.x, r4.xyzw, cb0[12].xyzw  // r5.x <- vout.tex.x
                 dp4 r5.y, r4.xyzw, cb0[13].xyzw  // r5.y <- vout.tex.y
                 
-                #line 58
+                #line 59
                 mov o0.xyzw, r1.xyzw
                 mov o3.xyzw, r3.xyzw
                 mov o1.xyz, r2.xyzx
@@ -1346,10 +1347,10 @@ fxgroup
                 //   v4.x <- v2p.tex.x; v4.y <- v2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 68 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 69 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 sample_indexable(texture2d)(float,float,float,float) r0.xyzw, v4.xyxx, t0.xyzw, s0  // r0.x <- texCol.x; r0.y <- texCol.y; r0.z <- texCol.z; r0.w <- texCol.w
                 
-                #line 101
+                #line 104
                 mul o0.xyzw, r0.xyzw, v3.xyzw
                 ret 
                 // Approximately 3 instruction slots used
@@ -1440,7 +1441,7 @@ fxgroup
                 //   o1.x <- <VS return value>.posW.x; o1.y <- <VS return value>.posW.y; o1.z <- <VS return value>.posW.z; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 52 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 53 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[0].xyzw  // r1.x <- vout.posH.x
@@ -1448,27 +1449,27 @@ fxgroup
                 dp4 r1.z, r0.xyzw, cb0[2].xyzw  // r1.z <- vout.posH.z
                 dp4 r1.w, r0.xyzw, cb0[3].xyzw  // r1.w <- vout.posH.w
                 
-                #line 53
+                #line 54
                 dp4 r2.x, r0.xyzw, cb0[4].xyzw  // r2.x <- vout.posW.x
                 dp4 r2.y, r0.xyzw, cb0[5].xyzw  // r2.y <- vout.posW.y
                 dp4 r2.z, r0.xyzw, cb0[6].xyzw  // r2.z <- vout.posW.z
                 
-                #line 54
+                #line 55
                 dp3 r0.x, v1.xyzx, cb0[8].xyzx  // r0.x <- vout.normalW.x
                 dp3 r0.y, v1.xyzx, cb0[9].xyzx  // r0.y <- vout.normalW.y
                 dp3 r0.z, v1.xyzx, cb0[10].xyzx  // r0.z <- vout.normalW.z
                 
-                #line 55
+                #line 56
                 mov r3.xyz, v1.xyzx  // r3.x <- vout.color.x; r3.y <- vout.color.y; r3.z <- vout.color.z
                 mov r3.w, l(1.000000)  // r3.w <- vout.color.w
                 
-                #line 56
+                #line 57
                 mov r4.xy, v2.xyxx
                 mov r4.zw, l(0,0,0,1.000000)
                 dp4 r5.x, r4.xyzw, cb0[12].xyzw  // r5.x <- vout.tex.x
                 dp4 r5.y, r4.xyzw, cb0[13].xyzw  // r5.y <- vout.tex.y
                 
-                #line 58
+                #line 59
                 mov o0.xyzw, r1.xyzw
                 mov o3.xyzw, r3.xyzw
                 mov o1.xyz, r2.xyzx
@@ -1515,10 +1516,10 @@ fxgroup
                 //   v4.x <- v2p.tex.x; v4.y <- v2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 64 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                #line 65 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r0.xyzw, l(1.000000,1.000000,1.000000,1.000000)  // r0.x <- texCol.x; r0.y <- texCol.y; r0.z <- texCol.z; r0.w <- texCol.w
                 
-                #line 101
+                #line 104
                 mul o0.xyzw, r0.xyzw, v3.xyzw
                 ret 
                 // Approximately 3 instruction slots used

@@ -34,6 +34,7 @@ public:
 	const std::vector<unsigned int>& getIndices() const;
 	const CustomMaterial& getMaterial() const;
 	ID3D11ShaderResourceView* getTexture() const;
+	ID3D11ShaderResourceView* getAlphaTexture() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
@@ -55,6 +56,8 @@ protected:
 
 	ID3D11Resource *texture;
 	ID3D11ShaderResourceView *textureView;
+	ID3D11Resource *alphaTexture;
+	ID3D11ShaderResourceView *alphaTextureView;
 
 	DirectX::XMFLOAT4X4 obj2World;
 };

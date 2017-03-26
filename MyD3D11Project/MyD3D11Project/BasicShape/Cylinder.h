@@ -7,10 +7,10 @@ public:
 	Cylinder();
 	~Cylinder();
 
-	virtual void createObjectMesh() override;
-
 private:
 
+	virtual void createObjectMesh() override;
+	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 	void generateCicle( float radius , float height );
 
 	float topRadius;
