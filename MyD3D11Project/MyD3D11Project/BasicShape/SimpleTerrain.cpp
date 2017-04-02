@@ -8,7 +8,6 @@ using namespace DirectX;
 SimpleTerrain::SimpleTerrain()
 	:verticesDim( { 50,50 } ) , terrainSize( { 160.0f,160.0f } )
 {
-	createObjectMesh();
 }
 
 SimpleTerrain::SimpleTerrain( const Point<unsigned int> &vert , const Point<float> &size )
@@ -23,7 +22,7 @@ SimpleTerrain::~SimpleTerrain()
 
 void SimpleTerrain::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/water1.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/grass.dds" , &texture , &textureView );
 }
 
 void SimpleTerrain::createObjectMesh()

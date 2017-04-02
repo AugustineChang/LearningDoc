@@ -8,11 +8,13 @@ public:
 	BasicCube();
 	~BasicCube();
 	
+	virtual void UpdateObject( float DeltaTime ) override;
+
 protected:
 
-	virtual void UpdateObject( float DeltaTime ) override;
 	virtual void createObjectMesh() override;
-	virtual void createObjectTexture( struct ID3D11Device *device ) override;
+	virtual void createBlendState( struct ID3D11Device *device ) override;
+	virtual void createObjectTexture( ID3D11Device *device ) override;
 
 	float timer;
 	int curTexture;

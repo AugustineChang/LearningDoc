@@ -41,19 +41,26 @@ private:
 protected:
 
 	void createObjects();
-	void createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer );
+	void addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
+	void renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase );
 
+	void createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer );
 	template<typename T>
 	void createVertexBuffer( const T *vertices , UINT vertexNum , ID3D11Buffer *&vertexBuffer );
+	template<typename T>
+	void createVertexBuffer2( const T *vertices , UINT vertexNum , ID3D11Buffer *&vertexBuffer );
 
 	Camera camera;
 	DirectionalLight dirLight;
 	ShaderEffect effect;
 	class WaveTerrain *wave;
+	class SimpleTerrain *terrain;
 
 	struct ID3D11InputLayout* inputLayout;
 	ID3D11Buffer *waveVB;
 	ID3D11Buffer *waveIB;
+	ID3D11Buffer *otherVB;
+	ID3D11Buffer *otherIB;
 	struct ID3D11RasterizerState *rasterState;
 
 	//move texture

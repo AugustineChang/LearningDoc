@@ -42,7 +42,7 @@ private:
 protected:
 
 	void createObjects();
-	void createGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
+	void addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
 	
 	template<typename T>
 	void createVertexBuffer( const T *vertices , UINT vertexNum );

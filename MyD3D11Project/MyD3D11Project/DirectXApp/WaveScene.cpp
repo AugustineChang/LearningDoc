@@ -13,6 +13,7 @@ WaveScene::WaveScene( HINSTANCE hinstance , int show )
 	lastMousePos.y = 0;
 
 	wave = new WaveTerrain();
+	terrain = new SimpleTerrain();
 }
 
 
@@ -22,6 +23,7 @@ WaveScene::~WaveScene()
 	ReleaseCOM( rasterState );
 
 	delete wave;
+	delete terrain;
 }
 
 bool WaveScene::InitDirectApp()
@@ -68,36 +70,27 @@ void WaveScene::DrawScene()
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
-	UINT stride = sizeof( CustomVertex );
-	UINT offset = 0;
-	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
-	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
 	immediateContext->RSSetState( rasterState );
-	
+
 	wave->buildWorldMatrix();
+	terrain->buildWorldMatrix();
 	camera.buildViewMatrix();
 
 	effect.UpdateSceneEffect( &camera , &dirLight , nullptr , nullptr );
 
-	XMMATRIX &tempW = wave->getWorldMatrix();
-	XMMATRIX &tempV = camera.getViewMatrix();
-	XMMATRIX &tempP = camera.getProjectMatrix();
-	XMMATRIX tempWVP = tempW * tempV * tempP;
+	//terrain
+	UINT stride = sizeof( CustomVertex );
+	UINT offset = 0;
+	immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
+	immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
+	renderObject( *terrain , terrain->indexSize , terrain->indexStart , terrain->indexBase );
 
-	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
-	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
-	XMMATRIX texMatrix = XMMatrixScaling( 5.0f , 5.0f , 1.0f ) * moveMatrix;
-
-	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , texMatrix , wave );
-
-	D3DX11_TECHNIQUE_DESC techDesc;
-	effect.getEffectTech()->GetDesc( &techDesc );
-	UINT indexSize = wave->getIndices().size();
-	for ( UINT i = 0; i < techDesc.Passes; ++i )
-	{
-		effect.getEffectTech()->GetPassByIndex( i )->Apply( 0 , immediateContext );
-		immediateContext->DrawIndexed( indexSize , 0 , 0 );
-	}
+	//wave
+	stride = sizeof( CustomVertex );
+	offset = 0;
+	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
+	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
+	renderObject( *wave , wave->indexSize , wave->indexStart , wave->indexBase );
 
 	HR( swapChain->Present( 0 , 0 ) );
 }
@@ -192,6 +185,23 @@ void WaveScene::createVertexBuffer( const T *vertices , UINT vertexNum , ID3D11B
 	HR( device->CreateBuffer( &bufferDesc , &initData , &vertexBuffer ) );
 }
 
+template<typename T>
+void WaveScene::createVertexBuffer2( const T *vertices , UINT vertexNum , ID3D11Buffer *&vertexBuffer )
+{
+	D3D11_BUFFER_DESC bufferDesc;
+	bufferDesc.ByteWidth = sizeof( T ) * vertexNum;
+	bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+	bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bufferDesc.CPUAccessFlags = 0;
+	bufferDesc.MiscFlags = 0;
+	bufferDesc.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA initData;
+	initData.pSysMem = vertices;
+
+	HR( device->CreateBuffer( &bufferDesc , &initData , &vertexBuffer ) );
+}
+
 void WaveScene::createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer )
 {
 	D3D11_BUFFER_DESC bufferDesc;
@@ -222,11 +232,57 @@ void WaveScene::createRenderState()
 
 void WaveScene::createObjects()
 {
-	std::vector<CustomVertex> vlist = wave->getVertices();
-	std::vector<UINT> ilist = wave->getIndices();
+	std::vector<CustomVertex> waveVlist;
+	std::vector<UINT> waveIlist;
+	std::vector<CustomVertex> gvlist;
+	std::vector<UINT> gilist;
 
-	wave->createObjectTexture( device );
+	wave->InitShape( device );
+	addToGlobalBuffer( waveVlist , waveIlist , *wave );
 
-	createVertexBuffer<CustomVertex>( &vlist[0] , vlist.size() , waveVB );
-	createIndexBuffer( &ilist[0] , ilist.size() , waveIB );
+	terrain->InitShape( device );
+	addToGlobalBuffer( gvlist , gilist , *terrain );
+
+	createVertexBuffer( &waveVlist[0] , waveVlist.size() ,waveVB );
+	createIndexBuffer( &waveIlist[0] , waveIlist.size() , waveIB );
+	createVertexBuffer2( &gvlist[0] , gvlist.size() , otherVB );
+	createIndexBuffer( &gilist[0] , gilist.size() , otherIB );
+}
+
+void WaveScene::addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
+{
+	std::vector<CustomVertex> vlist = shape.getVertices();
+	std::vector<UINT> ilist = shape.getIndices();
+
+	shape.indexSize = ilist.size();
+	shape.indexStart = gIBuffer.size();
+	shape.indexBase = gVBuffer.size();
+
+	gVBuffer.insert( gVBuffer.end() , vlist.begin() , vlist.end() );
+	gIBuffer.insert( gIBuffer.end() , ilist.begin() , ilist.end() );
+}
+
+void WaveScene::renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase )
+{
+	XMMATRIX &tempW = basicObj.getWorldMatrix();
+	XMMATRIX &tempV = camera.getViewMatrix();
+	XMMATRIX &tempP = camera.getProjectMatrix();
+	XMMATRIX tempWVP = tempW * tempV * tempP;
+
+	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
+	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
+	XMMATRIX identityMat = XMMatrixIdentity();
+
+	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	immediateContext->OMSetBlendState( basicObj.getBlendState() , blendFactors , 0xffffffff );
+	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , identityMat , &basicObj );
+
+	D3DX11_TECHNIQUE_DESC techDesc;
+	effect.getEffectTech()->GetDesc( &techDesc );
+	for ( UINT i = 0; i < techDesc.Passes; ++i )
+	{
+		effect.getEffectTech()->GetPassByIndex( i )->Apply( 0 , immediateContext );
+
+		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
+	}
 }

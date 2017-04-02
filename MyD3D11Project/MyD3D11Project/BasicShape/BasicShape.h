@@ -18,6 +18,7 @@ struct CustomMaterial
 
 struct ID3D11Resource;
 struct ID3D11ShaderResourceView;
+struct ID3D11BlendState;
 
 class BasicShape
 {
@@ -27,14 +28,15 @@ public:
 	~BasicShape();
 
 	void buildWorldMatrix();
+	void InitShape( struct ID3D11Device *device );
 	virtual void UpdateObject( float DeltaTime ){}
-	virtual void createObjectTexture( struct ID3D11Device *device ){};
 
 	const std::vector<CustomVertex>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;
 	const CustomMaterial& getMaterial() const;
 	ID3D11ShaderResourceView* getTexture() const;
 	ID3D11ShaderResourceView* getAlphaTexture() const;
+	ID3D11BlendState* getBlendState() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
@@ -47,6 +49,8 @@ public:
 
 protected:
 
+	virtual void createBlendState( ID3D11Device *device ) {}
+	virtual void createObjectTexture( ID3D11Device *device ) {}
 	virtual void createObjectMesh() = 0;
 	virtual void computeNormal();
 
@@ -58,6 +62,7 @@ protected:
 	ID3D11ShaderResourceView *textureView;
 	ID3D11Resource *alphaTexture;
 	ID3D11ShaderResourceView *alphaTextureView;
+	ID3D11BlendState *blendState;
 
 	DirectX::XMFLOAT4X4 obj2World;
 };

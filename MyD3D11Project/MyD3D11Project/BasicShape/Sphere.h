@@ -7,10 +7,10 @@ public:
 	Sphere();
 	~Sphere();
 
+private:
+
 	virtual void createObjectMesh() override;
 	virtual void createObjectTexture( struct ID3D11Device *device ) override;
-
-private:
 
 	void generateCicle( float vAngle );
 

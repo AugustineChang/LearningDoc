@@ -17,9 +17,6 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	BasicCube *cube = new BasicCube();
-	renderList.push_back( cube );
-
 	BasicSquareCone *squareCone = new BasicSquareCone();
 	squareCone->Position.z = 3.0f;
 	renderList.push_back( squareCone );
@@ -37,6 +34,9 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	Sphere *sphere = new Sphere();
 	sphere->Position.x = 3;
 	renderList.push_back( sphere );
+
+	BasicCube *cube = new BasicCube();
+	renderList.push_back( cube );
 
 	//SimpleMesh *mesh = new SimpleMesh();
 	//mesh->Position.y = 1.5f;
@@ -222,7 +222,9 @@ void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UI
 	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
 	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
 	XMMATRIX identityMat = XMMatrixIdentity();
-
+	
+	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	immediateContext->OMSetBlendState( basicObj.getBlendState() , blendFactors , 0xffffffff );
 	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , identityMat , &basicObj );
 
 	D3DX11_TECHNIQUE_DESC techDesc;
@@ -255,16 +257,15 @@ void SimpleScene::createObjects()
 	std::vector<UINT> gilist;
 	for ( BasicShape *shape : renderList )
 	{
-		createGlobalBuffer( gvlist , gilist , *shape );
-
-		shape->createObjectTexture( device );
+		shape->InitShape( device );
+		addToGlobalBuffer( gvlist , gilist , *shape );
 	}
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );
 	createIndexBuffer( &gilist[0] , gilist.size() );
 }
 
-void SimpleScene::createGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
+void SimpleScene::addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
 {
 	std::vector<CustomVertex> vlist = shape.getVertices();
 	std::vector<UINT> ilist = shape.getIndices();

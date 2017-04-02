@@ -41,6 +41,13 @@ void BasicShape::buildWorldMatrix( )
 	XMStoreFloat4x4( &obj2World , temp );
 }
 
+void BasicShape::InitShape( struct ID3D11Device *device )
+{
+	createObjectMesh();
+	createObjectTexture( device );
+	createBlendState( device );
+}
+
 const std::vector<CustomVertex>& BasicShape::getVertices() const
 {
 	return vertices;
@@ -64,6 +71,11 @@ ID3D11ShaderResourceView* BasicShape::getTexture() const
 ID3D11ShaderResourceView* BasicShape::getAlphaTexture() const
 {
 	return alphaTextureView;
+}
+
+ID3D11BlendState* BasicShape::getBlendState() const
+{
+	return blendState;
 }
 
 DirectX::XMMATRIX BasicShape::getWorldMatrix() const

@@ -6,9 +6,9 @@ public:
 	SimpleMesh();
 	~SimpleMesh();
 
-	virtual void createObjectMesh() override;
-
 private:
+
+	virtual void createObjectMesh() override;
 
 	std::string filePath;
 };

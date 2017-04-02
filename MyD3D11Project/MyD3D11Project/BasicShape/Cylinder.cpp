@@ -7,7 +7,6 @@ using namespace DirectX;
 Cylinder::Cylinder() : topRadius( 0.8f ) , bottomRadius( 1.2f ) , height( 2.0f ) ,
 	stackCount( 10 ) , sliceCount( 12 )
 {
-	createObjectMesh();
 }
 
 

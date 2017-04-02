@@ -6,7 +6,6 @@
 
 SimpleMesh::SimpleMesh() : filePath( "Models/car.txt" )
 {
-	createObjectMesh();
 }
 
 

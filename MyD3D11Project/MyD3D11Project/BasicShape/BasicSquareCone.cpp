@@ -6,7 +6,6 @@ using namespace DirectX;
 
 BasicSquareCone::BasicSquareCone() : BasicShape() , rotSpeed( 1.0f )
 {
-	createObjectMesh();
 }
 
 

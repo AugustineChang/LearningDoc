@@ -1,24 +1,19 @@
 #include <assert.h>
 #include "WaveTerrain.h"
+#include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
 using namespace DirectX;
 
 WaveTerrain::WaveTerrain() : SimpleTerrain( { 100,100 } , { 160,160 } ) , dx( 0.8f ) , timeStep( 0.03f ) , speed( 3.25f ) , damping( 0.4f ) ,
 timer( 0.0f ) , disturbTimer( 0.0f )
 {
-	createObjectMesh();
-
 	float d = damping*timeStep + 2.0f;
 	float e = ( speed*speed )*( timeStep*timeStep ) / ( dx*dx );
 	K1 = ( damping*timeStep - 2.0f ) / d;
 	K2 = ( 4.0f - 8.0f*e ) / d;
 	K3 = ( 2.0f*e ) / d;
 
-	UINT len = vertices.size();
-	for ( const CustomVertex &vert : vertices )
-	{
-		prevVertice.push_back( vert );
-	}
+	material.diffuse.w = 0.4f;
 }
 
 
@@ -101,6 +96,35 @@ void WaveTerrain::computeNormal()
 void WaveTerrain::createObjectMesh()
 {
 	createBasicPlane();
+
+	UINT len = vertices.size();
+	for ( const CustomVertex &vert : vertices )
+	{
+		prevVertice.push_back( vert );
+	}
+}
+
+void WaveTerrain::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/water1.dds" , &texture , &textureView );
+}
+
+void WaveTerrain::createBlendState( ID3D11Device *device )
+{
+	D3D11_BLEND_DESC blendDesc = { 0 };
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.IndependentBlendEnable = false;
+
+	blendDesc.RenderTarget[0].BlendEnable = true;
+	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	HR( device->CreateBlendState( &blendDesc , &blendState ) );
 }
 
 void WaveTerrain::disturb( unsigned int i , unsigned int j , float magnitude )

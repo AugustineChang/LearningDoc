@@ -7,10 +7,9 @@ public:
 	GeoSphere();
 	~GeoSphere();
 
-	virtual void createObjectMesh() override;
-
 private:
 
+	virtual void createObjectMesh() override;
 	void doTessllation();
 
 	inline DirectX::XMFLOAT3 float3Mid( const DirectX::XMFLOAT3 &a , const DirectX::XMFLOAT3 &b );

@@ -7,8 +7,6 @@ using namespace DirectX;
 Sphere::Sphere() : stackCount( 17 ) , sliceCount( 20 ) , radius( 2.0f )
 {
 	material.specular.w = 3.0f;
-
-	createObjectMesh();
 }
 
 

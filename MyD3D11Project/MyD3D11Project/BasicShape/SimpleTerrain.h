@@ -9,10 +9,9 @@ public:
 	SimpleTerrain( const Point<unsigned int> &vert , const Point<float> &size );
 	~SimpleTerrain();
 
-	virtual void createObjectTexture( struct ID3D11Device *device ) override;
-
 protected:
 
+	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 	virtual void createObjectMesh() override;
 	virtual void createBasicPlane();
 	virtual float getHeight( float x , float z , float time ) const;
