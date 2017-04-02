@@ -8,6 +8,7 @@ using namespace DirectX;
 SimpleTerrain::SimpleTerrain()
 	:verticesDim( { 50,50 } ) , terrainSize( { 160.0f,160.0f } )
 {
+	material.specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
 }
 
 SimpleTerrain::SimpleTerrain( const Point<unsigned int> &vert , const Point<float> &size )
@@ -91,5 +92,5 @@ void SimpleTerrain::createBasicPlane()
 
 float SimpleTerrain::getHeight( float x , float z , float time ) const
 {
-	return 0.3f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
+	return 0.2f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
 }

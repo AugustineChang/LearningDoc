@@ -86,17 +86,17 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ) : SV
 		specular += S;
 		ambient += A;
 
-		ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
+		//ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
+		//diffuse += D;
+		//specular += S;
+		//ambient += A;
 
-		ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
+		//ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
+		//diffuse += D;
+		//specular += S;
+		//ambient += A;
 
-		float4 litColor = texCol * ( diffuse + ambient ) + specular;
+		float4 litColor = texCol * ( diffuse + ambient ) +specular;
 		litColor.w = gMaterial.diffuse.w;
 		return litColor;
 	}

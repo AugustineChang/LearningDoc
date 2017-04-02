@@ -14,6 +14,7 @@ timer( 0.0f ) , disturbTimer( 0.0f )
 	K3 = ( 2.0f*e ) / d;
 
 	material.diffuse.w = 0.4f;
+	material.specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 2.0f );
 }
 
 
