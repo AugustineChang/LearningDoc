@@ -163,6 +163,8 @@
     <ClCompile Include="BasicShape\BasicCube.cpp" />
     <ClCompile Include="BasicShape\BasicShape.cpp" />
     <ClCompile Include="BasicShape\BasicSquareCone.cpp" />
+    <ClCompile Include="BasicShape\BlendFlame.cpp" />
+    <ClCompile Include="BasicShape\RotateFlame.cpp" />
     <ClCompile Include="DirectXApp\Camera.cpp" />
     <ClCompile Include="BasicShape\Cylinder.cpp" />
     <ClCompile Include="DirectXApp\DirectXApp.cpp" />
@@ -179,13 +181,6 @@
     <ClCompile Include="MyTest.cpp" />
     <ClCompile Include="Utilities\WindowsApp.cpp" />
     <ClCompile Include="BasicShape\WaveTerrain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="FX\color.fx">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h" />
@@ -214,6 +209,8 @@
     <ClInclude Include="BasicShape\BasicCube.h" />
     <ClInclude Include="BasicShape\BasicShape.h" />
     <ClInclude Include="BasicShape\BasicSquareCone.h" />
+    <ClInclude Include="BasicShape\BlendFlame.h" />
+    <ClInclude Include="BasicShape\RotateFlame.h" />
     <ClInclude Include="DirectXApp\Lights.h" />
     <ClInclude Include="DirectXApp\Camera.h" />
     <ClInclude Include="BasicShape\Cylinder.h" />
@@ -384,6 +381,7 @@
     <Image Include="Textures\grass.dds" />
     <Image Include="Textures\water1.dds" />
     <Image Include="Textures\water2.dds" />
+    <Image Include="Textures\WireFence.dds" />
     <Image Include="Textures\WoodCrate01.dds" />
     <Image Include="Textures\WoodCrate02.dds" />
   </ItemGroup>
@@ -392,6 +390,20 @@
       <FileType>Document</FileType>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FX\RotateFlame.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FX\ClipShader.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

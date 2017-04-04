@@ -4,14 +4,18 @@
 #include "../DirectXApp/Lights.h"
 using namespace DirectX;
 
-BasicShape::BasicShape() : effect( "LitShader" )
+BasicShape::BasicShape() : effect( "LitShader" ) , isEnableFog( true ) , fogStart( 20.0f ) ,
+fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
 	initDirectMath();
+	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
 }
 
-BasicShape::BasicShape( std::string shader ) : effect( shader )
+BasicShape::BasicShape( std::string shader ) : effect( shader ) , isEnableFog( true ) , fogStart( 20.0f ) ,
+fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
 	initDirectMath();
+	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
 }
 
 BasicShape::~BasicShape()
@@ -20,6 +24,7 @@ BasicShape::~BasicShape()
 	ReleaseCOM( texture );
 	ReleaseCOM( inputLayout );
 	ReleaseCOM( blendState );
+	ReleaseCOM( rasterState );
 }
 
 void BasicShape::initDirectMath()
@@ -62,6 +67,7 @@ void BasicShape::InitShape( struct ID3D11Device *device )
 	createInputLayout( device );
 	createObjectTexture( device );
 	createBlendState( device );
+	createRenderState( device );
 }
 
 void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight )
@@ -87,16 +93,24 @@ void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLig
 
 	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
 	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
+
+	if ( isEnableFog )
+	{
+		efFogStart->SetFloat( fogStart );
+		efFogDistance->SetFloat( fogDistance );
+		efFogColor->SetRawValue( &fogColor , 0 , sizeof( XMFLOAT4 ) );
+	}
 }
 
 void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
 {
 	immediateContext->IASetInputLayout( inputLayout );
+	immediateContext->RSSetState( rasterState );
 
 	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	immediateContext->OMSetBlendState( blendState , blendFactors , 0xffffffff );
 
-	ID3DX11EffectTechnique *technique = effect.getEffectTech( "LightTech_Lit_Tex" );
+	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )
@@ -131,6 +145,13 @@ void BasicShape::createEffect( ID3D11Device *device )
 	
 	efDirLight = effect.getEffect()->GetVariableByName( "gDirectLight" );
 	efCameraPos = effect.getEffect()->GetVariableByName( "gCameraPosW" )->AsVector();
+
+	if ( isEnableFog )
+	{
+		efFogStart = effect.getEffect()->GetVariableByName( "gFogStart" )->AsScalar();
+		efFogDistance = effect.getEffect()->GetVariableByName( "gFogDistance" )->AsScalar();
+		efFogColor = effect.getEffect()->GetVariableByName( "gFogColor" )->AsVector();
+	}
 }
 
 void BasicShape::createInputLayout( ID3D11Device *device )
@@ -143,9 +164,21 @@ void BasicShape::createInputLayout( ID3D11Device *device )
 	};
 
 	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech( "LightTech_Lit_Tex" )->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech( techName.c_str() )->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
+}
+
+void BasicShape::createRenderState( ID3D11Device *device )
+{
+	D3D11_RASTERIZER_DESC rsDesc;
+	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
+	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.CullMode = D3D11_CULL_BACK;
+	rsDesc.FrontCounterClockwise = false;
+	rsDesc.DepthClipEnable = true;
+
+	device->CreateRasterizerState( &rsDesc , &rasterState );
 }
 
 void BasicShape::computeNormal()

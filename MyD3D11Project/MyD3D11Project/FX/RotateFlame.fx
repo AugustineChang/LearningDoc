@@ -3,13 +3,7 @@
 cbuffer cbPerFrame
 {
 	DirectionalLight gDirectLight;
-	PointLight gPointLight;
-	SpotLight gSpotLight;
 	float3 gCameraPosW;
-
-	float gFogStart;
-	float gFogDistance;
-	float4 gFogColor;
 };
 
 cbuffer cbPerObject
@@ -22,6 +16,7 @@ cbuffer cbPerObject
 };
 
 Texture2D diffuseTex;
+Texture2D diffuseAlphaTex;
 SamplerState linearSampler
 {
 	Filter = MIN_MAG_MIP_LINEAR;
@@ -63,60 +58,34 @@ VertexOut VS( VertexIn vin )
 }
 
 
-float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
-	uniform bool isUseFog ) : SV_Target
+float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ) : SV_Target
 {
 	float4 texCol = float4( 1.0f , 1.0f , 1.0f , 1.0f );
 	if ( isUseTexture )
 	{
 		// Sample texture.
 		texCol = diffuseTex.Sample( linearSampler , v2p.tex );
+		float4 texAlphaCol = diffuseAlphaTex.Sample( linearSampler , v2p.tex );
+		texCol = texCol * texAlphaCol;
 	}
 
-	float4 litColor = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 	if ( isLit )
 	{
 		v2p.normalW = normalize( v2p.normalW );
-		float3 viewW = gCameraPosW - v2p.posW;
-		float dist2View = length( viewW );
-		viewW /= dist2View;
+		float3 viewW = normalize( gCameraPosW - v2p.posW );
 
 		float4 diffuse = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 		float4 specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 		float4 ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 
-		float4 A , D , S;
-		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
+		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
 
-		ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		litColor = texCol * ( diffuse + ambient ) + specular;
+		float4 litColor = texCol * ( diffuse + ambient ) + specular;
 		litColor.w = gMaterial.diffuse.w;
-
-		if ( isUseFog )
-		{
-			float fogFactor = ( dist2View - gFogStart ) / gFogDistance;
-			fogFactor = saturate( fogFactor );
-			litColor = lerp( litColor , gFogColor , fogFactor );
-		}
+		return litColor;
 	}
-	else
-	{
-		litColor = texCol * v2p.color;
-	}
-
-	return litColor;
+	
+	return texCol * v2p.color;
 }
 
 technique11 LightTech_Lit_Tex
@@ -124,16 +93,7 @@ technique11 LightTech_Lit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0, VS() ) );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false ) ) );
-	}
-}
-
-technique11 LightTech_Lit_Tex_Fog
-{
-	pass P0
-	{
-		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , true ) ) );
 	}
 }
 
@@ -142,7 +102,7 @@ technique11 LightTech_Lit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , false , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , false ) ) );
 	}
 }
 
@@ -151,7 +111,7 @@ technique11 LightTech_Unlit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
-		SetPixelShader( CompileShader( ps_5_0 , PS( false , true , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( false , true ) ) );
 	}
 }
 
@@ -160,6 +120,6 @@ technique11 LightTech_Unlit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
-		SetPixelShader( CompileShader( ps_5_0 , PS( false , false , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( false , false ) ) );
 	}
 }

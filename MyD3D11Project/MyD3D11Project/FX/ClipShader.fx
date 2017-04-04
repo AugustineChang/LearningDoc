@@ -3,8 +3,6 @@
 cbuffer cbPerFrame
 {
 	DirectionalLight gDirectLight;
-	PointLight gPointLight;
-	SpotLight gSpotLight;
 	float3 gCameraPosW;
 
 	float gFogStart;
@@ -63,7 +61,7 @@ VertexOut VS( VertexIn vin )
 }
 
 
-float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
+float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture , 
 	uniform bool isUseFog ) : SV_Target
 {
 	float4 texCol = float4( 1.0f , 1.0f , 1.0f , 1.0f );
@@ -71,6 +69,7 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 	{
 		// Sample texture.
 		texCol = diffuseTex.Sample( linearSampler , v2p.tex );
+		clip( texCol.a - 0.1f );
 	}
 
 	float4 litColor = float4( 0.0f , 0.0f , 0.0f , 0.0f );
@@ -85,25 +84,10 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 		float4 specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 		float4 ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 
-		float4 A , D , S;
-		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		litColor = texCol * ( diffuse + ambient ) + specular;
+		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
 		litColor.w = gMaterial.diffuse.w;
 
+		litColor = texCol * ( diffuse + ambient ) + specular;
 		if ( isUseFog )
 		{
 			float fogFactor = ( dist2View - gFogStart ) / gFogDistance;
@@ -115,7 +99,7 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 	{
 		litColor = texCol * v2p.color;
 	}
-
+	
 	return litColor;
 }
 
@@ -123,7 +107,7 @@ technique11 LightTech_Lit_Tex
 {
 	pass P0
 	{
-		SetVertexShader( CompileShader( vs_5_0, VS() ) );
+		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false ) ) );
 	}
 }
@@ -137,7 +121,7 @@ technique11 LightTech_Lit_Tex_Fog
 	}
 }
 
-technique11 LightTech_Lit_NoTex
+technique11 LightTech_Lit
 {
 	pass P0
 	{
@@ -155,7 +139,7 @@ technique11 LightTech_Unlit_Tex
 	}
 }
 
-technique11 LightTech_Unlit_NoTex
+technique11 LightTech_Unlit
 {
 	pass P0
 	{

@@ -107,7 +107,7 @@ void WaveTerrain::createObjectMesh()
 
 void WaveTerrain::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/water1.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/water2.dds" , &texture , &textureView );
 }
 
 void WaveTerrain::createBlendState( ID3D11Device *device )

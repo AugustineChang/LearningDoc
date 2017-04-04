@@ -7,6 +7,8 @@
 #include "../BasicShape/Sphere.h"
 #include "../BasicShape/GeoSphere.h"
 #include "../BasicShape/SimpleMesh.h"
+#include "../BasicShape/RotateFlame.h"
+#include "../BasicShape/BlendFlame.h"
 using namespace DirectX;
 
 
@@ -21,11 +23,8 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	squareCone->Position.z = 3.0f;
 	renderList.push_back( squareCone );
 
-	//SimpleTerrain *terrain = new SimpleTerrain();
-	//renderList.push_back( terrain );
-
 	Cylinder *cylinder = new Cylinder();
-	cylinder->Position.y = 2.0f;
+	cylinder->Position.y = 2.1f;
 	renderList.push_back( cylinder );
 
 	//GeoSphere *sphere = new GeoSphere();
@@ -38,6 +37,10 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCube *cube = new BasicCube();
 	renderList.push_back( cube );
 
+	BlendFlame *flame = new BlendFlame();
+	flame->Position.z = -2;
+	renderList.push_back( flame );
+
 	//SimpleMesh *mesh = new SimpleMesh();
 	//mesh->Position.y = 1.5f;
 	//renderList.push_back( mesh );
@@ -48,7 +51,6 @@ SimpleScene::~SimpleScene()
 {
 	ReleaseCOM( vertexBuffer );
 	ReleaseCOM( indexBuffer );
-	ReleaseCOM( rasterState );
 
 	for ( BasicShape *shape : renderList )
 	{
@@ -62,7 +64,6 @@ bool SimpleScene::InitDirectApp()
 	if ( !DirectXApp::InitDirectApp() ) return false;
 	
 	createObjects();
-	createRenderState();
 
 	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
@@ -75,10 +76,6 @@ void SimpleScene::UpdateScene( float deltaTime )
 	{
 		shape->UpdateObject( deltaTime );
 	}
-
-	/*rotAngle += deltaTime * 0.1f;
-	rotMatrix = XMMatrixTranslation( -0.5f , -0.5f , 0.0f ) * 
-		XMMatrixRotationZ( rotAngle ) * XMMatrixTranslation( 0.5f , 0.5f , 0.0f );*/
 }
 
 void SimpleScene::DrawScene()
@@ -95,7 +92,6 @@ void SimpleScene::DrawScene()
 		immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
 		immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
 	}
-	immediateContext->RSSetState( rasterState );
 	
 	camera.buildViewMatrix();
 	for ( BasicShape *shape : renderList )
@@ -186,18 +182,6 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 	initData.pSysMem = indices;
 	
 	HR( device->CreateBuffer( &bufferDesc , &initData , &indexBuffer ) );
-}
-
-void SimpleScene::createRenderState()
-{
-	D3D11_RASTERIZER_DESC rsDesc;
-	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_SOLID;
-	rsDesc.CullMode = D3D11_CULL_BACK;
-	rsDesc.FrontCounterClockwise = false;
-	rsDesc.DepthClipEnable = true;
-
-	device->CreateRasterizerState( &rsDesc , &rasterState );
 }
 
 void SimpleScene::createObjects()

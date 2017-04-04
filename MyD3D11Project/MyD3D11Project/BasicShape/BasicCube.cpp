@@ -6,27 +6,16 @@
 using namespace DirectX;
 
 
-BasicCube::BasicCube() : BasicShape( "BlendShader" ) , timer( 0.0f ) , curTexture( 0 )
+BasicCube::BasicCube() : BasicShape( "ClipShader" )
 {
 }
 
 BasicCube::~BasicCube()
 {
-	for ( auto texView : textureViews ) ReleaseCOM( texView );
-	for ( auto tex : textures ) ReleaseCOM( tex );
 }
 
 void BasicCube::UpdateObject( float DeltaTime )
 {
-	float interval = 0.0333f;
-	timer += DeltaTime;
-	if ( timer > interval )
-	{
-		timer -= interval;
-		curTexture = ( curTexture + 1 ) % 120;
-		texture = textures[curTexture];
-		textureView = textureViews[curTexture];
-	}
 }
 
 void BasicCube::createObjectMesh()
@@ -90,45 +79,19 @@ void BasicCube::createObjectMesh()
 	computeNormal();
 }
 
-void BasicCube::createBlendState( struct ID3D11Device *device )
+void BasicCube::createRenderState( ID3D11Device *device )
 {
-	D3D11_BLEND_DESC blendDesc = { 0 };
-	blendDesc.AlphaToCoverageEnable = false;
-	blendDesc.IndependentBlendEnable = false;
+	D3D11_RASTERIZER_DESC rsDesc;
+	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
+	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.CullMode = D3D11_CULL_NONE;
+	rsDesc.FrontCounterClockwise = false;
+	rsDesc.DepthClipEnable = true;
 
-	blendDesc.RenderTarget[0].BlendEnable = true;
-	blendDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-	blendDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	blendDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	blendDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	blendDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-
-	HR( device->CreateBlendState( &blendDesc , &blendState ) );
+	device->CreateRasterizerState( &rsDesc , &rasterState );
 }
 
 void BasicCube::createObjectTexture( ID3D11Device *device )
 {
-	//CreateDDSTextureFromFile( device , L"Textures/flare.dds" , &texture , &textureView );
-	//CreateDDSTextureFromFile( device , L"Textures/flarealpha.dds" , &alphaTexture , &alphaTextureView );
-
-	for ( int i = 1; i <= 120; ++i )
-	{
-		std::wstringstream wss;
-		wss << L"Textures/FireAnim/Fire";
-		if ( i < 10 ) wss << L"00" << i;
-		else if ( i < 100 ) wss << L"0" << i;
-		else wss << i;
-		wss << L".bmp";
-
-		ID3D11Resource *tex;
-		ID3D11ShaderResourceView *texView;
-		CreateWICTextureFromFile( device , wss.str().c_str() , &tex , &texView );
-		textures.push_back( tex );
-		textureViews.push_back( texView );
-	}
-
-	texture = textures[curTexture];
-	textureView = textureViews[curTexture];
+	CreateDDSTextureFromFile( device , L"Textures/WireFence.dds" , &texture , &textureView );
 }

@@ -28,8 +28,6 @@ public:
 	virtual void OnMouseWheel( int zDelta ) override;
 
 private:
-	
-	void createRenderState();
 
 	bool isMove;
 	POINT lastMousePos;
@@ -52,12 +50,12 @@ protected:
 	DirectionalLight dirLight;
 	class WaveTerrain *wave;
 	class SimpleTerrain *terrain;
+	class BasicCube *box;
 	
 	ID3D11Buffer *waveVB;
 	ID3D11Buffer *waveIB;
 	ID3D11Buffer *otherVB;
 	ID3D11Buffer *otherIB;
-	struct ID3D11RasterizerState *rasterState;
 
 	//move texture
 	DirectX::XMMATRIX moveMatrix;

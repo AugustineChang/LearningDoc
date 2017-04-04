@@ -1,6 +1,7 @@
 #include "WaveScene.h"
 #include "../Utilities/CommonHeader.h"
 #include "../BasicShape/WaveTerrain.h"
+#include "../BasicShape/BasicCube.h"
 #include <fstream>
 using namespace DirectX;
 
@@ -14,12 +15,14 @@ WaveScene::WaveScene( HINSTANCE hinstance , int show )
 
 	wave = new WaveTerrain();
 	terrain = new SimpleTerrain();
+	box = new BasicCube();
+	box->Position.y = 2.0f;
+	box->Scale = XMFLOAT3( 3.0f , 3.0f , 3.0f );
 }
 
 
 WaveScene::~WaveScene()
 {
-	ReleaseCOM( rasterState );
 	ReleaseCOM( waveVB );
 	ReleaseCOM( waveIB );
 	ReleaseCOM( otherVB );
@@ -27,6 +30,7 @@ WaveScene::~WaveScene()
 
 	delete wave;
 	delete terrain;
+	delete box;
 }
 
 bool WaveScene::InitDirectApp()
@@ -34,7 +38,6 @@ bool WaveScene::InitDirectApp()
 	if ( !DirectXApp::InitDirectApp() ) return false;
 	
 	createObjects();
-	createRenderState();
 
 	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
@@ -69,11 +72,11 @@ void WaveScene::DrawScene()
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
 
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-	immediateContext->RSSetState( rasterState );
 
 	camera.buildViewMatrix();
 	terrain->UpdateObjectEffect( &camera , &dirLight );
 	wave->UpdateObjectEffect( &camera , &dirLight );
+	box->UpdateObjectEffect( &camera , &dirLight );
 
 	//terrain
 	UINT stride = sizeof( CustomVertex );
@@ -81,10 +84,9 @@ void WaveScene::DrawScene()
 	immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
 	terrain->RenderObject( immediateContext );
+	box->RenderObject( immediateContext );
 
 	//wave
-	stride = sizeof( CustomVertex );
-	offset = 0;
 	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
 	wave->RenderObject( immediateContext );
@@ -190,18 +192,6 @@ void WaveScene::createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11B
 	HR( device->CreateBuffer( &bufferDesc , &initData , &indexBuffer ) );
 }
 
-void WaveScene::createRenderState()
-{
-	D3D11_RASTERIZER_DESC rsDesc;
-	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_SOLID;
-	rsDesc.CullMode = D3D11_CULL_BACK;
-	rsDesc.FrontCounterClockwise = false;
-	rsDesc.DepthClipEnable = true;
-	
-	device->CreateRasterizerState( &rsDesc , &rasterState );
-}
-
 void WaveScene::createObjects()
 {
 	std::vector<CustomVertex> waveVlist;
@@ -214,6 +204,8 @@ void WaveScene::createObjects()
 
 	terrain->InitShape( device );
 	addToGlobalBuffer( gvlist , gilist , *terrain );
+	box->InitShape( device );
+	addToGlobalBuffer( gvlist , gilist , *box );
 
 	createVertexBuffer( &waveVlist[0] , waveVlist.size() ,waveVB );
 	createIndexBuffer( &waveIlist[0] , waveIlist.size() , waveIB );

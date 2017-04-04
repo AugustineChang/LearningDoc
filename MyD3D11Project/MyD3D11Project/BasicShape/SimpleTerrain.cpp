@@ -92,5 +92,5 @@ void SimpleTerrain::createBasicPlane()
 
 float SimpleTerrain::getHeight( float x , float z , float time ) const
 {
-	return 0.2f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
+	return 0.3f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
 }

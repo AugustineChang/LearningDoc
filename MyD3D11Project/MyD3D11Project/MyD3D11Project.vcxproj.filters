@@ -114,6 +114,12 @@
     <ClCompile Include="DirectXApp\ShaderEffect.cpp">
       <Filter>源文件\DX11Apps</Filter>
     </ClCompile>
+    <ClCompile Include="BasicShape\RotateFlame.cpp">
+      <Filter>源文件\BasicShape</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicShape\BlendFlame.cpp">
+      <Filter>源文件\BasicShape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h">
@@ -245,11 +251,14 @@
     <ClInclude Include="..\Common\DirectXTK\Inc\XboxDDSTextureLoader.h">
       <Filter>Common\DirectXTK\Inc</Filter>
     </ClInclude>
+    <ClInclude Include="BasicShape\RotateFlame.h">
+      <Filter>头文件\BasicShape</Filter>
+    </ClInclude>
+    <ClInclude Include="BasicShape\BlendFlame.h">
+      <Filter>头文件\BasicShape</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="FX\color.fx">
-      <Filter>FX</Filter>
-    </CustomBuild>
     <CustomBuild Include="FX\SimpleShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
@@ -257,6 +266,12 @@
       <Filter>FX</Filter>
     </CustomBuild>
     <CustomBuild Include="FX\BlendShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\RotateFlame.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\ClipShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -663,6 +678,9 @@
     </Image>
     <Image Include="Textures\FireAnim\Fire120.bmp">
       <Filter>Textures\FireAnim</Filter>
+    </Image>
+    <Image Include="Textures\WireFence.dds">
+      <Filter>Textures</Filter>
     </Image>
   </ItemGroup>
 </Project>

@@ -27,9 +27,7 @@ public:
 	virtual void OnMouseWheel( int zDelta ) override;
 
 private:
-	
-	void createRenderState();
-	
+		
 	std::vector<class BasicShape*> renderList;
 
 	bool isMove;
@@ -51,11 +49,7 @@ protected:
 	DirectionalLight dirLight;
 	PointLight pointLight;
 	SpotLight spotLight;
-
-	//DirectX::XMMATRIX rotMatrix;
-	//float rotAngle;
 	
 	struct ID3D11Buffer *vertexBuffer;
 	struct ID3D11Buffer *indexBuffer;
-	struct ID3D11RasterizerState *rasterState;
 };
