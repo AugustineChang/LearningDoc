@@ -48,7 +48,6 @@ SimpleScene::~SimpleScene()
 {
 	ReleaseCOM( vertexBuffer );
 	ReleaseCOM( indexBuffer );
-	ReleaseCOM( inputLayout );
 	ReleaseCOM( rasterState );
 
 	for ( BasicShape *shape : renderList )
@@ -61,9 +60,7 @@ SimpleScene::~SimpleScene()
 bool SimpleScene::InitDirectApp()
 {
 	if ( !DirectXApp::InitDirectApp() ) return false;
-
-	effect.createEffectAtBuildtime( device );
-	createInputLayout();
+	
 	createObjects();
 	createRenderState();
 
@@ -89,7 +86,6 @@ void SimpleScene::DrawScene()
 	immediateContext->ClearRenderTargetView( backBufferView , reinterpret_cast<const float *>( &XMVectorSet( 0.2f , 0.2f , 0.2f , 1.0f ) ) );
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
 
-	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	if ( renderList.size() > 0 )
@@ -101,16 +97,11 @@ void SimpleScene::DrawScene()
 	}
 	immediateContext->RSSetState( rasterState );
 	
-	for ( BasicShape *shape : renderList )
-	{
-		shape->buildWorldMatrix();
-	}
 	camera.buildViewMatrix();
-	effect.UpdateSceneEffect( &camera , &dirLight , &pointLight , &spotLight );
-
 	for ( BasicShape *shape : renderList )
 	{
-		renderObject( *shape , shape->indexSize , shape->indexStart , shape->indexBase );
+		shape->UpdateObjectEffect( &camera , &dirLight );
+		shape->RenderObject( immediateContext );
 	}
 
 	HR( swapChain->Present( 0 , 0 ) );
@@ -164,21 +155,6 @@ void SimpleScene::OnMouseWheel( int zDelta )
 	camera.Position.y = radius * sinf( camera.Rotation.x );
 }
 
-void SimpleScene::createInputLayout()
-{
-	D3D11_INPUT_ELEMENT_DESC descList[] =
-	{
-		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 }
-	};
-	
-	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
-
-	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
-}
-
 template<typename T>
 void SimpleScene::createVertexBuffer( const T *vertices , UINT vertexNum )
 {
@@ -210,31 +186,6 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 	initData.pSysMem = indices;
 	
 	HR( device->CreateBuffer( &bufferDesc , &initData , &indexBuffer ) );
-}
-
-void SimpleScene::renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart, UINT indexBase )
-{
-	XMMATRIX &tempW = basicObj.getWorldMatrix();
-	XMMATRIX &tempV = camera.getViewMatrix();
-	XMMATRIX &tempP = camera.getProjectMatrix();
-	XMMATRIX tempWVP = tempW * tempV * tempP;
-
-	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
-	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
-	XMMATRIX identityMat = XMMatrixIdentity();
-	
-	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	immediateContext->OMSetBlendState( basicObj.getBlendState() , blendFactors , 0xffffffff );
-	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , identityMat , &basicObj );
-
-	D3DX11_TECHNIQUE_DESC techDesc;
-	effect.getEffectTech()->GetDesc( &techDesc );
-	for ( UINT i = 0; i < techDesc.Passes; ++i )
-	{
-		effect.getEffectTech()->GetPassByIndex( i )->Apply( 0 , immediateContext );
-		
-		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
-	}
 }
 
 void SimpleScene::createRenderState()

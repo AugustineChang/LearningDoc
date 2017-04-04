@@ -19,8 +19,11 @@ WaveScene::WaveScene( HINSTANCE hinstance , int show )
 
 WaveScene::~WaveScene()
 {
-	ReleaseCOM( inputLayout );
 	ReleaseCOM( rasterState );
+	ReleaseCOM( waveVB );
+	ReleaseCOM( waveIB );
+	ReleaseCOM( otherVB );
+	ReleaseCOM( otherIB );
 
 	delete wave;
 	delete terrain;
@@ -29,9 +32,7 @@ WaveScene::~WaveScene()
 bool WaveScene::InitDirectApp()
 {
 	if ( !DirectXApp::InitDirectApp() ) return false;
-
-	effect.createEffectAtBuildtime( device );
-	createInputLayout();
+	
 	createObjects();
 	createRenderState();
 
@@ -67,30 +68,26 @@ void WaveScene::DrawScene()
 	immediateContext->ClearRenderTargetView( backBufferView , reinterpret_cast<const float *>( &XMVectorSet( 0.2f , 0.2f , 0.2f , 1.0f ) ) );
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
 
-	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-
 	immediateContext->RSSetState( rasterState );
 
-	wave->buildWorldMatrix();
-	terrain->buildWorldMatrix();
 	camera.buildViewMatrix();
-
-	effect.UpdateSceneEffect( &camera , &dirLight , nullptr , nullptr );
+	terrain->UpdateObjectEffect( &camera , &dirLight );
+	wave->UpdateObjectEffect( &camera , &dirLight );
 
 	//terrain
 	UINT stride = sizeof( CustomVertex );
 	UINT offset = 0;
 	immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
-	renderObject( *terrain , terrain->indexSize , terrain->indexStart , terrain->indexBase );
+	terrain->RenderObject( immediateContext );
 
 	//wave
 	stride = sizeof( CustomVertex );
 	offset = 0;
 	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
-	renderObject( *wave , wave->indexSize , wave->indexStart , wave->indexBase );
+	wave->RenderObject( immediateContext );
 
 	HR( swapChain->Present( 0 , 0 ) );
 }
@@ -141,31 +138,6 @@ void WaveScene::OnMouseWheel( int zDelta )
 	camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
 	camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
 	camera.Position.y = radius * sinf( camera.Rotation.x );
-}
-
-void WaveScene::createInputLayout()
-{
-	D3D11_INPUT_ELEMENT_DESC descList[] =
-	{
-		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 }
-	};
-
-	/*D3D11_INPUT_ELEMENT_DESC descList2[] =
-	{
-		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "TANGENT",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "TEXCOORD",0,DXGI_FORMAT_R32G32B32_FLOAT,0,36,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "TEXCOORD",1,DXGI_FORMAT_R32G32B32_FLOAT,0,48,D3D11_INPUT_PER_VERTEX_DATA,0 },
-		{ "COLOR",0,DXGI_FORMAT_R32G32B32A32_FLOAT,0,60,D3D11_INPUT_PER_VERTEX_DATA,0 }
-	};*/
-
-	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
-
-	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
 
 template<typename T>
@@ -260,29 +232,4 @@ void WaveScene::addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::ve
 
 	gVBuffer.insert( gVBuffer.end() , vlist.begin() , vlist.end() );
 	gIBuffer.insert( gIBuffer.end() , ilist.begin() , ilist.end() );
-}
-
-void WaveScene::renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase )
-{
-	XMMATRIX &tempW = basicObj.getWorldMatrix();
-	XMMATRIX &tempV = camera.getViewMatrix();
-	XMMATRIX &tempP = camera.getProjectMatrix();
-	XMMATRIX tempWVP = tempW * tempV * tempP;
-
-	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
-	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
-	XMMATRIX identityMat = XMMatrixIdentity();
-
-	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
-	immediateContext->OMSetBlendState( basicObj.getBlendState() , blendFactors , 0xffffffff );
-	effect.UpdateObjectEffect( tempWVP , tempW , inverseTransposeW , identityMat , &basicObj );
-
-	D3DX11_TECHNIQUE_DESC techDesc;
-	effect.getEffectTech()->GetDesc( &techDesc );
-	for ( UINT i = 0; i < techDesc.Passes; ++i )
-	{
-		effect.getEffectTech()->GetPassByIndex( i )->Apply( 0 , immediateContext );
-
-		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
-	}
 }

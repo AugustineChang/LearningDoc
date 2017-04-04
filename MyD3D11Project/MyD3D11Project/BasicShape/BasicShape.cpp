@@ -1,8 +1,28 @@
 #include "BasicShape.h"
 #include "../Utilities/CommonHeader.h"
+#include "../DirectXApp/Camera.h"
+#include "../DirectXApp/Lights.h"
 using namespace DirectX;
 
-BasicShape::BasicShape()
+BasicShape::BasicShape() : effect( "LitShader" )
+{
+	initDirectMath();
+}
+
+BasicShape::BasicShape( std::string shader ) : effect( shader )
+{
+	initDirectMath();
+}
+
+BasicShape::~BasicShape()
+{
+	ReleaseCOM( textureView );
+	ReleaseCOM( texture );
+	ReleaseCOM( inputLayout );
+	ReleaseCOM( blendState );
+}
+
+void BasicShape::initDirectMath()
 {
 	XMMATRIX identityMaxtrix = DirectX::XMMatrixIdentity();
 	XMStoreFloat4x4( &obj2World , identityMaxtrix );
@@ -19,12 +39,6 @@ BasicShape::BasicShape()
 	material.ambient = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
 	material.diffuse = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
 	material.specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 5.0f );
-}
-
-BasicShape::~BasicShape()
-{
-	ReleaseCOM( textureView );
-	ReleaseCOM( texture );
 }
 
 void BasicShape::buildWorldMatrix( )
@@ -44,8 +58,53 @@ void BasicShape::buildWorldMatrix( )
 void BasicShape::InitShape( struct ID3D11Device *device )
 {
 	createObjectMesh();
+	createEffect( device );
+	createInputLayout( device );
 	createObjectTexture( device );
 	createBlendState( device );
+}
+
+void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight )
+{
+	buildWorldMatrix();
+
+	XMMATRIX &tempW = XMLoadFloat4x4( &obj2World );
+	XMMATRIX &tempV = camera->getViewMatrix();
+	XMMATRIX &tempP = camera->getProjectMatrix();
+	XMMATRIX tempWVP = tempW * tempV * tempP;
+
+	XMMATRIX inverseW = XMMatrixInverse( &XMMatrixDeterminant( tempW ) , tempW );
+	XMMATRIX inverseTransposeW = XMMatrixTranspose( inverseW );
+	XMMATRIX identityMat = XMMatrixIdentity();
+
+	efWVP->SetMatrix( reinterpret_cast<float*>( &tempWVP ) );
+	efWorld->SetMatrix( reinterpret_cast<const float*>( &tempW ) );
+	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &inverseTransposeW ) );
+	efTexTrans->SetMatrix( reinterpret_cast<const float*>( &identityMat ) );
+
+	efMaterial->SetRawValue( &material , 0 , sizeof( CustomMaterial ) );
+	efTexture->SetResource( textureView );
+
+	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
+	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
+}
+
+void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
+{
+	immediateContext->IASetInputLayout( inputLayout );
+
+	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	immediateContext->OMSetBlendState( blendState , blendFactors , 0xffffffff );
+
+	ID3DX11EffectTechnique *technique = effect.getEffectTech( "LightTech_Lit_Tex" );
+	D3DX11_TECHNIQUE_DESC techDesc;
+	technique->GetDesc( &techDesc );
+	for ( UINT i = 0; i < techDesc.Passes; ++i )
+	{
+		technique->GetPassByIndex( i )->Apply( 0 , immediateContext );
+
+		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
+	}
 }
 
 const std::vector<CustomVertex>& BasicShape::getVertices() const
@@ -58,29 +117,35 @@ const std::vector<unsigned int>& BasicShape::getIndices() const
 	return indices;
 }
 
-const CustomMaterial& BasicShape::getMaterial() const
+void BasicShape::createEffect( ID3D11Device *device )
 {
-	return material;
+	effect.createEffectAtBuildtime( device );
+
+	efWVP = effect.getEffect()->GetVariableByName( "gWVP" )->AsMatrix();
+	efWorld = effect.getEffect()->GetVariableByName( "gWorld" )->AsMatrix();
+	efWorldNorm = effect.getEffect()->GetVariableByName( "gWorldNormal" )->AsMatrix();
+	efTexTrans = effect.getEffect()->GetVariableByName( "gTexTransform" )->AsMatrix();
+
+	efMaterial = effect.getEffect()->GetVariableByName( "gMaterial" );
+	efTexture = effect.getEffect()->GetVariableByName( "diffuseTex" )->AsShaderResource();
+	
+	efDirLight = effect.getEffect()->GetVariableByName( "gDirectLight" );
+	efCameraPos = effect.getEffect()->GetVariableByName( "gCameraPosW" )->AsVector();
 }
 
-ID3D11ShaderResourceView* BasicShape::getTexture() const
+void BasicShape::createInputLayout( ID3D11Device *device )
 {
-	return textureView;
-}
+	D3D11_INPUT_ELEMENT_DESC descList[] =
+	{
+		{ "POSITION",0,DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "NORMAL",0,DXGI_FORMAT_R32G32B32_FLOAT,0,12,D3D11_INPUT_PER_VERTEX_DATA,0 },
+		{ "TEXCOORD",0,DXGI_FORMAT_R32G32_FLOAT,0,24,D3D11_INPUT_PER_VERTEX_DATA,0 }
+	};
 
-ID3D11ShaderResourceView* BasicShape::getAlphaTexture() const
-{
-	return alphaTextureView;
-}
+	D3DX11_PASS_DESC passDesc;
+	effect.getEffectTech( "LightTech_Lit_Tex" )->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
-ID3D11BlendState* BasicShape::getBlendState() const
-{
-	return blendState;
-}
-
-DirectX::XMMATRIX BasicShape::getWorldMatrix() const
-{
-	return XMLoadFloat4x4( &obj2World );
+	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
 
 void BasicShape::computeNormal()

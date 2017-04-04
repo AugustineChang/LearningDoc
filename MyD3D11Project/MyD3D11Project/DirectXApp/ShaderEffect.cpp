@@ -7,8 +7,9 @@
 #include <vector>
 using namespace DirectX;
 
-ShaderEffect::ShaderEffect()
+ShaderEffect::ShaderEffect( const std::string &shader )
 {
+	shaderName = shader;
 }
 
 
@@ -40,13 +41,12 @@ void ShaderEffect::createEffectAtRuntime( ID3D11Device *device )
 		DXTrace( __FILEW__ , (DWORD) __LINE__ , hr ,
 			L"D3DX11CompileFromFile" , true );
 	}
-
-	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
 }
 
 void ShaderEffect::createEffectAtBuildtime( ID3D11Device *device )
 {
-	std::ifstream fs( "FX/LitShader.fxo" , std::ios::binary );
+	std::string path = std::string( "FX/" ) + shaderName + std::string( ".fxo" );
+	std::ifstream fs( path.c_str() , std::ios::binary );
 	assert( fs );
 
 	fs.seekg( 0 , std::ios_base::end );
@@ -57,50 +57,15 @@ void ShaderEffect::createEffectAtBuildtime( ID3D11Device *device )
 	fs.close();
 
 	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
-	efWVP = effect->GetVariableByName( "gWVP" )->AsMatrix();
-	efWorld = effect->GetVariableByName( "gWorld" )->AsMatrix();
-	efWorldNorm = effect->GetVariableByName( "gWorldNormal" )->AsMatrix();
-	efTexTrans = effect->GetVariableByName( "gTexTransform" )->AsMatrix();
-
-	efMaterial = effect->GetVariableByName( "gMaterial" );
-	efTexture = effect->GetVariableByName( "diffuseTex" )->AsShaderResource();
-	efAlphaTexture = effect->GetVariableByName( "diffuseAlphaTex" )->AsShaderResource();
-
-	efDirLight = effect->GetVariableByName( "gDirectLight" );
-	efPointLight = effect->GetVariableByName( "gPointLight" );
-	efSpotLight = effect->GetVariableByName( "gSpotLight" );
-	efCameraPos = effect->GetVariableByName( "gCameraPosW" )->AsVector();
 }
 
-void ShaderEffect::UpdateSceneEffect( Camera *camera , DirectionalLight *dirLight ,
-	PointLight *pointLigiht , SpotLight *spotLigiht )
+ID3DX11EffectTechnique * ShaderEffect::getEffectTech( const std::string &techName )
 {
-	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
-	//efPointLight->SetRawValue( &pointLight , 0 , sizeof( PointLight ) );
-	//efSpotLight->SetRawValue( &spotLight , 0 , sizeof( SpotLight ) );
-	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
+	//"LightTech_Lit_Tex"
+	return effect->GetTechniqueByName( techName.c_str() );
 }
 
-void ShaderEffect::UpdateObjectEffect( XMMATRIX &maxtrixWVP , XMMATRIX &toWorld ,
-	XMMATRIX &normToWorld , XMMATRIX &texMatrix , const BasicShape *obj )
+ID3DX11Effect * ShaderEffect::getEffect()
 {
-	efWVP->SetMatrix( reinterpret_cast<float*>( &maxtrixWVP ) );
-	efWorld->SetMatrix( reinterpret_cast<const float*>( &toWorld ) );
-	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &normToWorld ) );
-	efTexTrans->SetMatrix( reinterpret_cast<const float*>( &texMatrix ) );
-
-	efMaterial->SetRawValue( &( obj->getMaterial() ) , 0 , sizeof( CustomMaterial ) );
-
-	efTexture->SetResource( obj->getTexture() );
-	efAlphaTexture->SetResource( obj->getAlphaTexture() );
-}
-
-ID3DX11EffectTechnique * ShaderEffect::getEffectTech()
-{
-	if ( effectTech == nullptr )
-	{
-		effectTech = effect->GetTechniqueByName( "LightTech_Lit_Tex" );
-	}
-
-	return effectTech;
+	return effect;
 }

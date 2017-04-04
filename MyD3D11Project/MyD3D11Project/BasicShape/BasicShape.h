@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <DirectXMath.h>
+#include "../DirectXApp/ShaderEffect.h"
 
 struct CustomVertex
 {
@@ -19,29 +20,32 @@ struct CustomMaterial
 struct ID3D11Resource;
 struct ID3D11ShaderResourceView;
 struct ID3D11BlendState;
+struct ID3D11InputLayout;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+
+class Camera;
+struct DirectionalLight;
 
 class BasicShape
 {
 public:
 	
 	BasicShape();
+	BasicShape( std::string shader );
 	~BasicShape();
-
-	void buildWorldMatrix();
-	void InitShape( struct ID3D11Device *device );
+	
+	void InitShape( ID3D11Device *device );
 	virtual void UpdateObject( float DeltaTime ){}
+	virtual void UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight );
+	virtual void RenderObject( ID3D11DeviceContext *immediateContext );
 
 	const std::vector<CustomVertex>& getVertices() const;
 	const std::vector<unsigned int>& getIndices() const;
-	const CustomMaterial& getMaterial() const;
-	ID3D11ShaderResourceView* getTexture() const;
-	ID3D11ShaderResourceView* getAlphaTexture() const;
-	ID3D11BlendState* getBlendState() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
 	DirectX::XMFLOAT3 Scale;
-	DirectX::XMMATRIX getWorldMatrix() const;
 
 	unsigned int indexStart;
 	unsigned int indexSize;
@@ -49,10 +53,26 @@ public:
 
 protected:
 
+	void initDirectMath();
+	void buildWorldMatrix();
+
+	virtual void createEffect( ID3D11Device *device );
+	virtual void createInputLayout( ID3D11Device *device );
 	virtual void createBlendState( ID3D11Device *device ) {}
 	virtual void createObjectTexture( ID3D11Device *device ) {}
 	virtual void createObjectMesh() = 0;
 	virtual void computeNormal();
+
+	ShaderEffect effect;
+	std::string techName;
+	struct ID3DX11EffectMatrixVariable *efWVP;
+	struct ID3DX11EffectMatrixVariable *efWorld;
+	struct ID3DX11EffectMatrixVariable *efWorldNorm;
+	struct ID3DX11EffectMatrixVariable *efTexTrans;
+	struct ID3DX11EffectVariable *efMaterial;
+	struct ID3DX11EffectShaderResourceVariable* efTexture;
+	struct ID3DX11EffectVariable *efDirLight;
+	struct ID3DX11EffectVectorVariable *efCameraPos;
 
 	CustomMaterial material;
 	std::vector<CustomVertex> vertices;
@@ -60,8 +80,7 @@ protected:
 
 	ID3D11Resource *texture;
 	ID3D11ShaderResourceView *textureView;
-	ID3D11Resource *alphaTexture;
-	ID3D11ShaderResourceView *alphaTextureView;
+	ID3D11InputLayout* inputLayout;
 	ID3D11BlendState *blendState;
 
 	DirectX::XMFLOAT4X4 obj2World;

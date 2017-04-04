@@ -27,8 +27,7 @@ public:
 	virtual void OnMouseWheel( int zDelta ) override;
 
 private:
-
-	void createInputLayout();
+	
 	void createRenderState();
 	
 	std::vector<class BasicShape*> renderList;
@@ -47,18 +46,15 @@ protected:
 	template<typename T>
 	void createVertexBuffer( const T *vertices , UINT vertexNum );
 	void createIndexBuffer( const UINT *indices , UINT indexNum );
-	void renderObject( const BasicShape &basicObj , UINT indexSize , UINT indexStart , UINT indexBase );
 	
 	Camera camera;
-	ShaderEffect effect;
 	DirectionalLight dirLight;
 	PointLight pointLight;
 	SpotLight spotLight;
 
 	//DirectX::XMMATRIX rotMatrix;
 	//float rotAngle;
-
-	struct ID3D11InputLayout* inputLayout;
+	
 	struct ID3D11Buffer *vertexBuffer;
 	struct ID3D11Buffer *indexBuffer;
 	struct ID3D11RasterizerState *rasterState;

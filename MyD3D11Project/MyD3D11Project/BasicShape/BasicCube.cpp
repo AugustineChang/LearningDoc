@@ -6,7 +6,7 @@
 using namespace DirectX;
 
 
-BasicCube::BasicCube() : timer( 0.0f ) , curTexture( 0 )
+BasicCube::BasicCube() : BasicShape( "BlendShader" ) , timer( 0.0f ) , curTexture( 0 )
 {
 }
 

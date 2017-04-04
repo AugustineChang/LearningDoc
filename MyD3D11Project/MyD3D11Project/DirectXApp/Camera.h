@@ -10,8 +10,8 @@ public:
 	void buildViewMatrix();
 	void buildProjectMatrix( int screenWidth , int screenHeight );
 
-	DirectX::XMMATRIX getViewMatrix();
-	DirectX::XMMATRIX getProjectMatrix();
+	DirectX::XMMATRIX getViewMatrix() const;
+	DirectX::XMMATRIX getProjectMatrix() const;
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;

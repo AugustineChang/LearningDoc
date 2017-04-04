@@ -3,8 +3,6 @@
 cbuffer cbPerFrame
 {
 	DirectionalLight gDirectLight;
-	PointLight gPointLight;
-	SpotLight gSpotLight;
 	float3 gCameraPosW;
 };
 
@@ -80,24 +78,10 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ) : SV
 		float4 specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 		float4 ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 
-		float4 A , D , S;
-		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
+		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
 
 		float4 litColor = texCol * ( diffuse + ambient ) + specular;
-		litColor.w = gMaterial.diffuse.w;
+		litColor.w = 0.2126f*texCol.r + 0.7152f*texCol.g + 0.0722f*texCol.b;
 		return litColor;
 	}
 	

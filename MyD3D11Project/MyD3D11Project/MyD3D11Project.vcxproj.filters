@@ -256,6 +256,9 @@
     <CustomBuild Include="FX\LitShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
+    <CustomBuild Include="FX\BlendShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Models\car.txt">

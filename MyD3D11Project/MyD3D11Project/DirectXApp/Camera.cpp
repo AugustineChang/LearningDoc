@@ -42,12 +42,12 @@ void Camera::buildProjectMatrix( int screenWidth , int screenHeight )
 	XMStoreFloat4x4( &view2Proj , temp );
 }
 
-DirectX::XMMATRIX Camera::getViewMatrix()
+DirectX::XMMATRIX Camera::getViewMatrix() const
 {
 	return XMLoadFloat4x4( &world2View );
 }
 
-DirectX::XMMATRIX Camera::getProjectMatrix()
+DirectX::XMMATRIX Camera::getProjectMatrix() const
 {
 	return XMLoadFloat4x4( &view2Proj );
 }

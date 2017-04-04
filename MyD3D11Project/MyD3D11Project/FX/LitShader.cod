@@ -191,7 +191,7 @@ fxgroup
                 //       float3 attenu;                 // Offset:  128
                 //       float pad;                     // Offset:  140
                 //
-                //   } gPointLight;                     // Offset:   64 Size:    80 [unused]
+                //   } gPointLight;                     // Offset:   64 Size:    80
                 //   
                 //   struct SpotLight
                 //   {
@@ -206,7 +206,7 @@ fxgroup
                 //       float3 attenu;                 // Offset:  224
                 //       float pad;                     // Offset:  236
                 //
-                //   } gSpotLight;                      // Offset:  144 Size:    96 [unused]
+                //   } gSpotLight;                      // Offset:  144 Size:    96
                 //   float3 gCameraPosW;                // Offset:  240 Size:    12
                 //
                 // }
@@ -269,7 +269,7 @@ fxgroup
                 dcl_input_ps linear v2.xyz
                 dcl_input_ps linear v4.xy
                 dcl_output o0.xyzw
-                dcl_temps 14
+                dcl_temps 20
                 //
                 // Initial variable locations:
                 //   v0.x <- v2p.posH.x; v0.y <- v2p.posH.y; v0.z <- v2p.posH.z; v0.w <- v2p.posH.w; 
@@ -343,38 +343,261 @@ fxgroup
                 dp3 r1.w, r6.xyzx, r1.xyzx
                 add r1.w, r1.w, r1.w
                 mov r1.w, -r1.w
-                mul r1.xyz, r1.wwww, r1.xyzx
-                add r1.xyz, r6.xyzx, r1.xyzx
-                dp3 r1.x, r1.xyzx, r2.xyzx
-                itof r1.y, l(0)
-                max r1.x, r1.y, r1.x
-                log r1.x, r1.x
-                mul r1.x, r1.x, r12.w
-                exp r1.x, r1.x  // r1.x <- specFactor
+                mul r10.xyz, r1.wwww, r1.xyzx
+                add r6.xyz, r6.xyzx, r10.xyzx
+                dp3 r1.w, r6.xyzx, r2.xyzx
+                itof r2.w, l(0)
+                max r1.w, r1.w, r2.w
+                log r1.w, r1.w
+                mul r1.w, r1.w, r12.w
+                exp r1.w, r1.w  // r1.w <- specFactor
                 
                 #line 63
-                mul r1.yzw, r9.xxyz, r12.xxyz
-                mul r1.xyz, r1.xxxx, r1.yzwy
-                mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                mul r6.xyz, r9.xyzx, r12.xyzx
+                mul r6.xyz, r1.wwww, r6.xyzx
+                mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
                 
                 #line 84 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r8.xyz, r8.xyzx  // r8.x <- D.x; r8.y <- D.y; r8.z <- D.z
-                mov r1.xyz, r1.xyzx  // r1.x <- S.x; r1.y <- S.y; r1.z <- S.z
+                mov r6.xyz, r6.xyzx  // r6.x <- S.x; r6.y <- S.y; r6.z <- S.z
                 mov r7.xyz, r7.xyzx  // r7.x <- A.x; r7.y <- A.y; r7.z <- A.z
                 
                 #line 85
-                add r2.xyz, r3.xyzx, r8.xyzx  // r2.x <- diffuse.x; r2.y <- diffuse.y; r2.z <- diffuse.z
+                add r3.xyz, r3.xyzx, r8.xyzx
                 
                 #line 86
-                add r1.xyz, r1.xyzx, r4.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                add r4.xyz, r4.xyzx, r6.xyzx
                 
                 #line 87
-                add r3.xyz, r5.xyzx, r7.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
+                add r5.xyz, r5.xyzx, r7.xyzx
+                
+                #line 89
+                nop 
+                mov r6.xyz, cb0[4].xyzx
+                mov r7.xyz, cb0[5].xyzx
+                mov r8.xyz, cb0[6].xyzx
+                mov r9.xyz, cb0[7].xyzx
+                mov r0.w, cb0[4].w
+                mov r10.xyz, cb0[8].xyzx
+                mov r11.xyz, cb1[16].xyzx
+                mov r12.xyz, cb1[17].xyzx
+                mov r13.xyzw, cb1[18].xyzw
+                mov r14.xyz, v1.xyzx
+                mov r15.xyz, l(1.000000,1.000000,1.000000,0)
+                mov r1.xyz, r1.xyzx
+                mov r2.xyz, r2.xyzx
+                
+                #line 69 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\Lights.fx"
+                mov r16.xyz, l(0,0,0,0)  // r16.x <- diffuse.x; r16.y <- diffuse.y; r16.z <- diffuse.z
+                
+                #line 70
+                mov r17.xyz, l(0,0,0,0)  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
+                
+                #line 71
+                mov r18.xyz, l(0,0,0,0)  // r18.x <- ambient.x; r18.y <- ambient.y; r18.z <- ambient.z
+                
+                #line 73
+                mov r14.xyz, -r14.xyzx
+                add r6.xyz, r6.xyzx, r14.xyzx  // r6.x <- lightDir.x; r6.y <- lightDir.y; r6.z <- lightDir.z
+                
+                #line 74
+                dp3 r1.w, r6.xyzx, r6.xyzx
+                sqrt r14.y, r1.w  // r14.y <- lightLen
+                
+                #line 75
+                lt r0.w, r0.w, r14.y
+                
+                #line 77
+                if_z r0.w
+                  div r6.xyz, r6.xyzx, r14.yyyy
+                
+                #line 78
+                  dp3 r0.w, r6.xyzx, r1.xyzx  // r0.w <- diffuseFactor
+                
+                #line 80
+                  mul r8.xyz, r8.xyzx, r12.xyzx
+                  itof r1.w, l(0)
+                  max r1.w, r0.w, r1.w
+                  mul r8.xyz, r1.wwww, r8.xyzx
+                  mul r8.xyz, r15.xyzx, r8.xyzx  // r8.x <- diffuse.x; r8.y <- diffuse.y; r8.z <- diffuse.z
+                
+                #line 81
+                  mul r18.xyz, r7.xyzx, r11.xyzx
+                
+                #line 83
+                  itof r1.w, l(0)
+                  ge r0.w, r0.w, r1.w
+                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                
+                #line 84
+                  mov r6.xyz, -r6.xyzx
+                  dp3 r1.w, r6.xyzx, r1.xyzx
+                  add r1.w, r1.w, r1.w
+                  mov r1.w, -r1.w
+                  mul r7.xyz, r1.wwww, r1.xyzx
+                  add r6.xyz, r6.xyzx, r7.xyzx
+                  dp3 r1.w, r6.xyzx, r2.xyzx
+                  itof r2.w, l(0)
+                  max r1.w, r1.w, r2.w
+                  log r1.w, r1.w
+                  mul r1.w, r1.w, r13.w
+                  exp r1.w, r1.w  // r1.w <- specFactor
+                
+                #line 85
+                  mul r6.xyz, r9.xyzx, r13.xyzx
+                  mul r6.xyz, r1.wwww, r6.xyzx
+                  mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
+                
+                #line 87
+                  itof r0.w, l(1)
+                  mul r14.z, r14.y, r14.y
+                  itof r14.x, l(1)
+                  dp3 r1.w, r10.xyzx, r14.xyzx
+                  div r0.w, r0.w, r1.w  // r0.w <- attenu
+                
+                #line 88
+                  mul r16.xyz, r0.wwww, r8.xyzx  // r16.x <- diffuse.x; r16.y <- diffuse.y; r16.z <- diffuse.z
+                
+                #line 89
+                  mul r17.xyz, r0.wwww, r6.xyzx  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
+                endif 
+                
+                #line 89 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                mov r16.xyz, r16.xyzx  // r16.x <- D.x; r16.y <- D.y; r16.z <- D.z
+                mov r17.xyz, r17.xyzx  // r17.x <- S.x; r17.y <- S.y; r17.z <- S.z
+                mov r18.xyz, r18.xyzx  // r18.x <- A.x; r18.y <- A.y; r18.z <- A.z
+                
+                #line 90
+                add r3.xyz, r3.xyzx, r16.xyzx
+                
+                #line 91
+                add r4.xyz, r4.xyzx, r17.xyzx
+                
+                #line 92
+                add r5.xyz, r5.xyzx, r18.xyzx
+                
+                #line 94
+                nop 
+                mov r6.xyz, cb0[9].xyzx
+                mov r7.xyz, cb0[10].xyzx
+                mov r8.xyz, cb0[11].xyzx
+                mov r9.xyz, cb0[12].xyzx
+                mov r10.xyz, cb0[13].xyzx
+                mov r11.xyz, cb0[14].xyzx
+                mov r0.w, cb0[9].w
+                mov r1.w, cb0[10].w
+                mov r12.xyz, cb1[16].xyzx
+                mov r13.xyz, cb1[17].xyzx
+                mov r14.xyzw, cb1[18].xyzw
+                mov r15.xyz, v1.xyzx
+                mov r16.xyz, l(1.000000,1.000000,1.000000,0)
+                mov r1.xyz, r1.xyzx
+                mov r2.xyz, r2.xyzx
+                
+                #line 95 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\Lights.fx"
+                mov r17.xyz, l(0,0,0,0)  // r17.x <- diffuse.x; r17.y <- diffuse.y; r17.z <- diffuse.z
+                
+                #line 96
+                mov r18.xyz, l(0,0,0,0)  // r18.x <- specular.x; r18.y <- specular.y; r18.z <- specular.z
+                
+                #line 97
+                mov r19.xyz, l(0,0,0,0)  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
                 
                 #line 99
-                add r2.xyz, r2.xyzx, r3.xyzx
-                mul r0.xyz, r0.xyzx, r2.xyzx
-                add r0.xyz, r1.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
+                mov r15.xyz, -r15.xyzx
+                add r6.xyz, r6.xyzx, r15.xyzx  // r6.x <- lightDir.x; r6.y <- lightDir.y; r6.z <- lightDir.z
+                
+                #line 100
+                dp3 r2.w, r6.xyzx, r6.xyzx
+                sqrt r15.y, r2.w  // r15.y <- lightLen
+                
+                #line 101
+                lt r0.w, r0.w, r15.y
+                
+                #line 103
+                if_z r0.w
+                  div r6.xyz, r6.xyzx, r15.yyyy
+                
+                #line 104
+                  dp3 r0.w, r6.xyzx, r1.xyzx  // r0.w <- diffuseFactor
+                
+                #line 106
+                  mul r9.xyz, r9.xyzx, r13.xyzx
+                  itof r2.w, l(0)
+                  max r2.w, r0.w, r2.w
+                  mul r9.xyz, r2.wwww, r9.xyzx
+                  mul r9.xyz, r16.xyzx, r9.xyzx  // r9.x <- diffuse.x; r9.y <- diffuse.y; r9.z <- diffuse.z
+                
+                #line 107
+                  mul r8.xyz, r8.xyzx, r12.xyzx  // r8.x <- ambient.x; r8.y <- ambient.y; r8.z <- ambient.z
+                
+                #line 109
+                  itof r2.w, l(0)
+                  ge r0.w, r0.w, r2.w
+                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                
+                #line 110
+                  mov r12.xyz, -r6.xyzx
+                  dp3 r2.w, r12.xyzx, r1.xyzx
+                  add r2.w, r2.w, r2.w
+                  mov r2.w, -r2.w
+                  mul r1.xyz, r1.xyzx, r2.wwww
+                  add r1.xyz, r12.xyzx, r1.xyzx
+                  dp3 r1.x, r1.xyzx, r2.xyzx
+                  itof r1.y, l(0)
+                  max r1.x, r1.y, r1.x
+                  log r1.x, r1.x
+                  mul r1.x, r1.x, r14.w
+                  exp r1.x, r1.x  // r1.x <- specFactor
+                
+                #line 111
+                  mul r2.xyz, r10.xyzx, r14.xyzx
+                  mul r1.xyz, r1.xxxx, r2.xyzx
+                  mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                
+                #line 113
+                  mov r2.xyz, -r6.xyzx
+                  dp3 r0.w, r2.xyzx, r7.xyzx
+                  itof r2.x, l(0)
+                  max r0.w, r0.w, r2.x
+                  log r0.w, r0.w
+                  mul r0.w, r0.w, r1.w
+                  exp r0.w, r0.w  // r0.w <- spotFactor
+                
+                #line 114
+                  mul r15.z, r15.y, r15.y
+                  itof r15.x, l(1)
+                  dp3 r1.w, r11.xyzx, r15.xyzx
+                  div r1.w, r0.w, r1.w  // r1.w <- attenu
+                
+                #line 115
+                  mul r17.xyz, r1.wwww, r9.xyzx  // r17.x <- diffuse.x; r17.y <- diffuse.y; r17.z <- diffuse.z
+                
+                #line 116
+                  mul r18.xyz, r1.wwww, r1.xyzx  // r18.x <- specular.x; r18.y <- specular.y; r18.z <- specular.z
+                
+                #line 117
+                  mul r19.xyz, r0.wwww, r8.xyzx  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
+                endif 
+                
+                #line 94 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                mov r17.xyz, r17.xyzx  // r17.x <- D.x; r17.y <- D.y; r17.z <- D.z
+                mov r18.xyz, r18.xyzx  // r18.x <- S.x; r18.y <- S.y; r18.z <- S.z
+                mov r19.xyz, r19.xyzx  // r19.x <- A.x; r19.y <- A.y; r19.z <- A.z
+                
+                #line 95
+                add r1.xyz, r3.xyzx, r17.xyzx  // r1.x <- diffuse.x; r1.y <- diffuse.y; r1.z <- diffuse.z
+                
+                #line 96
+                add r2.xyz, r4.xyzx, r18.xyzx  // r2.x <- specular.x; r2.y <- specular.y; r2.z <- specular.z
+                
+                #line 97
+                add r3.xyz, r5.xyzx, r19.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
+                
+                #line 99
+                add r1.xyz, r1.xyzx, r3.xyzx
+                mul r0.xyz, r0.xyzx, r1.xyzx
+                add r0.xyz, r2.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
                 
                 #line 100
                 mov r0.w, cb1[17].w  // r0.w <- litColor.w
@@ -383,7 +606,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 63 instruction slots used
+                // Approximately 198 instruction slots used
                             
             };
         }
@@ -541,7 +764,7 @@ fxgroup
                 //       float3 attenu;                 // Offset:  128
                 //       float pad;                     // Offset:  140
                 //
-                //   } gPointLight;                     // Offset:   64 Size:    80 [unused]
+                //   } gPointLight;                     // Offset:   64 Size:    80
                 //   
                 //   struct SpotLight
                 //   {
@@ -556,7 +779,7 @@ fxgroup
                 //       float3 attenu;                 // Offset:  224
                 //       float pad;                     // Offset:  236
                 //
-                //   } gSpotLight;                      // Offset:  144 Size:    96 [unused]
+                //   } gSpotLight;                      // Offset:  144 Size:    96
                 //   float3 gCameraPosW;                // Offset:  240 Size:    12
                 //
                 // }
@@ -614,7 +837,7 @@ fxgroup
                 dcl_input_ps linear v1.xyz
                 dcl_input_ps linear v2.xyz
                 dcl_output o0.xyzw
-                dcl_temps 14
+                dcl_temps 20
                 //
                 // Initial variable locations:
                 //   v0.x <- v2p.posH.x; v0.y <- v2p.posH.y; v0.z <- v2p.posH.z; v0.w <- v2p.posH.w; 
@@ -687,38 +910,261 @@ fxgroup
                 dp3 r1.w, r6.xyzx, r1.xyzx
                 add r1.w, r1.w, r1.w
                 mov r1.w, -r1.w
-                mul r1.xyz, r1.wwww, r1.xyzx
-                add r1.xyz, r6.xyzx, r1.xyzx
-                dp3 r1.x, r1.xyzx, r2.xyzx
-                itof r1.y, l(0)
-                max r1.x, r1.y, r1.x
-                log r1.x, r1.x
-                mul r1.x, r1.x, r12.w
-                exp r1.x, r1.x  // r1.x <- specFactor
+                mul r10.xyz, r1.wwww, r1.xyzx
+                add r6.xyz, r6.xyzx, r10.xyzx
+                dp3 r1.w, r6.xyzx, r2.xyzx
+                itof r2.w, l(0)
+                max r1.w, r1.w, r2.w
+                log r1.w, r1.w
+                mul r1.w, r1.w, r12.w
+                exp r1.w, r1.w  // r1.w <- specFactor
                 
                 #line 63
-                mul r1.yzw, r9.xxyz, r12.xxyz
-                mul r1.xyz, r1.xxxx, r1.yzwy
-                mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                mul r6.xyz, r9.xyzx, r12.xyzx
+                mul r6.xyz, r1.wwww, r6.xyzx
+                mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
                 
                 #line 84 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
                 mov r8.xyz, r8.xyzx  // r8.x <- D.x; r8.y <- D.y; r8.z <- D.z
-                mov r1.xyz, r1.xyzx  // r1.x <- S.x; r1.y <- S.y; r1.z <- S.z
+                mov r6.xyz, r6.xyzx  // r6.x <- S.x; r6.y <- S.y; r6.z <- S.z
                 mov r7.xyz, r7.xyzx  // r7.x <- A.x; r7.y <- A.y; r7.z <- A.z
                 
                 #line 85
-                add r2.xyz, r3.xyzx, r8.xyzx  // r2.x <- diffuse.x; r2.y <- diffuse.y; r2.z <- diffuse.z
+                add r3.xyz, r3.xyzx, r8.xyzx
                 
                 #line 86
-                add r1.xyz, r1.xyzx, r4.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                add r4.xyz, r4.xyzx, r6.xyzx
                 
                 #line 87
-                add r3.xyz, r5.xyzx, r7.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
+                add r5.xyz, r5.xyzx, r7.xyzx
+                
+                #line 89
+                nop 
+                mov r6.xyz, cb0[4].xyzx
+                mov r7.xyz, cb0[5].xyzx
+                mov r8.xyz, cb0[6].xyzx
+                mov r9.xyz, cb0[7].xyzx
+                mov r0.w, cb0[4].w
+                mov r10.xyz, cb0[8].xyzx
+                mov r11.xyz, cb1[16].xyzx
+                mov r12.xyz, cb1[17].xyzx
+                mov r13.xyzw, cb1[18].xyzw
+                mov r14.xyz, v1.xyzx
+                mov r15.xyz, l(1.000000,1.000000,1.000000,0)
+                mov r1.xyz, r1.xyzx
+                mov r2.xyz, r2.xyzx
+                
+                #line 69 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\Lights.fx"
+                mov r16.xyz, l(0,0,0,0)  // r16.x <- diffuse.x; r16.y <- diffuse.y; r16.z <- diffuse.z
+                
+                #line 70
+                mov r17.xyz, l(0,0,0,0)  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
+                
+                #line 71
+                mov r18.xyz, l(0,0,0,0)  // r18.x <- ambient.x; r18.y <- ambient.y; r18.z <- ambient.z
+                
+                #line 73
+                mov r14.xyz, -r14.xyzx
+                add r6.xyz, r6.xyzx, r14.xyzx  // r6.x <- lightDir.x; r6.y <- lightDir.y; r6.z <- lightDir.z
+                
+                #line 74
+                dp3 r1.w, r6.xyzx, r6.xyzx
+                sqrt r14.y, r1.w  // r14.y <- lightLen
+                
+                #line 75
+                lt r0.w, r0.w, r14.y
+                
+                #line 77
+                if_z r0.w
+                  div r6.xyz, r6.xyzx, r14.yyyy
+                
+                #line 78
+                  dp3 r0.w, r6.xyzx, r1.xyzx  // r0.w <- diffuseFactor
+                
+                #line 80
+                  mul r8.xyz, r8.xyzx, r12.xyzx
+                  itof r1.w, l(0)
+                  max r1.w, r0.w, r1.w
+                  mul r8.xyz, r1.wwww, r8.xyzx
+                  mul r8.xyz, r15.xyzx, r8.xyzx  // r8.x <- diffuse.x; r8.y <- diffuse.y; r8.z <- diffuse.z
+                
+                #line 81
+                  mul r18.xyz, r7.xyzx, r11.xyzx
+                
+                #line 83
+                  itof r1.w, l(0)
+                  ge r0.w, r0.w, r1.w
+                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                
+                #line 84
+                  mov r6.xyz, -r6.xyzx
+                  dp3 r1.w, r6.xyzx, r1.xyzx
+                  add r1.w, r1.w, r1.w
+                  mov r1.w, -r1.w
+                  mul r7.xyz, r1.wwww, r1.xyzx
+                  add r6.xyz, r6.xyzx, r7.xyzx
+                  dp3 r1.w, r6.xyzx, r2.xyzx
+                  itof r2.w, l(0)
+                  max r1.w, r1.w, r2.w
+                  log r1.w, r1.w
+                  mul r1.w, r1.w, r13.w
+                  exp r1.w, r1.w  // r1.w <- specFactor
+                
+                #line 85
+                  mul r6.xyz, r9.xyzx, r13.xyzx
+                  mul r6.xyz, r1.wwww, r6.xyzx
+                  mul r6.xyz, r0.wwww, r6.xyzx  // r6.x <- specular.x; r6.y <- specular.y; r6.z <- specular.z
+                
+                #line 87
+                  itof r0.w, l(1)
+                  mul r14.z, r14.y, r14.y
+                  itof r14.x, l(1)
+                  dp3 r1.w, r10.xyzx, r14.xyzx
+                  div r0.w, r0.w, r1.w  // r0.w <- attenu
+                
+                #line 88
+                  mul r16.xyz, r0.wwww, r8.xyzx  // r16.x <- diffuse.x; r16.y <- diffuse.y; r16.z <- diffuse.z
+                
+                #line 89
+                  mul r17.xyz, r0.wwww, r6.xyzx  // r17.x <- specular.x; r17.y <- specular.y; r17.z <- specular.z
+                endif 
+                
+                #line 89 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                mov r16.xyz, r16.xyzx  // r16.x <- D.x; r16.y <- D.y; r16.z <- D.z
+                mov r17.xyz, r17.xyzx  // r17.x <- S.x; r17.y <- S.y; r17.z <- S.z
+                mov r18.xyz, r18.xyzx  // r18.x <- A.x; r18.y <- A.y; r18.z <- A.z
+                
+                #line 90
+                add r3.xyz, r3.xyzx, r16.xyzx
+                
+                #line 91
+                add r4.xyz, r4.xyzx, r17.xyzx
+                
+                #line 92
+                add r5.xyz, r5.xyzx, r18.xyzx
+                
+                #line 94
+                nop 
+                mov r6.xyz, cb0[9].xyzx
+                mov r7.xyz, cb0[10].xyzx
+                mov r8.xyz, cb0[11].xyzx
+                mov r9.xyz, cb0[12].xyzx
+                mov r10.xyz, cb0[13].xyzx
+                mov r11.xyz, cb0[14].xyzx
+                mov r0.w, cb0[9].w
+                mov r1.w, cb0[10].w
+                mov r12.xyz, cb1[16].xyzx
+                mov r13.xyz, cb1[17].xyzx
+                mov r14.xyzw, cb1[18].xyzw
+                mov r15.xyz, v1.xyzx
+                mov r16.xyz, l(1.000000,1.000000,1.000000,0)
+                mov r1.xyz, r1.xyzx
+                mov r2.xyz, r2.xyzx
+                
+                #line 95 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\Lights.fx"
+                mov r17.xyz, l(0,0,0,0)  // r17.x <- diffuse.x; r17.y <- diffuse.y; r17.z <- diffuse.z
+                
+                #line 96
+                mov r18.xyz, l(0,0,0,0)  // r18.x <- specular.x; r18.y <- specular.y; r18.z <- specular.z
+                
+                #line 97
+                mov r19.xyz, l(0,0,0,0)  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
                 
                 #line 99
-                add r2.xyz, r2.xyzx, r3.xyzx
-                mul r0.xyz, r0.xyzx, r2.xyzx
-                add r0.xyz, r1.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
+                mov r15.xyz, -r15.xyzx
+                add r6.xyz, r6.xyzx, r15.xyzx  // r6.x <- lightDir.x; r6.y <- lightDir.y; r6.z <- lightDir.z
+                
+                #line 100
+                dp3 r2.w, r6.xyzx, r6.xyzx
+                sqrt r15.y, r2.w  // r15.y <- lightLen
+                
+                #line 101
+                lt r0.w, r0.w, r15.y
+                
+                #line 103
+                if_z r0.w
+                  div r6.xyz, r6.xyzx, r15.yyyy
+                
+                #line 104
+                  dp3 r0.w, r6.xyzx, r1.xyzx  // r0.w <- diffuseFactor
+                
+                #line 106
+                  mul r9.xyz, r9.xyzx, r13.xyzx
+                  itof r2.w, l(0)
+                  max r2.w, r0.w, r2.w
+                  mul r9.xyz, r2.wwww, r9.xyzx
+                  mul r9.xyz, r16.xyzx, r9.xyzx  // r9.x <- diffuse.x; r9.y <- diffuse.y; r9.z <- diffuse.z
+                
+                #line 107
+                  mul r8.xyz, r8.xyzx, r12.xyzx  // r8.x <- ambient.x; r8.y <- ambient.y; r8.z <- ambient.z
+                
+                #line 109
+                  itof r2.w, l(0)
+                  ge r0.w, r0.w, r2.w
+                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                
+                #line 110
+                  mov r12.xyz, -r6.xyzx
+                  dp3 r2.w, r12.xyzx, r1.xyzx
+                  add r2.w, r2.w, r2.w
+                  mov r2.w, -r2.w
+                  mul r1.xyz, r1.xyzx, r2.wwww
+                  add r1.xyz, r12.xyzx, r1.xyzx
+                  dp3 r1.x, r1.xyzx, r2.xyzx
+                  itof r1.y, l(0)
+                  max r1.x, r1.y, r1.x
+                  log r1.x, r1.x
+                  mul r1.x, r1.x, r14.w
+                  exp r1.x, r1.x  // r1.x <- specFactor
+                
+                #line 111
+                  mul r2.xyz, r10.xyzx, r14.xyzx
+                  mul r1.xyz, r1.xxxx, r2.xyzx
+                  mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- specular.x; r1.y <- specular.y; r1.z <- specular.z
+                
+                #line 113
+                  mov r2.xyz, -r6.xyzx
+                  dp3 r0.w, r2.xyzx, r7.xyzx
+                  itof r2.x, l(0)
+                  max r0.w, r0.w, r2.x
+                  log r0.w, r0.w
+                  mul r0.w, r0.w, r1.w
+                  exp r0.w, r0.w  // r0.w <- spotFactor
+                
+                #line 114
+                  mul r15.z, r15.y, r15.y
+                  itof r15.x, l(1)
+                  dp3 r1.w, r11.xyzx, r15.xyzx
+                  div r1.w, r0.w, r1.w  // r1.w <- attenu
+                
+                #line 115
+                  mul r17.xyz, r1.wwww, r9.xyzx  // r17.x <- diffuse.x; r17.y <- diffuse.y; r17.z <- diffuse.z
+                
+                #line 116
+                  mul r18.xyz, r1.wwww, r1.xyzx  // r18.x <- specular.x; r18.y <- specular.y; r18.z <- specular.z
+                
+                #line 117
+                  mul r19.xyz, r0.wwww, r8.xyzx  // r19.x <- ambient.x; r19.y <- ambient.y; r19.z <- ambient.z
+                endif 
+                
+                #line 94 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\LitShader.fx"
+                mov r17.xyz, r17.xyzx  // r17.x <- D.x; r17.y <- D.y; r17.z <- D.z
+                mov r18.xyz, r18.xyzx  // r18.x <- S.x; r18.y <- S.y; r18.z <- S.z
+                mov r19.xyz, r19.xyzx  // r19.x <- A.x; r19.y <- A.y; r19.z <- A.z
+                
+                #line 95
+                add r1.xyz, r3.xyzx, r17.xyzx  // r1.x <- diffuse.x; r1.y <- diffuse.y; r1.z <- diffuse.z
+                
+                #line 96
+                add r2.xyz, r4.xyzx, r18.xyzx  // r2.x <- specular.x; r2.y <- specular.y; r2.z <- specular.z
+                
+                #line 97
+                add r3.xyz, r5.xyzx, r19.xyzx  // r3.x <- ambient.x; r3.y <- ambient.y; r3.z <- ambient.z
+                
+                #line 99
+                add r1.xyz, r1.xyzx, r3.xyzx
+                mul r0.xyz, r0.xyzx, r1.xyzx
+                add r0.xyz, r2.xyzx, r0.xyzx  // r0.x <- litColor.x; r0.y <- litColor.y; r0.z <- litColor.z
                 
                 #line 100
                 mov r0.w, cb1[17].w  // r0.w <- litColor.w
@@ -727,7 +1173,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 62 instruction slots used
+                // Approximately 197 instruction slots used
                             
             };
         }
