@@ -31,9 +31,8 @@ private:
 
 	bool isMove;
 	POINT lastMousePos;
+	float rotSpeed;
 	float moveSpeed;
-	float radius;
-	float zoomSpeed;
 
 protected:
 

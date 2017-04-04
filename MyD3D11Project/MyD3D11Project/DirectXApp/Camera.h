@@ -13,6 +13,10 @@ public:
 	DirectX::XMMATRIX getViewMatrix() const;
 	DirectX::XMMATRIX getProjectMatrix() const;
 
+	void UpdatePosition( float raduis );
+	void UpdatePosition2( float speed );
+	void UpdateRotation( float deltaX , float deltaY );
+
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
 
@@ -22,6 +26,7 @@ private:
 	float nearPlane;
 	float farPlane;
 
+	DirectX::XMFLOAT4X4 rotationMat;
 	DirectX::XMFLOAT4X4 world2View;
 	DirectX::XMFLOAT4X4 view2Proj;
 };

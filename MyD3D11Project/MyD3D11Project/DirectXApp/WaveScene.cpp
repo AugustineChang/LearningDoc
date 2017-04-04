@@ -7,8 +7,7 @@ using namespace DirectX;
 
 
 WaveScene::WaveScene( HINSTANCE hinstance , int show )
-	:DirectXApp( hinstance , show ) , moveSpeed( 0.1f ) , 
-	radius( 5.0f ) , zoomSpeed( 0.005f )
+	:DirectXApp( hinstance , show ) , moveSpeed( 0.08f ) , rotSpeed( 0.1f )
 {
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
@@ -38,8 +37,7 @@ bool WaveScene::InitDirectApp()
 	if ( !DirectXApp::InitDirectApp() ) return false;
 	
 	createObjects();
-
-	camera.Position.z = -radius;
+	
 	camera.buildProjectMatrix( screenWidth , screenHeight );
 	return true;
 }
@@ -113,16 +111,11 @@ void WaveScene::OnMouseMove( WPARAM btnState , int x , int y )
 {
 	if ( ( btnState & MK_RBUTTON ) != 0 )
 	{
-		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*moveSpeed );
-		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*moveSpeed );
+		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*rotSpeed );
+		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*rotSpeed );
 		
-		camera.Rotation.y += deltaX;
-		camera.Rotation.x = SimpleMath::Clamp<float>( camera.Rotation.x + deltaY , -SimpleMath::PI / 2 + 0.01f , SimpleMath::PI / 2 - 0.01f );
-
-		camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.y = radius * sinf( camera.Rotation.x );
-
+		camera.UpdateRotation( deltaX , deltaY );
+		
 		lastMousePos.x = x;
 		lastMousePos.y = y;
 	}
@@ -135,11 +128,7 @@ void WaveScene::OnMouseUp( WPARAM btnState , int x , int y )
 
 void WaveScene::OnMouseWheel( int zDelta )
 {
-	radius -= zDelta * zoomSpeed;
-
-	camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
-	camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
-	camera.Position.y = radius * sinf( camera.Rotation.x );
+	camera.UpdatePosition2( zDelta * moveSpeed );
 }
 
 template<typename T>

@@ -343,9 +343,17 @@ fxgroup
                 mul r7.xyz, r7.xyzx, r10.xyzx  // r7.x <- ambient.x; r7.y <- ambient.y; r7.z <- ambient.z
                 
                 #line 61
-                itof r1.w, l(0)
-                ge r0.w, r0.w, r1.w
-                movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                mov r1.w, l(0.100000)
+                add r2.w, r1.w, l(0.100000)
+                add r0.w, r0.w, r1.w
+                div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                mul r0.w, r0.w, r1.w
+                max r0.w, r0.w, l(0.000000)
+                min r0.w, r0.w, l(1.000000)
+                mul r1.w, r0.w, l(-2.000000)
+                add r1.w, r1.w, l(3.000000)
+                mul r0.w, r0.w, r0.w
+                mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 62
                 mov r6.xyz, -r6.xyzx
@@ -434,9 +442,17 @@ fxgroup
                   mul r18.xyz, r7.xyzx, r11.xyzx
                 
                 #line 83
-                  itof r1.w, l(0)
-                  ge r0.w, r0.w, r1.w
-                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                  mov r1.w, l(0.100000)
+                  add r2.w, r1.w, l(0.100000)
+                  add r0.w, r0.w, r1.w
+                  div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                  mul r0.w, r0.w, r1.w
+                  max r0.w, r0.w, l(0.000000)
+                  min r0.w, r0.w, l(1.000000)
+                  mul r1.w, r0.w, l(-2.000000)
+                  add r1.w, r1.w, l(3.000000)
+                  mul r0.w, r0.w, r0.w
+                  mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 84
                   mov r6.xyz, -r6.xyzx
@@ -541,9 +557,17 @@ fxgroup
                   mul r8.xyz, r8.xyzx, r12.xyzx  // r8.x <- ambient.x; r8.y <- ambient.y; r8.z <- ambient.z
                 
                 #line 109
-                  itof r2.w, l(0)
-                  ge r0.w, r0.w, r2.w
-                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                  mov r2.w, l(0.100000)
+                  add r3.w, r2.w, l(0.100000)
+                  add r0.w, r0.w, r2.w
+                  div r2.w, l(1.000000, 1.000000, 1.000000, 1.000000), r3.w
+                  mul r0.w, r0.w, r2.w
+                  max r0.w, r0.w, l(0.000000)
+                  min r0.w, r0.w, l(1.000000)
+                  mul r2.w, r0.w, l(-2.000000)
+                  add r2.w, r2.w, l(3.000000)
+                  mul r0.w, r0.w, r0.w
+                  mul r0.w, r0.w, r2.w  // r0.w <- hasSpec
                 
                 #line 110
                   mov r12.xyz, -r6.xyzx
@@ -615,7 +639,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 198 instruction slots used
+                // Approximately 222 instruction slots used
                             
             };
         }
@@ -923,9 +947,17 @@ fxgroup
                 mul r7.xyz, r7.xyzx, r10.xyzx  // r7.x <- ambient.x; r7.y <- ambient.y; r7.z <- ambient.z
                 
                 #line 61
-                itof r2.w, l(0)
-                ge r1.w, r1.w, r2.w
-                movc r1.w, r1.w, l(1.000000), l(0)  // r1.w <- hasSpec
+                mov r2.w, l(0.100000)
+                add r3.w, r2.w, l(0.100000)
+                add r1.w, r1.w, r2.w
+                div r2.w, l(1.000000, 1.000000, 1.000000, 1.000000), r3.w
+                mul r1.w, r1.w, r2.w
+                max r1.w, r1.w, l(0.000000)
+                min r1.w, r1.w, l(1.000000)
+                mul r2.w, r1.w, l(-2.000000)
+                add r2.w, r2.w, l(3.000000)
+                mul r1.w, r1.w, r1.w
+                mul r1.w, r1.w, r2.w  // r1.w <- hasSpec
                 
                 #line 62
                 mov r6.xyz, -r6.xyzx
@@ -1014,9 +1046,17 @@ fxgroup
                   mul r18.xyz, r7.xyzx, r11.xyzx
                 
                 #line 83
-                  itof r2.w, l(0)
-                  ge r1.w, r1.w, r2.w
-                  movc r1.w, r1.w, l(1.000000), l(0)  // r1.w <- hasSpec
+                  mov r2.w, l(0.100000)
+                  add r3.w, r2.w, l(0.100000)
+                  add r1.w, r1.w, r2.w
+                  div r2.w, l(1.000000, 1.000000, 1.000000, 1.000000), r3.w
+                  mul r1.w, r1.w, r2.w
+                  max r1.w, r1.w, l(0.000000)
+                  min r1.w, r1.w, l(1.000000)
+                  mul r2.w, r1.w, l(-2.000000)
+                  add r2.w, r2.w, l(3.000000)
+                  mul r1.w, r1.w, r1.w
+                  mul r1.w, r1.w, r2.w  // r1.w <- hasSpec
                 
                 #line 84
                   mov r6.xyz, -r6.xyzx
@@ -1121,9 +1161,17 @@ fxgroup
                   mul r8.xyz, r8.xyzx, r12.xyzx  // r8.x <- ambient.x; r8.y <- ambient.y; r8.z <- ambient.z
                 
                 #line 109
-                  itof r3.w, l(0)
-                  ge r1.w, r1.w, r3.w
-                  movc r1.w, r1.w, l(1.000000), l(0)  // r1.w <- hasSpec
+                  mov r3.w, l(0.100000)
+                  add r4.w, r3.w, l(0.100000)
+                  add r1.w, r1.w, r3.w
+                  div r3.w, l(1.000000, 1.000000, 1.000000, 1.000000), r4.w
+                  mul r1.w, r1.w, r3.w
+                  max r1.w, r1.w, l(0.000000)
+                  min r1.w, r1.w, l(1.000000)
+                  mul r3.w, r1.w, l(-2.000000)
+                  add r3.w, r3.w, l(3.000000)
+                  mul r1.w, r1.w, r1.w
+                  mul r1.w, r1.w, r3.w  // r1.w <- hasSpec
                 
                 #line 110
                   mov r12.xyz, -r6.xyzx
@@ -1209,7 +1257,7 @@ fxgroup
                 #line 119
                 mov o0.xyzw, r0.xyzw
                 ret 
-                // Approximately 206 instruction slots used
+                // Approximately 230 instruction slots used
                             
             };
         }
@@ -1511,9 +1559,17 @@ fxgroup
                 mul r7.xyz, r7.xyzx, r10.xyzx  // r7.x <- ambient.x; r7.y <- ambient.y; r7.z <- ambient.z
                 
                 #line 61
-                itof r1.w, l(0)
-                ge r0.w, r0.w, r1.w
-                movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                mov r1.w, l(0.100000)
+                add r2.w, r1.w, l(0.100000)
+                add r0.w, r0.w, r1.w
+                div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                mul r0.w, r0.w, r1.w
+                max r0.w, r0.w, l(0.000000)
+                min r0.w, r0.w, l(1.000000)
+                mul r1.w, r0.w, l(-2.000000)
+                add r1.w, r1.w, l(3.000000)
+                mul r0.w, r0.w, r0.w
+                mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 62
                 mov r6.xyz, -r6.xyzx
@@ -1602,9 +1658,17 @@ fxgroup
                   mul r18.xyz, r7.xyzx, r11.xyzx
                 
                 #line 83
-                  itof r1.w, l(0)
-                  ge r0.w, r0.w, r1.w
-                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                  mov r1.w, l(0.100000)
+                  add r2.w, r1.w, l(0.100000)
+                  add r0.w, r0.w, r1.w
+                  div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                  mul r0.w, r0.w, r1.w
+                  max r0.w, r0.w, l(0.000000)
+                  min r0.w, r0.w, l(1.000000)
+                  mul r1.w, r0.w, l(-2.000000)
+                  add r1.w, r1.w, l(3.000000)
+                  mul r0.w, r0.w, r0.w
+                  mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 84
                   mov r6.xyz, -r6.xyzx
@@ -1709,9 +1773,17 @@ fxgroup
                   mul r8.xyz, r8.xyzx, r12.xyzx  // r8.x <- ambient.x; r8.y <- ambient.y; r8.z <- ambient.z
                 
                 #line 109
-                  itof r2.w, l(0)
-                  ge r0.w, r0.w, r2.w
-                  movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                  mov r2.w, l(0.100000)
+                  add r3.w, r2.w, l(0.100000)
+                  add r0.w, r0.w, r2.w
+                  div r2.w, l(1.000000, 1.000000, 1.000000, 1.000000), r3.w
+                  mul r0.w, r0.w, r2.w
+                  max r0.w, r0.w, l(0.000000)
+                  min r0.w, r0.w, l(1.000000)
+                  mul r2.w, r0.w, l(-2.000000)
+                  add r2.w, r2.w, l(3.000000)
+                  mul r0.w, r0.w, r0.w
+                  mul r0.w, r0.w, r2.w  // r0.w <- hasSpec
                 
                 #line 110
                   mov r12.xyz, -r6.xyzx
@@ -1783,7 +1855,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 197 instruction slots used
+                // Approximately 221 instruction slots used
                             
             };
         }

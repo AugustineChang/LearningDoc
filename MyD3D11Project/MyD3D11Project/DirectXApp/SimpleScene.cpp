@@ -125,12 +125,8 @@ void SimpleScene::OnMouseMove( WPARAM btnState , int x , int y )
 		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*moveSpeed );
 		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*moveSpeed );
 		
-		camera.Rotation.y += deltaX;
-		camera.Rotation.x = SimpleMath::Clamp<float>( camera.Rotation.x + deltaY , -SimpleMath::PI / 2 + 0.01f , SimpleMath::PI / 2 - 0.01f );
-
-		camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
-		camera.Position.y = radius * sinf( camera.Rotation.x );
+		camera.UpdateRotation( deltaX , deltaY );
+		camera.UpdatePosition( radius );
 
 		lastMousePos.x = x;
 		lastMousePos.y = y;
@@ -145,10 +141,7 @@ void SimpleScene::OnMouseUp( WPARAM btnState , int x , int y )
 void SimpleScene::OnMouseWheel( int zDelta )
 {
 	radius -= zDelta * zoomSpeed;
-
-	camera.Position.x = radius * cosf( camera.Rotation.x ) * cosf( -camera.Rotation.y - SimpleMath::PI / 2 );
-	camera.Position.z = radius * cosf( camera.Rotation.x ) * sinf( -camera.Rotation.y - SimpleMath::PI / 2 );
-	camera.Position.y = radius * sinf( camera.Rotation.x );
+	camera.UpdatePosition( radius );
 }
 
 template<typename T>

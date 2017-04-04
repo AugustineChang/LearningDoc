@@ -58,7 +58,7 @@ void ComputeDirectionalLight( DirectionalLight light , Material mat , float4 col
 	diffuse = light.diffuseColor * mat.diffuse * max( diffuseFactor , 0 ) * color;
 	ambient = light.ambientColor * mat.ambient;
 	
-	float hasSpec = step( 0 , diffuseFactor );
+	float hasSpec = smoothstep( -0.1f , 0.1f , diffuseFactor );
 	float specFactor = pow( max( dot( reflect( -lightDir , normal ) , view ) , 0 ) , mat.specular.w );
 	specular = light.specularColor * mat.specular * specFactor * hasSpec;
 }
@@ -80,7 +80,7 @@ void ComputePointLight( PointLight light , Material mat , float3 pos , float4 co
 	diffuse = light.diffuseColor * mat.diffuse * max( diffuseFactor , 0 ) * color;
 	ambient = light.ambientColor * mat.ambient;
 
-	float hasSpec = step( 0 , diffuseFactor );
+	float hasSpec = smoothstep( -0.1f , 0.1f , diffuseFactor );
 	float specFactor = pow( max( dot( reflect( -lightDir , normal ) , view ) , 0 ) , mat.specular.w );
 	specular = light.specularColor * mat.specular * specFactor * hasSpec;
 
@@ -106,7 +106,7 @@ void ComputeSpotLight( SpotLight light , Material mat , float3 pos , float4 colo
 	diffuse = light.diffuseColor * mat.diffuse * max( diffuseFactor , 0 ) * color;
 	ambient = light.ambientColor * mat.ambient;
 
-	float hasSpec = step( 0 , diffuseFactor );
+	float hasSpec = smoothstep( -0.1f , 0.1f , diffuseFactor );
 	float specFactor = pow( max( dot( reflect( -lightDir , normal ) , view ) , 0 ) , mat.specular.w );
 	specular = light.specularColor * mat.specular * specFactor * hasSpec;
 
