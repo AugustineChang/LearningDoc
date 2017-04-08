@@ -96,3 +96,10 @@ void BlendFlame::createObjectTexture( ID3D11Device *device )
 	texture = textures[curTexture];
 	textureView = textureViews[curTexture];
 }
+
+void BlendFlame::UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum )
+{
+	if ( lightNum < 0 )return;
+
+	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
+}

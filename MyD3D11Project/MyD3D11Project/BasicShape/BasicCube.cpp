@@ -1,5 +1,6 @@
 #include "BasicCube.h"
 #include "../Utilities/CommonHeader.h"
+#include "../DirectXApp/Lights.h"
 #include "DDSTextureLoader.h"
 #include "WICTextureLoader.h"
 #include <sstream>
@@ -77,6 +78,13 @@ void BasicCube::createObjectMesh()
 	};
 
 	computeNormal();
+}
+
+void BasicCube::UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum )
+{
+	if ( lightNum < 0 )return;
+	
+	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
 }
 
 void BasicCube::createRenderState( ID3D11Device *device )

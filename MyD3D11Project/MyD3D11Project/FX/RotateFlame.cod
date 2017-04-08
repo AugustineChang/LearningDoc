@@ -304,9 +304,17 @@ fxgroup
                 mul r4.xyz, r4.xyzx, r7.xyzx  // r4.x <- ambient.x; r4.y <- ambient.y; r4.z <- ambient.z
                 
                 #line 61
-                itof r1.w, l(0)
-                ge r0.w, r0.w, r1.w
-                movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                mov r1.w, l(0.100000)
+                add r2.w, r1.w, l(0.100000)
+                add r0.w, r0.w, r1.w
+                div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                mul r0.w, r0.w, r1.w
+                max r0.w, r0.w, l(0.000000)
+                min r0.w, r0.w, l(1.000000)
+                mul r1.w, r0.w, l(-2.000000)
+                add r1.w, r1.w, l(3.000000)
+                mul r0.w, r0.w, r0.w
+                mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 62
                 mov r3.xyz, -r3.xyzx
@@ -344,7 +352,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 60 instruction slots used
+                // Approximately 68 instruction slots used
                             
             };
         }
@@ -602,9 +610,17 @@ fxgroup
                 mul r4.xyz, r4.xyzx, r7.xyzx  // r4.x <- ambient.x; r4.y <- ambient.y; r4.z <- ambient.z
                 
                 #line 61
-                itof r1.w, l(0)
-                ge r0.w, r0.w, r1.w
-                movc r0.w, r0.w, l(1.000000), l(0)  // r0.w <- hasSpec
+                mov r1.w, l(0.100000)
+                add r2.w, r1.w, l(0.100000)
+                add r0.w, r0.w, r1.w
+                div r1.w, l(1.000000, 1.000000, 1.000000, 1.000000), r2.w
+                mul r0.w, r0.w, r1.w
+                max r0.w, r0.w, l(0.000000)
+                min r0.w, r0.w, l(1.000000)
+                mul r1.w, r0.w, l(-2.000000)
+                add r1.w, r1.w, l(3.000000)
+                mul r0.w, r0.w, r0.w
+                mul r0.w, r0.w, r1.w  // r0.w <- hasSpec
                 
                 #line 62
                 mov r3.xyz, -r3.xyzx
@@ -642,7 +658,7 @@ fxgroup
                 mov o0.xyz, r0.xyzx
                 mov o0.w, r0.w
                 ret 
-                // Approximately 56 instruction slots used
+                // Approximately 64 instruction slots used
                             
             };
         }

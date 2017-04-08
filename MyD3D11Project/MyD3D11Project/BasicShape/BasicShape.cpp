@@ -70,7 +70,7 @@ void BasicShape::InitShape( struct ID3D11Device *device )
 	createRenderState( device );
 }
 
-void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight )
+void BasicShape::UpdateObjectEffect( const Camera *camera )
 {
 	buildWorldMatrix();
 
@@ -90,8 +90,6 @@ void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLig
 
 	efMaterial->SetRawValue( &material , 0 , sizeof( CustomMaterial ) );
 	efTexture->SetResource( textureView );
-
-	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
 	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
 
 	if ( isEnableFog )
@@ -100,6 +98,30 @@ void BasicShape::UpdateObjectEffect( const Camera *camera , const DirectionalLig
 		efFogDistance->SetFloat( fogDistance );
 		efFogColor->SetRawValue( &fogColor , 0 , sizeof( XMFLOAT4 ) );
 	}
+}
+
+void BasicShape::UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum )
+{
+	if ( lightNum < 0 || lightNum > 3 ) return;
+
+	efDirLight->SetRawValue( dirLight , 0 , lightNum * sizeof( DirectionalLight ) );
+	efDirLightNum->SetInt( lightNum );
+}
+
+void BasicShape::UpdatePointLight( const PointLight *pointLight , int lightNum )
+{
+	if ( lightNum < 0 || lightNum > 3 ) return;
+
+	efPointLight->SetRawValue( pointLight , 0 , lightNum * sizeof( PointLight ) );
+	efPointLightNum->SetInt( lightNum );
+}
+
+void BasicShape::UpdateSpotLight( const SpotLight *spotLight , int lightNum )
+{
+	if ( lightNum < 0 || lightNum > 3 ) return;
+
+	efSpotLight->SetRawValue( spotLight , 0 , lightNum * sizeof( SpotLight ) );
+	efSpotLightNum->SetInt( lightNum );
 }
 
 void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
@@ -144,6 +166,12 @@ void BasicShape::createEffect( ID3D11Device *device )
 	efTexture = effect.getEffect()->GetVariableByName( "diffuseTex" )->AsShaderResource();
 	
 	efDirLight = effect.getEffect()->GetVariableByName( "gDirectLight" );
+	efPointLight = effect.getEffect()->GetVariableByName( "gPointLight" );
+	efSpotLight = effect.getEffect()->GetVariableByName( "gSpotLight" );
+	efDirLightNum = effect.getEffect()->GetVariableByName( "gDirLightNum" )->AsScalar();
+	efPointLightNum = effect.getEffect()->GetVariableByName( "gPointLightNum" )->AsScalar();
+	efSpotLightNum = effect.getEffect()->GetVariableByName( "gSpotLightNum" )->AsScalar();
+
 	efCameraPos = effect.getEffect()->GetVariableByName( "gCameraPosW" )->AsVector();
 
 	if ( isEnableFog )

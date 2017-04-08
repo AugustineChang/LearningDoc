@@ -72,9 +72,12 @@ void WaveScene::DrawScene()
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	camera.buildViewMatrix();
-	terrain->UpdateObjectEffect( &camera , &dirLight );
-	wave->UpdateObjectEffect( &camera , &dirLight );
-	box->UpdateObjectEffect( &camera , &dirLight );
+	terrain->UpdateDirectionalLight( &dirLight , 1 );
+	terrain->UpdateObjectEffect( &camera );
+	wave->UpdateDirectionalLight( &dirLight , 1 );
+	wave->UpdateObjectEffect( &camera );
+	box->UpdateDirectionalLight( &dirLight , 1 );
+	box->UpdateObjectEffect( &camera );
 
 	//terrain
 	UINT stride = sizeof( CustomVertex );

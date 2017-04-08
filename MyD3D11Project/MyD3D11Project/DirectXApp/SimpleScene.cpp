@@ -44,6 +44,11 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	//SimpleMesh *mesh = new SimpleMesh();
 	//mesh->Position.y = 1.5f;
 	//renderList.push_back( mesh );
+
+	DirectX::XMVECTOR dir = DirectX::XMVectorSet( -1.0f , 1.0f , 0.5f , 0.0f );
+	DirectX::XMStoreFloat3( &dirLight[1].direction , DirectX::XMVector3Normalize( dir ) );
+
+	dirLight[1].diffuseColor = DirectX::XMFLOAT4( 0.0f , 0.8f , 0.8f , 1.0f );
 }
 
 
@@ -96,7 +101,8 @@ void SimpleScene::DrawScene()
 	camera.buildViewMatrix();
 	for ( BasicShape *shape : renderList )
 	{
-		shape->UpdateObjectEffect( &camera , &dirLight );
+		shape->UpdateDirectionalLight( &dirLight[0] , 2 );
+		shape->UpdateObjectEffect( &camera );
 		shape->RenderObject( immediateContext );
 	}
 

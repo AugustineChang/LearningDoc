@@ -58,7 +58,7 @@ void RotateFlame::createObjectTexture( ID3D11Device *device )
 	CreateDDSTextureFromFile( device , L"Textures/flarealpha.dds" , &alphaTexture , &alphaTextureView );
 }
 
-void RotateFlame::UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight )
+void RotateFlame::UpdateObjectEffect( const Camera *camera )
 {
 	buildWorldMatrix();
 
@@ -78,7 +78,13 @@ void RotateFlame::UpdateObjectEffect( const Camera *camera , const DirectionalLi
 	efMaterial->SetRawValue( &material , 0 , sizeof( CustomMaterial ) );
 	efTexture->SetResource( textureView );
 	efAlphaTexture->SetResource( alphaTextureView );
+	
+	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
+}
+
+void RotateFlame::UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum )
+{
+	if ( lightNum < 0 )return;
 
 	efDirLight->SetRawValue( dirLight , 0 , sizeof( DirectionalLight ) );
-	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
 }

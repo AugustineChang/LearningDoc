@@ -2,9 +2,13 @@
 
 cbuffer cbPerFrame
 {
-	DirectionalLight gDirectLight;
-	PointLight gPointLight;
-	SpotLight gSpotLight;
+	DirectionalLight gDirectLight[3];
+	PointLight gPointLight[3];
+	SpotLight gSpotLight[3];
+	float gDirLightNum;
+	float gPointLightNum;
+	float gSpotLightNum;
+
 	float3 gCameraPosW;
 
 	float gFogStart;
@@ -63,6 +67,52 @@ VertexOut VS( VertexIn vin )
 }
 
 
+void UpdateLights( float3 pos , float4 color , float3 normal , float3 view , out float4 diffuse , out float4 specular , out float4 ambient )
+{
+	diffuse = float4( 0.0f , 0.0f , 0.0f , 0.0f );
+	specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
+	ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
+
+	if ( gDirLightNum > 0 )
+	{
+		[unroll]
+		for ( int i = 0; i < gDirLightNum; ++i )
+		{
+			float4 A , D , S;
+			ComputeDirectionalLight( gDirectLight[i] , gMaterial , color , normal , view , D , S , A );
+			diffuse += D;
+			specular += S;
+			ambient += A;
+		}
+	}
+	
+	if ( gPointLightNum )
+	{
+		[unroll]
+		for ( int i = 0; i < gPointLightNum; ++i )
+		{
+			float4 A , D , S;
+			ComputePointLight( gPointLight[i] , gMaterial , pos , color , normal , view , D , S , A );
+			diffuse += D;
+			specular += S;
+			ambient += A;
+		}
+	}
+	
+	if ( gSpotLightNum )
+	{
+		[unroll]
+		for ( int i = 0; i < gSpotLightNum; ++i )
+		{
+			float4 A , D , S;
+			ComputeSpotLight( gSpotLight[i] , gMaterial , pos , color , normal , view , D , S , A );
+			diffuse += D;
+			specular += S;
+			ambient += A;
+		}
+	}
+}
+
 float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 	uniform bool isUseFog ) : SV_Target
 {
@@ -81,25 +131,8 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 		float dist2View = length( viewW );
 		viewW /= dist2View;
 
-		float4 diffuse = float4( 0.0f , 0.0f , 0.0f , 0.0f );
-		float4 specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
-		float4 ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
-
-		float4 A , D , S;
-		ComputeDirectionalLight( gDirectLight , gMaterial , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputePointLight( gPointLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
-
-		ComputeSpotLight( gSpotLight , gMaterial , v2p.posW , 1.0f , v2p.normalW , viewW , D , S , A );
-		diffuse += D;
-		specular += S;
-		ambient += A;
+		float4 diffuse, specular, ambient;
+		UpdateLights( v2p.posW , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
 
 		litColor = texCol * ( diffuse + ambient ) + specular;
 		litColor.w = gMaterial.diffuse.w;

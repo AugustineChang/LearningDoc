@@ -46,9 +46,7 @@ protected:
 	void createIndexBuffer( const UINT *indices , UINT indexNum );
 	
 	Camera camera;
-	DirectionalLight dirLight;
-	PointLight pointLight;
-	SpotLight spotLight;
+	DirectionalLight dirLight[2];
 	
 	struct ID3D11Buffer *vertexBuffer;
 	struct ID3D11Buffer *indexBuffer;

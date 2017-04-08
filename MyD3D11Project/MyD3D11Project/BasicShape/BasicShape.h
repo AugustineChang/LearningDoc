@@ -33,6 +33,8 @@ struct ID3DX11EffectShaderResourceVariable;
 
 class Camera;
 struct DirectionalLight;
+struct PointLight;
+struct SpotLight;
 
 class BasicShape
 {
@@ -44,7 +46,10 @@ public:
 	
 	void InitShape( ID3D11Device *device );
 	virtual void UpdateObject( float DeltaTime ){}
-	virtual void UpdateObjectEffect( const Camera *camera , const DirectionalLight *dirLight );
+	virtual void UpdateObjectEffect( const Camera *camera );
+	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum );
+	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum );
+	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum );
 	virtual void RenderObject( ID3D11DeviceContext *immediateContext );
 
 	const std::vector<CustomVertex>& getVertices() const;
@@ -79,9 +84,16 @@ protected:
 	ID3DX11EffectMatrixVariable *efTexTrans;
 	ID3DX11EffectVariable *efMaterial;
 	ID3DX11EffectShaderResourceVariable* efTexture;
-	ID3DX11EffectVariable *efDirLight;
 	ID3DX11EffectVectorVariable *efCameraPos;
 	
+	//light
+	ID3DX11EffectVariable *efDirLight;
+	ID3DX11EffectScalarVariable *efDirLightNum;
+	ID3DX11EffectVariable *efPointLight;
+	ID3DX11EffectScalarVariable *efPointLightNum;
+	ID3DX11EffectVariable *efSpotLight;
+	ID3DX11EffectScalarVariable *efSpotLightNum;
+
 	//Fog
 	bool isEnableFog;
 	float fogStart;

@@ -9,6 +9,9 @@ public:
 	~BlendFlame();
 	
 	virtual void UpdateObject( float DeltaTime ) override;
+	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum ) override;
+	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum ) override {}
+	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum ) override {}
 
 protected:
 
