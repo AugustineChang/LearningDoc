@@ -9,6 +9,7 @@
 #include "../BasicShape/SimpleMesh.h"
 #include "../BasicShape/RotateFlame.h"
 #include "../BasicShape/BlendFlame.h"
+#include "../BasicShape/Billboard.h"
 using namespace DirectX;
 
 
@@ -37,6 +38,11 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCube *cube = new BasicCube();
 	renderList.push_back( cube );
 
+	Billboard *board = new Billboard();
+	board->Position.x = -1;
+	renderList.push_back( board );
+
+	//注意这个带Blend 目前需要最后一个画
 	BlendFlame *flame = new BlendFlame();
 	flame->Position.z = -2;
 	renderList.push_back( flame );
@@ -87,22 +93,19 @@ void SimpleScene::DrawScene()
 {
 	immediateContext->ClearRenderTargetView( backBufferView , reinterpret_cast<const float *>( &XMVectorSet( 0.2f , 0.2f , 0.2f , 1.0f ) ) );
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
-
-	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
-
-	if ( renderList.size() > 0 )
-	{
-		UINT stride = sizeof( CustomVertex );
-		UINT offset = 0;
-		immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
-		immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
-	}
 	
 	camera.buildViewMatrix();
 	for ( BasicShape *shape : renderList )
 	{
 		shape->UpdateDirectionalLight( &dirLight[0] , 2 );
 		shape->UpdateObjectEffect( &camera );
+		if ( shape->isUseGlobalBuffer )
+		{
+			UINT stride = sizeof( CustomVertex );
+			UINT offset = 0;
+			immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
+			immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
+		}
 		shape->RenderObject( immediateContext );
 	}
 

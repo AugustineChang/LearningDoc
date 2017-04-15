@@ -44,7 +44,7 @@ public:
 	BasicShape( std::string shader );
 	~BasicShape();
 	
-	void InitShape( ID3D11Device *device );
+	virtual void InitShape( ID3D11Device *device );
 	virtual void UpdateObject( float DeltaTime ){}
 	virtual void UpdateObjectEffect( const Camera *camera );
 	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum );
@@ -62,6 +62,7 @@ public:
 	unsigned int indexStart;
 	unsigned int indexSize;
 	unsigned int indexBase;
+	bool isUseGlobalBuffer;// global vertexBuffer and indexBuffer
 
 protected:
 
@@ -102,7 +103,7 @@ protected:
 	ID3DX11EffectScalarVariable *efFogStart;
 	ID3DX11EffectScalarVariable *efFogDistance;
 	ID3DX11EffectVectorVariable *efFogColor;
-
+	
 	CustomMaterial material;
 	std::vector<CustomVertex> vertices;
 	std::vector<unsigned int> indices;

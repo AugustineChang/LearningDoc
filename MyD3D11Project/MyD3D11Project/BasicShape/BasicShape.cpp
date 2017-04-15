@@ -4,15 +4,15 @@
 #include "../DirectXApp/Lights.h"
 using namespace DirectX;
 
-BasicShape::BasicShape() : effect( "LitShader" ) , isEnableFog( true ) , fogStart( 20.0f ) ,
-fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
+BasicShape::BasicShape() : effect( "LitShader" ) , isUseGlobalBuffer( true ) , isEnableFog( true ) , 
+fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
 	initDirectMath();
 	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
 }
 
-BasicShape::BasicShape( std::string shader ) : effect( shader ) , isEnableFog( true ) , fogStart( 20.0f ) ,
-fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
+BasicShape::BasicShape( std::string shader ) : effect( shader ) , isUseGlobalBuffer( true ) , isEnableFog( true ) ,
+fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
 	initDirectMath();
 	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
@@ -126,6 +126,7 @@ void BasicShape::UpdateSpotLight( const SpotLight *spotLight , int lightNum )
 
 void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
 {
+	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->RSSetState( rasterState );
 

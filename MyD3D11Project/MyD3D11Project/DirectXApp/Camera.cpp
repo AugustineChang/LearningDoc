@@ -43,6 +43,12 @@ void Camera::buildProjectMatrix( int screenWidth , int screenHeight )
 	XMStoreFloat4x4( &view2Proj , temp );
 }
 
+DirectX::XMVECTOR Camera::TransformDirection( DirectX::FXMVECTOR dir ) const
+{
+	XMMATRIX rotMatrix = XMLoadFloat4x4( &rotationMat );
+	return DirectX::XMVector4Transform( dir , rotMatrix );
+}
+
 DirectX::XMMATRIX Camera::getViewMatrix() const
 {
 	return XMLoadFloat4x4( &world2View );

@@ -9,6 +9,7 @@ public:
 
 	void buildViewMatrix();
 	void buildProjectMatrix( int screenWidth , int screenHeight );
+	DirectX::XMVECTOR TransformDirection( DirectX::FXMVECTOR dir ) const;
 
 	DirectX::XMMATRIX getViewMatrix() const;
 	DirectX::XMMATRIX getProjectMatrix() const;

@@ -90,6 +90,7 @@ technique11 LightTech_Lit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0, VS() ) );
+		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true ) ) );
 	}
 }
@@ -99,6 +100,7 @@ technique11 LightTech_Lit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , false ) ) );
 	}
 }
@@ -108,6 +110,7 @@ technique11 LightTech_Unlit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , true ) ) );
 	}
 }
@@ -117,6 +120,7 @@ technique11 LightTech_Unlit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , false ) ) );
 	}
 }
