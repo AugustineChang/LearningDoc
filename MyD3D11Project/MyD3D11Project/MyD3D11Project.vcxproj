@@ -168,6 +168,7 @@
     <ClCompile Include="BasicShape\RotateFlame.cpp" />
     <ClCompile Include="DirectXApp\Camera.cpp" />
     <ClCompile Include="BasicShape\Cylinder.cpp" />
+    <ClCompile Include="DirectXApp\DebugQuad.cpp" />
     <ClCompile Include="DirectXApp\DirectXApp.cpp" />
     <ClCompile Include="DirectXApp\ShaderEffect.cpp" />
     <ClCompile Include="DirectXApp\WaveScene.cpp" />
@@ -213,6 +214,7 @@
     <ClInclude Include="BasicShape\Billboard.h" />
     <ClInclude Include="BasicShape\BlendFlame.h" />
     <ClInclude Include="BasicShape\RotateFlame.h" />
+    <ClInclude Include="DirectXApp\DebugQuad.h" />
     <ClInclude Include="DirectXApp\Lights.h" />
     <ClInclude Include="DirectXApp\Camera.h" />
     <ClInclude Include="BasicShape\Cylinder.h" />
@@ -230,13 +232,6 @@
     <ClInclude Include="Utilities\SimpleMath.h" />
     <ClInclude Include="Utilities\WindowsApp.h" />
     <ClInclude Include="BasicShape\WaveTerrain.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <CustomBuild Include="FX\SimpleShader.fx">
-      <FileType>Document</FileType>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
-    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Models\car.txt" />
@@ -410,6 +405,13 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\GeoShader.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FX\DebugShader.fx">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>

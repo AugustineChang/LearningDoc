@@ -1,5 +1,3 @@
-#include "Lights.fx"
-
 cbuffer cbPerFrame
 {
 	float3 gCameraPosW;
@@ -11,7 +9,6 @@ cbuffer cbPerObject
 	float4x4 gVP;
 	float4x4 gWorld;
 	float4x4 gTexTransform;
-	Material gMaterial;
 };
 
 cbuffer cbFixed

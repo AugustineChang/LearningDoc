@@ -8,6 +8,7 @@ struct ID3D11DeviceContext;
 struct IDXGISwapChain;
 struct ID3D11RenderTargetView;
 struct ID3D11DepthStencilView;
+struct ID3D11ShaderResourceView;
 struct ID3D11Texture2D;
 
 class DirectXApp : public WindowsApp
@@ -38,6 +39,7 @@ protected:
 
 	ID3D11RenderTargetView *backBufferView;
 	ID3D11DepthStencilView *depthBufferView;
+	ID3D11ShaderResourceView *depthShaderView;
 	
 	bool enable4xMSAA;
 

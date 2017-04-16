@@ -20,6 +20,8 @@ Billboard::Billboard() : BasicShape( "GeoShader" )
 
 Billboard::~Billboard()
 {
+	ReleaseCOM( vertexBuffer );
+	ReleaseCOM( indexBuffer );
 }
 
 void Billboard::InitShape( ID3D11Device *device )
@@ -43,7 +45,6 @@ void Billboard::UpdateObjectEffect( const Camera *camera )
 	efWorld->SetMatrix( reinterpret_cast<float*>( &tempW ) );
 	efTexTrans->SetMatrix( reinterpret_cast<const float*>( &identityMat ) );
 
-	efMaterial->SetRawValue( &material , 0 , sizeof( CustomMaterial ) );
 	efTexture->SetResource( textureView );
 	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
 

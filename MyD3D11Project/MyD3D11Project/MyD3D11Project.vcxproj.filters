@@ -123,6 +123,9 @@
     <ClCompile Include="BasicShape\Billboard.cpp">
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
+    <ClCompile Include="DirectXApp\DebugQuad.cpp">
+      <Filter>源文件\DX11Apps</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h">
@@ -263,11 +266,11 @@
     <ClInclude Include="BasicShape\Billboard.h">
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
+    <ClInclude Include="DirectXApp\DebugQuad.h">
+      <Filter>头文件\DX11Apps</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="FX\SimpleShader.fx">
-      <Filter>FX</Filter>
-    </CustomBuild>
     <CustomBuild Include="FX\LitShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
@@ -281,6 +284,9 @@
       <Filter>FX</Filter>
     </CustomBuild>
     <CustomBuild Include="FX\GeoShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\DebugShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>

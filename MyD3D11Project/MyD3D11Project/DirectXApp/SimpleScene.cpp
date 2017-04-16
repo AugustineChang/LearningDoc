@@ -1,4 +1,6 @@
 #include "SimpleScene.h"
+#include "DebugQuad.h"
+
 #include "../Utilities/CommonHeader.h"
 #include "../BasicShape/BasicCube.h"
 #include "../BasicShape/BasicSquareCone.h"
@@ -10,6 +12,7 @@
 #include "../BasicShape/RotateFlame.h"
 #include "../BasicShape/BlendFlame.h"
 #include "../BasicShape/Billboard.h"
+
 using namespace DirectX;
 
 
@@ -55,6 +58,8 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	DirectX::XMStoreFloat3( &dirLight[1].direction , DirectX::XMVector3Normalize( dir ) );
 
 	dirLight[1].diffuseColor = DirectX::XMFLOAT4( 0.0f , 0.8f , 0.8f , 1.0f );
+
+	//debugDepth = new DebugQuad();
 }
 
 
@@ -75,6 +80,7 @@ bool SimpleScene::InitDirectApp()
 	if ( !DirectXApp::InitDirectApp() ) return false;
 	
 	createObjects();
+	//createDepthStencilState();
 
 	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
@@ -93,7 +99,8 @@ void SimpleScene::DrawScene()
 {
 	immediateContext->ClearRenderTargetView( backBufferView , reinterpret_cast<const float *>( &XMVectorSet( 0.2f , 0.2f , 0.2f , 1.0f ) ) );
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
-	
+	//immediateContext->OMSetDepthStencilState( depthState , 0 );
+
 	camera.buildViewMatrix();
 	for ( BasicShape *shape : renderList )
 	{
@@ -109,6 +116,13 @@ void SimpleScene::DrawScene()
 		shape->RenderObject( immediateContext );
 	}
 
+	//Debug
+	//////////////////////////////////////////////////////////////////////////
+
+	//debugDepth->UpdateDebugTexture( depthShaderView );
+	//debugDepth->RenderObject( immediateContext );
+
+	//////////////////////////////////////////////////////////////////////////
 	HR( swapChain->Present( 0 , 0 ) );
 }
 
@@ -186,6 +200,29 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 	HR( device->CreateBuffer( &bufferDesc , &initData , &indexBuffer ) );
 }
 
+void SimpleScene::createDepthStencilState()
+{
+	D3D11_DEPTH_STENCIL_DESC dssDesc;
+	dssDesc.DepthEnable = true;
+	dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dssDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	dssDesc.StencilEnable = true;
+	dssDesc.StencilReadMask = 0xff;
+	dssDesc.StencilWriteMask = 0xff;
+
+	dssDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dssDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dssDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
+	dssDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	dssDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	dssDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
+	dssDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	dssDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	HR( device->CreateDepthStencilState( &dssDesc , &depthState ) );
+}
+
 void SimpleScene::createObjects()
 {
 	if ( renderList.size() <= 0 ) return;
@@ -197,6 +234,8 @@ void SimpleScene::createObjects()
 		shape->InitShape( device );
 		addToGlobalBuffer( gvlist , gilist , *shape );
 	}
+
+	//debugDepth->InitShape( device );
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );
 	createIndexBuffer( &gilist[0] , gilist.size() );

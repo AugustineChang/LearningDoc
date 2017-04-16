@@ -6,7 +6,10 @@
 
 #include <vector>
 
+class DebugQuad;
 struct CustomVertex;
+struct ID3D11Buffer;
+struct ID3D11DepthStencilState;
 
 class SimpleScene : public DirectXApp
 {
@@ -29,6 +32,7 @@ public:
 private:
 		
 	std::vector<class BasicShape*> renderList;
+	DebugQuad *debugDepth;
 
 	bool isMove;
 	POINT lastMousePos;
@@ -44,10 +48,12 @@ protected:
 	template<typename T>
 	void createVertexBuffer( const T *vertices , UINT vertexNum );
 	void createIndexBuffer( const UINT *indices , UINT indexNum );
-	
+	void createDepthStencilState();
+
 	Camera camera;
 	DirectionalLight dirLight[2];
 	
-	struct ID3D11Buffer *vertexBuffer;
-	struct ID3D11Buffer *indexBuffer;
+	ID3D11Buffer *vertexBuffer;
+	ID3D11Buffer *indexBuffer;
+	ID3D11DepthStencilState *depthState;
 };

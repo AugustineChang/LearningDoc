@@ -14,7 +14,6 @@ cbuffer cbPerObject
     float4x4 gVP;                       // Offset:    0, size:   64
     float4x4 gWorld;                    // Offset:   64, size:   64
     float4x4 gTexTransform;             // Offset:  128, size:   64
-    Material gMaterial;                 // Offset:  192, size:   48
 }
 
 cbuffer cbFixed
@@ -58,15 +57,6 @@ fxgroup
                 //   float4x4 gVP;                      // Offset:    0 Size:    64 [unused]
                 //   float4x4 gWorld;                   // Offset:   64 Size:    64
                 //   float4x4 gTexTransform;            // Offset:  128 Size:    64 [unused]
-                //   
-                //   struct Material
-                //   {
-                //       
-                //       float4 ambient;                // Offset:  192
-                //       float4 diffuse;                // Offset:  208
-                //       float4 specular;               // Offset:  224
-                //
-                //   } gMaterial;                       // Offset:  192 Size:    48 [unused]
                 //
                 // }
                 //
@@ -109,17 +99,17 @@ fxgroup
                 //   o1.x <- <VS return value>.size.x; o1.y <- <VS return value>.size.y; 
                 //   o0.x <- <VS return value>.centerW.x; o0.y <- <VS return value>.centerW.y; o0.z <- <VS return value>.centerW.z
                 //
-                #line 61 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
+                #line 58 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
                 mov r0.xyz, v0.xyzx
                 mov r0.w, l(1.000000)
                 dp4 r1.x, r0.xyzw, cb0[4].xyzw  // r1.x <- vout.centerW.x
                 dp4 r1.y, r0.xyzw, cb0[5].xyzw  // r1.y <- vout.centerW.y
                 dp4 r1.z, r0.xyzw, cb0[6].xyzw  // r1.z <- vout.centerW.z
                 
-                #line 62
+                #line 59
                 mov r0.xy, v1.xyxx  // r0.x <- vout.size.x; r0.y <- vout.size.y
                 
-                #line 64
+                #line 61
                 mov o0.xyz, r1.xyzx
                 mov o1.xy, r0.xyxx
                 ret 
@@ -147,15 +137,6 @@ fxgroup
                 //   float4x4 gVP;                      // Offset:    0 Size:    64
                 //   float4x4 gWorld;                   // Offset:   64 Size:    64 [unused]
                 //   float4x4 gTexTransform;            // Offset:  128 Size:    64
-                //   
-                //   struct Material
-                //   {
-                //       
-                //       float4 ambient;                // Offset:  192
-                //       float4 diffuse;                // Offset:  208
-                //       float4 specular;               // Offset:  224
-                //
-                //   } gMaterial;                       // Offset:  192 Size:    48 [unused]
                 //
                 // }
                 //
@@ -218,29 +199,29 @@ fxgroup
                 //   v[0][1].x <- v2g[0].size.x; v[0][1].y <- v2g[0].size.y; 
                 //   x0 <- pointsW
                 //
-                #line 71 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
+                #line 68 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
                 mov r0.xyz, cb0[1].xyzx  // r0.x <- up.x; r0.y <- up.y; r0.z <- up.z
                 
-                #line 72
+                #line 69
                 mov r1.xyz, -v[0][0].yzxy
                 add r1.xyz, r1.xyzx, cb0[0].yzxy
                 dp3 r0.w, r1.xyzx, r1.xyzx
                 rsq r0.w, r0.w
                 mul r1.xyz, r0.wwww, r1.xyzx  // r1.x <- look.y; r1.y <- look.z; r1.z <- look.x
                 
-                #line 73
+                #line 70
                 mul r2.xyz, r0.yzxy, r1.yzxy
                 mul r1.xyz, r0.zxyz, r1.xyzx
                 mov r1.xyz, -r1.xyzx
                 add r1.xyz, r1.xyzx, r2.xyzx  // r1.x <- right.x; r1.y <- right.y; r1.z <- right.z
                 
-                #line 75
+                #line 72
                 mul r0.w, l(0.500000), v[0][1].x  // r0.w <- halfWidth
                 
-                #line 76
+                #line 73
                 mul r1.w, l(0.500000), v[0][1].y  // r1.w <- halfHeight
                 
-                #line 82
+                #line 79
                 mul r2.xyz, r1.xyzx, r0.wwww
                 add r2.xyz, r2.xyzx, v[0][0].xyzx
                 mul r3.xyz, r0.xyzx, r1.wwww
@@ -248,7 +229,7 @@ fxgroup
                 mov r2.w, l(1.000000)
                 mov x0[0].xyzw, r2.xyzw
                 
-                #line 83
+                #line 80
                 mul r2.xyz, r1.xyzx, r0.wwww
                 mov r2.xyz, -r2.xyzx
                 add r2.xyz, r2.xyzx, v[0][0].xyzx
@@ -257,7 +238,7 @@ fxgroup
                 mov r2.w, l(1.000000)
                 mov x0[1].xyzw, r2.xyzw
                 
-                #line 84
+                #line 81
                 mul r2.xyz, r1.xyzx, r0.wwww
                 add r2.xyz, r2.xyzx, v[0][0].xyzx
                 mul r3.xyz, r0.xyzx, r1.wwww
@@ -266,7 +247,7 @@ fxgroup
                 mov r2.w, l(1.000000)
                 mov x0[2].xyzw, r2.xyzw
                 
-                #line 85
+                #line 82
                 mul r1.xyz, r1.xyzx, r0.wwww
                 mov r1.xyz, -r1.xyzx
                 add r1.xyz, r1.xyzx, v[0][0].xyzx
@@ -276,79 +257,79 @@ fxgroup
                 mov r0.w, l(1.000000)
                 mov x0[3].xyzw, r0.xyzw
                 
-                #line 91
+                #line 88
                 mov r0.xyzw, x0[0].xyzw
                 dp4 r1.x, r0.xyzw, cb1[0].xyzw  // r1.x <- gOut.posH.x
                 dp4 r1.y, r0.xyzw, cb1[1].xyzw  // r1.y <- gOut.posH.y
                 dp4 r1.z, r0.xyzw, cb1[2].xyzw  // r1.z <- gOut.posH.z
                 dp4 r1.w, r0.xyzw, cb1[3].xyzw  // r1.w <- gOut.posH.w
                 
-                #line 92
+                #line 89
                 mov r0.xy, cb2[0].xyxx
                 mov r0.zw, l(0,0,0,1.000000)
                 dp4 r2.x, r0.xyzw, cb1[8].xyzw  // r2.x <- gOut.tex.x
                 dp4 r2.y, r0.xyzw, cb1[9].xyzw  // r2.y <- gOut.tex.y
                 
-                #line 94
+                #line 91
                 mov o0.xyzw, r1.xyzw
                 mov o1.xy, r2.xyxx
                 emit_stream m0
                 
-                #line 91
+                #line 88
                 mov r0.xyzw, x0[1].xyzw
                 dp4 r1.x, r0.xyzw, cb1[0].xyzw
                 dp4 r1.y, r0.xyzw, cb1[1].xyzw
                 dp4 r1.z, r0.xyzw, cb1[2].xyzw
                 dp4 r1.w, r0.xyzw, cb1[3].xyzw
                 
-                #line 92
+                #line 89
                 mov r0.xy, cb2[1].xyxx
                 mov r0.zw, l(0,0,0,1.000000)
                 dp4 r2.x, r0.xyzw, cb1[8].xyzw
                 dp4 r2.y, r0.xyzw, cb1[9].xyzw
                 
-                #line 94
+                #line 91
                 mov o0.xyzw, r1.xyzw
                 mov o1.xy, r2.xyxx
                 emit_stream m0
                 
-                #line 91
+                #line 88
                 mov r0.xyzw, x0[2].xyzw
                 dp4 r1.x, r0.xyzw, cb1[0].xyzw
                 dp4 r1.y, r0.xyzw, cb1[1].xyzw
                 dp4 r1.z, r0.xyzw, cb1[2].xyzw
                 dp4 r1.w, r0.xyzw, cb1[3].xyzw
                 
-                #line 92
+                #line 89
                 mov r0.xy, cb2[2].xyxx
                 mov r0.zw, l(0,0,0,1.000000)
                 dp4 r2.x, r0.xyzw, cb1[8].xyzw
                 dp4 r2.y, r0.xyzw, cb1[9].xyzw
                 
-                #line 94
+                #line 91
                 mov o0.xyzw, r1.xyzw
                 mov o1.xy, r2.xyxx
                 emit_stream m0
                 
-                #line 91
+                #line 88
                 mov r0.xyzw, x0[3].xyzw
                 dp4 r1.x, r0.xyzw, cb1[0].xyzw
                 dp4 r1.y, r0.xyzw, cb1[1].xyzw
                 dp4 r1.z, r0.xyzw, cb1[2].xyzw
                 dp4 r1.w, r0.xyzw, cb1[3].xyzw
                 
-                #line 92
+                #line 89
                 mov r0.xy, cb2[3].xyxx
                 mov r0.zw, l(0,0,0,1.000000)
                 dp4 r2.x, r0.xyzw, cb1[8].xyzw
                 dp4 r2.y, r0.xyzw, cb1[9].xyzw
                 
-                #line 94
+                #line 91
                 mov o0.xyzw, r1.xyzw
                 mov o1.xy, r2.xyxx
                 emit_stream m0
                 
-                #line 96
+                #line 93
                 ret 
                 // Approximately 89 instruction slots used
                             
@@ -394,10 +375,10 @@ fxgroup
                 //   v1.x <- g2p.tex.x; v1.y <- g2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 100 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
+                #line 97 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\GeoShader.fx"
                 sample_indexable(texture2d)(float,float,float,float) r0.xyzw, v1.xyxx, t0.xyzw, s0  // r0.x <- texCol.x; r0.y <- texCol.y; r0.z <- texCol.z; r0.w <- texCol.w
                 
-                #line 101
+                #line 98
                 mov o0.xyzw, r0.xyzw
                 ret 
                 // Approximately 3 instruction slots used
