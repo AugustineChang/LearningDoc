@@ -1,5 +1,4 @@
 #include "SimpleScene.h"
-#include "DebugQuad.h"
 
 #include "../Utilities/CommonHeader.h"
 #include "../BasicShape/BasicCube.h"
@@ -58,8 +57,6 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	DirectX::XMStoreFloat3( &dirLight[1].direction , DirectX::XMVector3Normalize( dir ) );
 
 	dirLight[1].diffuseColor = DirectX::XMFLOAT4( 0.0f , 0.8f , 0.8f , 1.0f );
-
-	//debugDepth = new DebugQuad();
 }
 
 
@@ -115,16 +112,6 @@ void SimpleScene::DrawScene()
 		shape->RenderObject( immediateContext );
 	}
 
-	//Debug
-	//////////////////////////////////////////////////////////////////////////
-	//immediateContext->OMSetDepthStencilState( depthState , 0 );
-
-	//debugDepth->UpdateDebugTexture( depthShaderView );
-	//debugDepth->RenderObject( immediateContext );
-
-	//immediateContext->OMSetDepthStencilState( nullptr , 0 );
-
-	//////////////////////////////////////////////////////////////////////////
 	HR( swapChain->Present( 0 , 0 ) );
 }
 
@@ -236,8 +223,6 @@ void SimpleScene::createObjects()
 		shape->InitShape( device );
 		addToGlobalBuffer( gvlist , gilist , *shape );
 	}
-
-	//debugDepth->InitShape( device );
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );
 	createIndexBuffer( &gilist[0] , gilist.size() );

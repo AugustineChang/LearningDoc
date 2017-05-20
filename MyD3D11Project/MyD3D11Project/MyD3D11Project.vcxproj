@@ -169,7 +169,6 @@
     <ClCompile Include="BasicShape\RotateFlame.cpp" />
     <ClCompile Include="DirectXApp\Camera.cpp" />
     <ClCompile Include="BasicShape\Cylinder.cpp" />
-    <ClCompile Include="DirectXApp\DebugQuad.cpp" />
     <ClCompile Include="DirectXApp\DirectXApp.cpp" />
     <ClCompile Include="DirectXApp\ShaderEffect.cpp" />
     <ClCompile Include="DirectXApp\TessellationHillScene.cpp" />
@@ -217,7 +216,6 @@
     <ClInclude Include="BasicShape\Billboard.h" />
     <ClInclude Include="BasicShape\BlendFlame.h" />
     <ClInclude Include="BasicShape\RotateFlame.h" />
-    <ClInclude Include="DirectXApp\DebugQuad.h" />
     <ClInclude Include="DirectXApp\Lights.h" />
     <ClInclude Include="DirectXApp\Camera.h" />
     <ClInclude Include="BasicShape\Cylinder.h" />

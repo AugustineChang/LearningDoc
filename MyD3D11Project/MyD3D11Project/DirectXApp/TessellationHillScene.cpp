@@ -68,7 +68,7 @@ void TessellationHillScene::DrawScene()
 	camera.buildViewMatrix();
 	terrain->UpdateObjectEffect( &camera );
 
-	//terrain
+	//terraind
 	UINT stride = sizeof( TessVertex );
 	UINT offset = 0;
 	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );

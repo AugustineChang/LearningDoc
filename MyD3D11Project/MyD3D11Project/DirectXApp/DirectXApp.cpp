@@ -178,7 +178,7 @@ void DirectXApp::createDepthBufferView()
 	depthTexDesc.Height = screenHeight;
 	depthTexDesc.MipLevels = 1;
 	depthTexDesc.ArraySize = 1;
-	depthTexDesc.Format = DXGI_FORMAT_R24G8_TYPELESS;//DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthTexDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
 
 	if ( enable4xMSAA )
 	{
@@ -192,29 +192,12 @@ void DirectXApp::createDepthBufferView()
 	}
 
 	depthTexDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL | D3D11_BIND_SHADER_RESOURCE;
+	depthTexDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 	depthTexDesc.CPUAccessFlags = 0;
 	depthTexDesc.MiscFlags = 0;
 	
 	HR( device->CreateTexture2D( &depthTexDesc , nullptr , &depthBuffer ) );
-
-	//创建 深度Buffer 渲染绑定View
-	D3D11_DEPTH_STENCIL_VIEW_DESC depthViewDesc;
-	ZeroMemory( &depthViewDesc , sizeof( D3D11_DEPTH_STENCIL_VIEW_DESC ) );
-	depthViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthViewDesc.ViewDimension = enable4xMSAA ? D3D11_DSV_DIMENSION_TEXTURE2DMS : D3D11_DSV_DIMENSION_TEXTURE2D;
-	depthViewDesc.Texture2D.MipSlice = 0;
-
-	HR( device->CreateDepthStencilView( depthBuffer , &depthViewDesc , &depthBufferView ) );
-
-	//创建 深度Buffer Shader访问View
-	D3D11_SHADER_RESOURCE_VIEW_DESC depthShaderDesc;
-	ZeroMemory( &depthShaderDesc , sizeof( D3D11_SHADER_RESOURCE_VIEW_DESC ) );
-	depthShaderDesc.Format = DXGI_FORMAT_R24_UNORM_X8_TYPELESS;
-	depthShaderDesc.ViewDimension = enable4xMSAA ? D3D11_SRV_DIMENSION_TEXTURE2DMS : D3D11_SRV_DIMENSION_TEXTURE2D;
-	depthShaderDesc.Texture2D.MipLevels = 1;
-
-	HR( device->CreateShaderResourceView( depthBuffer , &depthShaderDesc , &depthShaderView ) );
+	HR( device->CreateDepthStencilView( depthBuffer , nullptr , &depthBufferView ) );
 }
 
 void DirectXApp::initImmediateContext()
