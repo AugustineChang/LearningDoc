@@ -144,16 +144,6 @@ void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
 	}
 }
 
-const std::vector<CustomVertex>& BasicShape::getVertices() const
-{
-	return vertices;
-}
-
-const std::vector<unsigned int>& BasicShape::getIndices() const
-{
-	return indices;
-}
-
 void BasicShape::createEffect( ID3D11Device *device )
 {
 	effect.createEffectAtBuildtime( device );

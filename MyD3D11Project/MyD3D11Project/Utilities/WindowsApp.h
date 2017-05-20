@@ -19,6 +19,9 @@ public:
 	virtual void OnMouseUp( WPARAM btnState , int x , int y ) = 0;
 	virtual void OnMouseWheel( int zDelta ) = 0;
 
+	virtual void OnKeyDown( WPARAM keyCode ) = 0;
+	virtual void OnKeyUp( WPARAM keyCode ) = 0;
+
 	virtual void UpdateScene( float deltaTime ) = 0;
 	virtual void DrawScene() = 0;
 

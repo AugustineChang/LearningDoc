@@ -27,6 +27,9 @@ protected:
 	virtual void OnMouseMove( WPARAM btnState , int x , int y ) override;
 	virtual void OnMouseUp( WPARAM btnState , int x , int y ) override;
 
+	virtual void OnKeyDown( WPARAM keyCode ) override;
+	virtual void OnKeyUp( WPARAM keyCode ) override;
+
 	virtual void UpdateScene( float deltaTime ) override;
 	virtual void DrawScene() override;
 

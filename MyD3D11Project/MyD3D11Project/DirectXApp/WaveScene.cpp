@@ -131,7 +131,7 @@ void WaveScene::OnMouseUp( WPARAM btnState , int x , int y )
 
 void WaveScene::OnMouseWheel( int zDelta )
 {
-	camera.UpdatePosition2( zDelta * moveSpeed );
+	camera.UpdatePosition2( zDelta * moveSpeed , 0.0f );
 }
 
 template<typename T>

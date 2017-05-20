@@ -66,15 +66,17 @@ void Camera::UpdatePosition( float radius )
 	Position.y = radius * sinf( Rotation.x );
 }
 
-void Camera::UpdatePosition2( float speed )
+void Camera::UpdatePosition2( float forwardSpeed , float rightSpeed )
 {
+	if ( forwardSpeed == 0.0f && rightSpeed == 0.0f ) return;
+
 	XMMATRIX rotMatrix = XMLoadFloat4x4( &rotationMat );
 
-	XMVECTOR forward = XMVectorSet( 0 , 0 , 1 , 0 );
-	forward = DirectX::XMVector4Transform( forward , rotMatrix );
+	XMVECTOR moveDir = XMVectorSet( rightSpeed , 0 , forwardSpeed , 0 );
+	moveDir = DirectX::XMVector4Transform( moveDir , rotMatrix );
 
 	XMVECTOR curPosition = XMLoadFloat4( &Position );
-	XMStoreFloat4( &Position , curPosition + forward * speed );
+	XMStoreFloat4( &Position , curPosition + moveDir );
 }
 
 void Camera::UpdateRotation( float deltaX , float deltaY )

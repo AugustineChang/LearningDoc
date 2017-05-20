@@ -15,7 +15,7 @@ public:
 	DirectX::XMMATRIX getProjectMatrix() const;
 
 	void UpdatePosition( float raduis );
-	void UpdatePosition2( float speed );
+	void UpdatePosition2( float forwardSpeed , float rightSpeed );
 	void UpdateRotation( float deltaX , float deltaY );
 
 	DirectX::XMFLOAT4 Position;

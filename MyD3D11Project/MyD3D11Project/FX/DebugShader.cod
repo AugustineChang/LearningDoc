@@ -1,22 +1,8 @@
 //
 // FX Version: fx_5_0
 //
-// 3 local object(s)
+// 2 local object(s)
 //
-DepthStencilState DSS
-{
-    DepthEnable = bool(TRUE /* true */);
-    DepthWriteMask = uint(ZERO /* 0 */);
-    StencilEnable = bool(TRUE /* true */);
-    StencilReadMask = byte(0xff);
-    StencilWriteMask = byte(0xff);
-    FrontFaceStencilFunc = uint(ALWAYS /* 8 */);
-    FrontFaceStencilPass = uint(KEEP /* 1 */);
-    FrontFaceStencilFail = uint(KEEP /* 1 */);
-    BackFaceStencilFunc = uint(ALWAYS /* 8 */);
-    BackFaceStencilPass = uint(KEEP /* 1 */);
-    BackFaceStencilFail = uint(KEEP /* 1 */);
-};
 Texture2D depthBuffer;
 SamplerState linearSampler
 {
@@ -69,7 +55,7 @@ fxgroup
                 //   o1.x <- <VS return value>.tex.x; o1.y <- <VS return value>.tex.y; 
                 //   o0.x <- <VS return value>.posH.x; o0.y <- <VS return value>.posH.y; o0.z <- <VS return value>.posH.z; o0.w <- <VS return value>.posH.w
                 //
-                #line 37 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\DebugShader.fx"
+                #line 21 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\DebugShader.fx"
                 mov r0.x, l(1)
                 and r0.x, r0.x, v0.x
                 mov r0.y, l(1)
@@ -77,10 +63,10 @@ fxgroup
                 utof r1.x, r0.x  // r1.x <- texcoord.x
                 utof r1.y, r0.y  // r1.y <- texcoord.y
                 
-                #line 38
+                #line 22
                 mov r1.xy, r1.xyxx  // r1.x <- vout.tex.x; r1.y <- vout.tex.y
                 
-                #line 39
+                #line 23
                 mov r0.x, l(-0.500000)
                 add r0.x, r0.x, r1.x
                 itof r0.y, l(2)
@@ -90,9 +76,9 @@ fxgroup
                 mov r1.z, -r1.z
                 itof r1.w, l(2)
                 mul r0.y, r1.w, r1.z  // r0.y <- vout.posH.y
-                itof r0.zw, l(0, 0, 0, 1)  // r0.z <- vout.posH.z; r0.w <- vout.posH.w
+                itof r0.zw, l(0, 0, 1, 1)  // r0.z <- vout.posH.z; r0.w <- vout.posH.w
                 
-                #line 41
+                #line 25
                 mov o0.xyzw, r0.xyzw
                 mov o1.xy, r1.xyxx
                 ret 
@@ -141,11 +127,11 @@ fxgroup
                 //   v1.x <- v2p.tex.x; v1.y <- v2p.tex.y; 
                 //   o0.x <- <PS return value>.x; o0.y <- <PS return value>.y; o0.z <- <PS return value>.z; o0.w <- <PS return value>.w
                 //
-                #line 46 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\DebugShader.fx"
+                #line 30 "D:\Projects\LearningDoc\MyD3D11Project\MyD3D11Project\FX\DebugShader.fx"
                 sample_indexable(texture2d)(float,float,float,float) r0.xyz, v1.xyxx, t0.xyzw, s0
                 mov r0.xyz, r0.xyzx  // r0.x <- depth.x; r0.y <- depth.y; r0.z <- depth.z
                 
-                #line 47
+                #line 31
                 itof o0.w, l(1)
                 mov o0.xyz, r0.xyzx
                 ret 

@@ -16,6 +16,8 @@ protected:
 	virtual void createBasicPlane();
 	virtual float getHeight( float x , float z , float time ) const;
 
+	virtual void createRenderState( ID3D11Device *device ) override;
+
 	Point<unsigned int> verticesDim;// GridVertices m x n
 	Point<float> terrainSize;// Terrain real width and length
 };

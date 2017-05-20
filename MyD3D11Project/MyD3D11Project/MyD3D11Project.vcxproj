@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="..\Common\dxerr.cpp" />
     <ClCompile Include="BasicShape\BasicCube.cpp" />
+    <ClCompile Include="BasicShape\BasicQuad.cpp" />
     <ClCompile Include="BasicShape\BasicShape.cpp" />
     <ClCompile Include="BasicShape\BasicSquareCone.cpp" />
     <ClCompile Include="BasicShape\Billboard.cpp" />
@@ -171,6 +172,7 @@
     <ClCompile Include="DirectXApp\DebugQuad.cpp" />
     <ClCompile Include="DirectXApp\DirectXApp.cpp" />
     <ClCompile Include="DirectXApp\ShaderEffect.cpp" />
+    <ClCompile Include="DirectXApp\TessellationHillScene.cpp" />
     <ClCompile Include="DirectXApp\WaveScene.cpp" />
     <ClCompile Include="Utilities\GameTimer.cpp" />
     <ClCompile Include="BasicShape\GeoSphere.cpp" />
@@ -209,6 +211,7 @@
     <ClInclude Include="..\Common\dxerr.h" />
     <ClInclude Include="..\Common\scoped.h" />
     <ClInclude Include="BasicShape\BasicCube.h" />
+    <ClInclude Include="BasicShape\BasicQuad.h" />
     <ClInclude Include="BasicShape\BasicShape.h" />
     <ClInclude Include="BasicShape\BasicSquareCone.h" />
     <ClInclude Include="BasicShape\Billboard.h" />
@@ -220,6 +223,7 @@
     <ClInclude Include="BasicShape\Cylinder.h" />
     <ClInclude Include="DirectXApp\DirectXApp.h" />
     <ClInclude Include="DirectXApp\ShaderEffect.h" />
+    <ClInclude Include="DirectXApp\TessellationHillScene.h" />
     <ClInclude Include="DirectXApp\WaveScene.h" />
     <ClInclude Include="Utilities\GameTimer.h" />
     <ClInclude Include="Utilities\CommonHeader.h" />
@@ -412,6 +416,13 @@
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\DebugShader.fx">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="FX\TessellationShader.fx">
       <FileType>Document</FileType>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">fxc /Fc /Od /Zi /T fx_5_0 /Fo "%(RelativeDir)\%(Filename).fxo" "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RelativeDir)\%(Filename).fxo</Outputs>

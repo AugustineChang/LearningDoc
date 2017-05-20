@@ -52,8 +52,8 @@ public:
 	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum );
 	virtual void RenderObject( ID3D11DeviceContext *immediateContext );
 
-	const std::vector<CustomVertex>& getVertices() const;
-	const std::vector<unsigned int>& getIndices() const;
+	const std::vector<CustomVertex>& getVertices() const { return vertices; }
+	const std::vector<unsigned int>& getIndices() const { return indices; }
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;

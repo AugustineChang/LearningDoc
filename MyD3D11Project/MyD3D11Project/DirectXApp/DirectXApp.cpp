@@ -55,6 +55,9 @@ void DirectXApp::OnMouseDown( WPARAM btnState , int x , int y ){}
 void DirectXApp::OnMouseMove( WPARAM btnState , int x , int y ){}
 void DirectXApp::OnMouseUp( WPARAM btnState , int x , int y ){}
 
+void DirectXApp::OnKeyDown( WPARAM keyCode ) {}
+void DirectXApp::OnKeyUp( WPARAM keyCode ) {}
+
 void DirectXApp::UpdateScene( float deltaTime ){}
 void DirectXApp::DrawScene(){}
 

@@ -1,19 +1,3 @@
-
-DepthStencilState DSS
-{
-	DepthEnable = true;
-	DepthWriteMask = Zero;
-	StencilEnable = true;
-	StencilReadMask = 0xff;
-	StencilWriteMask = 0xff;
-	FrontFaceStencilFunc = Always;
-	FrontFaceStencilPass = Keep;
-	FrontFaceStencilFail = Keep;
-	BackFaceStencilFunc = Always;
-	BackFaceStencilPass = Keep;
-	BackFaceStencilFail = Keep;
-};
-
 Texture2D depthBuffer;
 SamplerState linearSampler
 {
@@ -36,7 +20,7 @@ VertexOut VS( uint vI : SV_VERTEXID )
 
 	float2 texcoord = float2( vI & 1 , vI >> 1 );
 	vout.tex = texcoord;
-	vout.posH = float4( ( texcoord.x - 0.5f ) * 2 , -( texcoord.y - 0.5f ) * 2 , 0 , 1 );
+	vout.posH = float4( ( texcoord.x - 0.5f ) * 2 , -( texcoord.y - 0.5f ) * 2 , 1 , 1 );
 
 	return vout;
 }

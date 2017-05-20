@@ -99,7 +99,6 @@ void SimpleScene::DrawScene()
 {
 	immediateContext->ClearRenderTargetView( backBufferView , reinterpret_cast<const float *>( &XMVectorSet( 0.2f , 0.2f , 0.2f , 1.0f ) ) );
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
-	//immediateContext->OMSetDepthStencilState( depthState , 0 );
 
 	camera.buildViewMatrix();
 	for ( BasicShape *shape : renderList )
@@ -118,9 +117,12 @@ void SimpleScene::DrawScene()
 
 	//Debug
 	//////////////////////////////////////////////////////////////////////////
+	//immediateContext->OMSetDepthStencilState( depthState , 0 );
 
 	//debugDepth->UpdateDebugTexture( depthShaderView );
 	//debugDepth->RenderObject( immediateContext );
+
+	//immediateContext->OMSetDepthStencilState( nullptr , 0 );
 
 	//////////////////////////////////////////////////////////////////////////
 	HR( swapChain->Present( 0 , 0 ) );
@@ -203,16 +205,16 @@ void SimpleScene::createIndexBuffer( const UINT *indices , UINT indexNum )
 void SimpleScene::createDepthStencilState()
 {
 	D3D11_DEPTH_STENCIL_DESC dssDesc;
-	dssDesc.DepthEnable = true;
-	dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	dssDesc.DepthEnable = false;
+	dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	dssDesc.DepthFunc = D3D11_COMPARISON_LESS;
-	dssDesc.StencilEnable = true;
+	dssDesc.StencilEnable = false;
 	dssDesc.StencilReadMask = 0xff;
 	dssDesc.StencilWriteMask = 0xff;
 
 	dssDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
 	dssDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_KEEP;
-	dssDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_INCR;
+	dssDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	dssDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
 	dssDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;

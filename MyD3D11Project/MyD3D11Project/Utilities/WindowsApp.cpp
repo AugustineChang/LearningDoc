@@ -172,6 +172,18 @@ LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lPara
 		OnMouseMove( wParam , GET_X_LPARAM( lParam ) , GET_Y_LPARAM( lParam ) );
 		return 0;
 
+	case WM_KEYDOWN:
+		if ( wParam == VK_ESCAPE )
+		{
+			DestroyWindow( ghMainWnd );
+		}
+		OnKeyDown( wParam );
+		return 0;
+
+	case WM_KEYUP:
+		OnKeyUp( wParam );
+		return 0;
+
 	case WM_GETMINMAXINFO:
 		( (MINMAXINFO*) lParam )->ptMinTrackSize.x = 200;
 		( (MINMAXINFO*) lParam )->ptMinTrackSize.y = 200;
@@ -179,13 +191,6 @@ LRESULT WindowsApp::MsgProc( HWND hWnd , UINT msg , WPARAM wParam , LPARAM lPara
 
 	case WM_MENUCHAR:
 		return MAKELRESULT( 0 , MNC_CLOSE );
-
-	case WM_KEYDOWN:
-		if ( wParam == VK_ESCAPE )
-		{
-			DestroyWindow( ghMainWnd );
-		}
-		return 0;
 
 	case WM_DESTROY:
 		PostQuitMessage( 0 );
