@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClCompile Include="..\Common\dxerr.cpp" />
     <ClCompile Include="BasicShape\BasicCube.cpp" />
+    <ClCompile Include="BasicShape\BasicCurve.cpp" />
     <ClCompile Include="BasicShape\BasicQuad.cpp" />
     <ClCompile Include="BasicShape\BasicShape.cpp" />
     <ClCompile Include="BasicShape\BasicSquareCone.cpp" />
@@ -210,6 +211,7 @@
     <ClInclude Include="..\Common\dxerr.h" />
     <ClInclude Include="..\Common\scoped.h" />
     <ClInclude Include="BasicShape\BasicCube.h" />
+    <ClInclude Include="BasicShape\BasicCurve.h" />
     <ClInclude Include="BasicShape\BasicQuad.h" />
     <ClInclude Include="BasicShape\BasicShape.h" />
     <ClInclude Include="BasicShape\BasicSquareCone.h" />
@@ -253,6 +255,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Textures\checkboard.dds" />
     <Image Include="Textures\darkbrick.bmp" />
     <Image Include="Textures\darkbrickdxt1.dds" />
     <Image Include="Textures\FireAnim\Fire001.bmp" />
@@ -378,6 +381,7 @@
     <Image Include="Textures\flare.dds" />
     <Image Include="Textures\flarealpha.dds" />
     <Image Include="Textures\grass.dds" />
+    <Image Include="Textures\ice.dds" />
     <Image Include="Textures\water1.dds" />
     <Image Include="Textures\water2.dds" />
     <Image Include="Textures\WireFence.dds" />

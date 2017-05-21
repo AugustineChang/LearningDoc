@@ -11,6 +11,7 @@
 #include "../BasicShape/RotateFlame.h"
 #include "../BasicShape/BlendFlame.h"
 #include "../BasicShape/Billboard.h"
+#include "../BasicShape/BasicCurve.h"
 
 using namespace DirectX;
 
@@ -30,9 +31,6 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	cylinder->Position.y = 2.1f;
 	renderList.push_back( cylinder );
 
-	//GeoSphere *sphere = new GeoSphere();
-	//renderList.push_back( sphere );
-
 	Sphere *sphere = new Sphere();
 	sphere->Position.x = 3;
 	renderList.push_back( sphere );
@@ -40,18 +38,13 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCube *cube = new BasicCube();
 	renderList.push_back( cube );
 
-	Billboard *board = new Billboard();
-	board->Position.x = -1;
-	renderList.push_back( board );
-
-	//注意这个带Blend 目前需要最后一个画
-	BlendFlame *flame = new BlendFlame();
-	flame->Position.z = -2;
-	renderList.push_back( flame );
-
 	//SimpleMesh *mesh = new SimpleMesh();
 	//mesh->Position.y = 1.5f;
 	//renderList.push_back( mesh );
+
+	BasicCurve *curve = new BasicCurve();
+	curve->Position.y = 3.5f;
+	renderList.push_back( curve );
 
 	DirectX::XMVECTOR dir = DirectX::XMVectorSet( -1.0f , 1.0f , 0.5f , 0.0f );
 	DirectX::XMStoreFloat3( &dirLight[1].direction , DirectX::XMVector3Normalize( dir ) );

@@ -35,12 +35,36 @@ void BasicQuad::createObjectMesh()
 {
 	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 
-	tessVertices =
+	/*tessVertices =
 	{
 		{ XMFLOAT3( width,0.0f,height ), XMFLOAT2( 1.0f, 0.0f ) },
 		{ XMFLOAT3( -width,0.0f,height ), XMFLOAT2( 0.0f, 0.0f ) },
 		{ XMFLOAT3( width,0.0f,-height ), XMFLOAT2( 1.0f, 1.0f ) },
 		{ XMFLOAT3( -width,0.0f,-height ), XMFLOAT2( 0.0f, 1.0f ) }
+	};*/
+
+	tessVertices =
+	{
+		// Row 0
+		{XMFLOAT3( -10.0f, -10.0f, +15.0f ) , XMFLOAT2( 0.0f, 0.0f ) } ,
+		{XMFLOAT3( -5.0f, 0.0f, +15.0f ) , XMFLOAT2( 0.25f, 0.0f ) },
+		{XMFLOAT3( +5.0f, 0.0f, +15.0f ) , XMFLOAT2( 0.5f, 0.0f ) },
+		{XMFLOAT3( +10.0f, 0.0f, +15.0f ) , XMFLOAT2( 1.0f, 0.0f ) },
+		// Row 1
+		{XMFLOAT3( -15.0f, 0.0f, +5.0f ) , XMFLOAT2( 0.0f, 0.25f ) },
+		{XMFLOAT3( -5.0f, 0.0f, +5.0f ) , XMFLOAT2( 0.25f, 0.25f ) },
+		{XMFLOAT3( +5.0f, 20.0f, +5.0f ) , XMFLOAT2( 0.5f, 0.25f ) },
+		{XMFLOAT3( +15.0f, 0.0f, +5.0f ) , XMFLOAT2( 1.0f, 0.25f ) },
+		// Row 2
+		{XMFLOAT3( -15.0f, 0.0f, -5.0f ) , XMFLOAT2( 0.0f, 0.5f ) },
+		{XMFLOAT3( -5.0f, 0.0f, -5.0f ) , XMFLOAT2( 0.25f, 0.5f ) },
+		{XMFLOAT3( +5.0f, 0.0f, -5.0f ) , XMFLOAT2( 0.5f, 0.5f ) },
+		{XMFLOAT3( +15.0f, 0.0f, -5.0f ) , XMFLOAT2( 1.0f, 0.5f ) },
+		// Row 3
+		{XMFLOAT3( -10.0f, 10.0f, -15.0f ) , XMFLOAT2( 0.0f, 1.0f ) },
+		{XMFLOAT3( -5.0f, 0.0f, -15.0f ) , XMFLOAT2( 0.25f, 1.0f ) },
+		{XMFLOAT3( +5.0f, 0.0f, -15.0f ) , XMFLOAT2( 0.5f, 1.0f ) },
+		{XMFLOAT3( +25.0f, 10.0f, -15.0f ) , XMFLOAT2( 1.0f, 1.0f ) }
 	};
 }
 
@@ -62,8 +86,8 @@ void BasicQuad::createRenderState( ID3D11Device *device )
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
-	rsDesc.CullMode = D3D11_CULL_FRONT;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;
 
@@ -97,7 +121,8 @@ void BasicQuad::UpdateObjectEffect( const Camera *camera )
 
 void BasicQuad::RenderObject( ID3D11DeviceContext *immediateContext )
 {
-	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
+	//immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST );
+	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_16_CONTROL_POINT_PATCHLIST );
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->RSSetState( rasterState );
 
@@ -108,6 +133,7 @@ void BasicQuad::RenderObject( ID3D11DeviceContext *immediateContext )
 	{
 		technique->GetPassByIndex( i )->Apply( 0 , immediateContext );
 
-		immediateContext->Draw( 4 , 0 );
+		//immediateContext->Draw( 4 , 0 );
+		immediateContext->Draw( 16 , 0 );
 	}
 }

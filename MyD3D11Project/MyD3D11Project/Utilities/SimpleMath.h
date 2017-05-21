@@ -24,6 +24,13 @@ public:
 		return a + RandF()*( b - a );
 	}
 
+	static float Lerp( float from , float to , float alpha )
+	{
+		alpha = Clamp<float>( alpha , 0.0f , 1.0f );
+
+		return from * ( 1 - alpha ) + to * alpha;
+	}
+
 	inline static DirectX::XMFLOAT4 Add( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
 	{
 		return DirectX::XMFLOAT4( a.x + b.x , a.y + b.y , a.z + b.z , a.w + b.w );

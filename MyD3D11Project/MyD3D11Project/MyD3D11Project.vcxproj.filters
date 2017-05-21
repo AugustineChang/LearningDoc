@@ -129,6 +129,9 @@
     <ClCompile Include="BasicShape\BasicQuad.cpp">
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
+    <ClCompile Include="BasicShape\BasicCurve.cpp">
+      <Filter>源文件\BasicShape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h">
@@ -273,6 +276,9 @@
       <Filter>头文件\DX11Apps</Filter>
     </ClInclude>
     <ClInclude Include="BasicShape\BasicQuad.h">
+      <Filter>头文件\BasicShape</Filter>
+    </ClInclude>
+    <ClInclude Include="BasicShape\BasicCurve.h">
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
   </ItemGroup>
@@ -704,6 +710,12 @@
       <Filter>Textures\FireAnim</Filter>
     </Image>
     <Image Include="Textures\WireFence.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\checkboard.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\ice.dds">
       <Filter>Textures</Filter>
     </Image>
   </ItemGroup>
