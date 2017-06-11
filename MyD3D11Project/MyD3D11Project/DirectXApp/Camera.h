@@ -8,8 +8,12 @@ public:
 	~Camera();
 
 	void buildViewMatrix();
+	void buildProjectMatrix();
 	void buildProjectMatrix( int screenWidth , int screenHeight );
 	DirectX::XMVECTOR TransformDirection( DirectX::FXMVECTOR dir ) const;
+
+	// Set frustum.
+	void SetFrustum( float fovY , float aspect , float zn , float zf );
 
 	DirectX::XMMATRIX getViewMatrix() const;
 	DirectX::XMMATRIX getProjectMatrix() const;
@@ -26,6 +30,7 @@ private:
 	float fovAngle;
 	float nearPlane;
 	float farPlane;
+	float aspectRatio;
 
 	DirectX::XMFLOAT4X4 rotationMat;
 	DirectX::XMFLOAT4X4 world2View;

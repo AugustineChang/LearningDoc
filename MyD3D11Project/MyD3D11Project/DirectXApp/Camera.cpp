@@ -3,7 +3,7 @@
 using namespace DirectX;
 
 Camera::Camera() : fovAngle( SimpleMath::PI / 3.0f ) ,
-nearPlane( 1.0f ) , farPlane( 300.0f )
+nearPlane( 1.0f ) , farPlane( 300.0f ) , aspectRatio( 16.0f / 9.0f )
 {
 	XMMATRIX identityMaxtrix = DirectX::XMMatrixIdentity();
 	XMStoreFloat4x4( &world2View , identityMaxtrix );
@@ -38,7 +38,13 @@ void Camera::buildViewMatrix()
 
 void Camera::buildProjectMatrix( int screenWidth , int screenHeight )
 {
-	float aspectRatio = (float) screenWidth / screenHeight;
+	float aspect = (float) screenWidth / screenHeight;
+	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspect , nearPlane , farPlane );
+	XMStoreFloat4x4( &view2Proj , temp );
+}
+
+void Camera::buildProjectMatrix()
+{
 	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspectRatio , nearPlane , farPlane );
 	XMStoreFloat4x4( &view2Proj , temp );
 }
@@ -47,6 +53,15 @@ DirectX::XMVECTOR Camera::TransformDirection( DirectX::FXMVECTOR dir ) const
 {
 	XMMATRIX rotMatrix = XMLoadFloat4x4( &rotationMat );
 	return DirectX::XMVector4Transform( dir , rotMatrix );
+}
+
+void Camera::SetFrustum( float fovY , float aspect , float zn , float zf )
+{
+	fovAngle = fovY;
+	aspectRatio = aspect;
+
+	nearPlane = zn;
+	farPlane = zf;
 }
 
 DirectX::XMMATRIX Camera::getViewMatrix() const
