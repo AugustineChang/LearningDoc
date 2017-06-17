@@ -74,14 +74,14 @@ DirectX::XMMATRIX Camera::getProjectMatrix() const
 	return XMLoadFloat4x4( &view2Proj );
 }
 
-void Camera::UpdatePosition( float radius )
+void Camera::MoveCamera_Orbit( float radius )
 {
 	Position.x = radius * cosf( Rotation.x ) * cosf( -Rotation.y - SimpleMath::PI / 2 );
 	Position.z = radius * cosf( Rotation.x ) * sinf( -Rotation.y - SimpleMath::PI / 2 );
 	Position.y = radius * sinf( Rotation.x );
 }
 
-void Camera::UpdatePosition2( float forwardSpeed , float rightSpeed )
+void Camera::MoveCamera_Walk( float forwardSpeed , float rightSpeed )
 {
 	if ( forwardSpeed == 0.0f && rightSpeed == 0.0f ) return;
 
@@ -94,7 +94,7 @@ void Camera::UpdatePosition2( float forwardSpeed , float rightSpeed )
 	XMStoreFloat4( &Position , curPosition + moveDir );
 }
 
-void Camera::UpdateRotation( float deltaX , float deltaY )
+void Camera::RotateCamera( float deltaX , float deltaY )
 {
 	Rotation.y += deltaX;
 	Rotation.x = SimpleMath::Clamp<float>( Rotation.x + deltaY , -SimpleMath::PI / 2 + 0.01f , SimpleMath::PI / 2 - 0.01f );

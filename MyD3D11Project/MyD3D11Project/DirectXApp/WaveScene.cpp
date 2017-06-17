@@ -44,12 +44,12 @@ bool WaveScene::InitDirectApp()
 
 void WaveScene::UpdateScene( float deltaTime )
 {
-	wave->UpdateObject( deltaTime );
+	wave->UpdateObject( deltaTime , immediateContext );
 	UINT len = wave->getVertices().size();
 
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	HR( immediateContext->Map( waveVB , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
-	CustomVertex *vert = reinterpret_cast<CustomVertex *>( mappedData.pData );
+	BaseVertex *vert = reinterpret_cast<BaseVertex *>( mappedData.pData );
 	for ( UINT i = 0; i < len; ++i )
 	{
 		vert[i].Pos = wave->getVertices()[i].Pos;
@@ -80,7 +80,7 @@ void WaveScene::DrawScene()
 	box->UpdateObjectEffect( &camera );
 
 	//terrain
-	UINT stride = sizeof( CustomVertex );
+	UINT stride = sizeof( BaseVertex );
 	UINT offset = 0;
 	immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
 	immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
@@ -117,7 +117,7 @@ void WaveScene::OnMouseMove( WPARAM btnState , int x , int y )
 		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*rotSpeed );
 		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*rotSpeed );
 		
-		camera.UpdateRotation( deltaX , deltaY );
+		camera.RotateCamera( deltaX , deltaY );
 		
 		lastMousePos.x = x;
 		lastMousePos.y = y;
@@ -131,7 +131,7 @@ void WaveScene::OnMouseUp( WPARAM btnState , int x , int y )
 
 void WaveScene::OnMouseWheel( int zDelta )
 {
-	camera.UpdatePosition2( zDelta * moveSpeed , 0.0f );
+	camera.MoveCamera_Walk( zDelta * moveSpeed , 0.0f );
 }
 
 template<typename T>
@@ -186,9 +186,9 @@ void WaveScene::createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11B
 
 void WaveScene::createObjects()
 {
-	std::vector<CustomVertex> waveVlist;
+	std::vector<BaseVertex> waveVlist;
 	std::vector<UINT> waveIlist;
-	std::vector<CustomVertex> gvlist;
+	std::vector<BaseVertex> gvlist;
 	std::vector<UINT> gilist;
 
 	wave->InitShape( device );
@@ -205,9 +205,9 @@ void WaveScene::createObjects()
 	createIndexBuffer( &gilist[0] , gilist.size() , otherIB );
 }
 
-void WaveScene::addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
+void WaveScene::addToGlobalBuffer( std::vector<BaseVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
 {
-	std::vector<CustomVertex> vlist = shape.getVertices();
+	std::vector<BaseVertex> vlist = shape.getVertices();
 	std::vector<UINT> ilist = shape.getIndices();
 
 	shape.indexSize = ilist.size();

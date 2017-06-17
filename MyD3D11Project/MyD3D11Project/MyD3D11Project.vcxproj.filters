@@ -132,6 +132,9 @@
     <ClCompile Include="BasicShape\BasicCurve.cpp">
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
+    <ClCompile Include="BasicShape\InstancedCube.cpp">
+      <Filter>源文件\BasicShape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dx11effect.h">
@@ -281,6 +284,9 @@
     <ClInclude Include="BasicShape\BasicCurve.h">
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
+    <ClInclude Include="BasicShape\InstancedCube.h">
+      <Filter>头文件\BasicShape</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="FX\LitShader.fx">
@@ -302,6 +308,9 @@
       <Filter>FX</Filter>
     </CustomBuild>
     <CustomBuild Include="FX\TessellationShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\InstancedLitShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>

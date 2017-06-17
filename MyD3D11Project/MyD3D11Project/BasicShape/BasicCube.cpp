@@ -15,10 +15,6 @@ BasicCube::~BasicCube()
 {
 }
 
-void BasicCube::UpdateObject( float DeltaTime )
-{
-}
-
 void BasicCube::createObjectMesh()
 {
 	XMFLOAT3 zero = XMFLOAT3( 0.0f , 0.0f , 0.0f );

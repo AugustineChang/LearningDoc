@@ -2,11 +2,7 @@
 #include "BasicShape.h"
 #include <vector>
 
-struct TessVertex
-{
-	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT2 TexCoord;
-};
+struct TessVertex;
 
 class BasicQuad :public BasicShape
 {
@@ -14,7 +10,6 @@ public:
 	BasicQuad();
 	~BasicQuad();
 	
-	virtual void UpdateObject( float DeltaTime ) override;
 	virtual void UpdateObjectEffect( const Camera *camera ) override;
 	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum ) override {}
 	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum ) override {}

@@ -3,20 +3,7 @@
 #include <DirectXMath.h>
 #include "../DirectXApp/ShaderEffect.h"
 
-struct CustomVertex
-{
-	DirectX::XMFLOAT3 Pos;
-	DirectX::XMFLOAT3 Normal;
-	DirectX::XMFLOAT2 TexCoord;
-};
-
-struct CustomMaterial
-{
-	DirectX::XMFLOAT4 ambient;
-	DirectX::XMFLOAT4 diffuse;
-	DirectX::XMFLOAT4 specular;// w = SpecPower
-};
-
+struct ID3D11Buffer;
 struct ID3D11Resource;
 struct ID3D11ShaderResourceView;
 struct ID3D11BlendState;
@@ -36,6 +23,17 @@ struct DirectionalLight;
 struct PointLight;
 struct SpotLight;
 
+struct BaseVertex;
+struct InstanceData;
+struct CustomMaterial;
+
+enum ShapeType
+{
+	Standard, // common objects use BaseVertex
+	Instanced, // instanced objects use BaseVertex and InstancedData
+	Custom // use custom vertexType
+};
+
 class BasicShape
 {
 public:
@@ -45,15 +43,16 @@ public:
 	~BasicShape();
 	
 	virtual void InitShape( ID3D11Device *device );
-	virtual void UpdateObject( float DeltaTime ){}
+	virtual void UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext ){}
 	virtual void UpdateObjectEffect( const Camera *camera );
 	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum );
 	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum );
 	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum );
 	virtual void RenderObject( ID3D11DeviceContext *immediateContext );
 
-	const std::vector<CustomVertex>& getVertices() const { return vertices; }
+	const std::vector<BaseVertex>& getVertices() const { return vertices; }
 	const std::vector<unsigned int>& getIndices() const { return indices; }
+	ID3D11Buffer *getInstancedData() const { return instanceBuffer; }
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
@@ -62,7 +61,7 @@ public:
 	unsigned int indexStart;
 	unsigned int indexSize;
 	unsigned int indexBase;
-	bool isUseGlobalBuffer;// global vertexBuffer and indexBuffer
+	ShapeType type;
 
 protected:
 
@@ -104,9 +103,10 @@ protected:
 	ID3DX11EffectScalarVariable *efFogDistance;
 	ID3DX11EffectVectorVariable *efFogColor;
 	
-	CustomMaterial material;
-	std::vector<CustomVertex> vertices;
+	CustomMaterial *material;
+	std::vector<BaseVertex> vertices;
 	std::vector<unsigned int> indices;
+	ID3D11Buffer *instanceBuffer;
 
 	ID3D11Resource *texture;
 	ID3D11ShaderResourceView *textureView;

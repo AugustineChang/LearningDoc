@@ -5,7 +5,7 @@
 #include <DirectXMath.h>
 #include <vector>
 
-struct CustomVertex;
+struct BaseVertex;
 struct ID3D11Buffer;
 class BasicShape;
 
@@ -37,7 +37,7 @@ private:
 protected:
 
 	void createObjects();
-	void addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
+	void addToGlobalBuffer( std::vector<BaseVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
 	
 	void createIndexBuffer( const UINT *indices , UINT indexNum , ID3D11Buffer *&indexBuffer );
 	template<typename T>

@@ -40,8 +40,8 @@ void BasicCurve::createObjectMesh()
 		XMFLOAT3 location;
 		XMStoreFloat3( &location , result );
 
-		CustomVertex vertex = { location , zero , XMFLOAT2( alpha , 0.1f ) };
-		CustomVertex vertex2 = { XMFLOAT3( location.x , location.y , location.z + lineWidth ) , zero , XMFLOAT2( alpha , 0.0f ) };
+		BaseVertex vertex = { location , zero , XMFLOAT2( alpha , 0.1f ) };
+		BaseVertex vertex2 = { XMFLOAT3( location.x , location.y , location.z + lineWidth ) , zero , XMFLOAT2( alpha , 0.0f ) };
 
 		vertices.push_back( vertex );
 		vertices.push_back( vertex2 );

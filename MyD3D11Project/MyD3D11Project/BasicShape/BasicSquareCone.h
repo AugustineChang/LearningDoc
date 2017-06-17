@@ -8,7 +8,7 @@ public:
 	BasicSquareCone();
 	~BasicSquareCone();
 
-	virtual void UpdateObject( float DeltaTime ) override;
+	virtual void UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext ) override;
 
 protected:
 

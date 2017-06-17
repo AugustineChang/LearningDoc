@@ -7,7 +7,7 @@
 #include <vector>
 
 class DebugQuad;
-struct CustomVertex;
+struct BaseVertex;
 struct ID3D11Buffer;
 struct ID3D11DepthStencilState;
 
@@ -43,7 +43,7 @@ private:
 protected:
 
 	void createObjects();
-	void addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
+	void addToGlobalBuffer( std::vector<BaseVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );
 	
 	template<typename T>
 	void createVertexBuffer( const T *vertices , UINT vertexNum );

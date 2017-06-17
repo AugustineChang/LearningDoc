@@ -5,7 +5,7 @@
 #include <DirectXMath.h>
 #include <vector>
 
-struct CustomVertex;
+struct BaseVertex;
 struct ID3D11Buffer;
 class BasicShape;
 

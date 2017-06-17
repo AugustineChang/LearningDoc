@@ -5,7 +5,7 @@ using namespace DirectX;
 
 GeoSphere::GeoSphere() : radius( 2.0f ) , tesselTimes( 2 )
 {
-	material.specular.w = 1.0f;
+	material->specular.w = 1.0f;
 }
 
 
@@ -85,9 +85,9 @@ void GeoSphere::doTessllation()
 		UINT v0Index = indices[i * 3];
 		UINT v1Index = indices[i * 3 + 1];
 		UINT v2Index = indices[i * 3 + 2];
-		CustomVertex v0 = vertices[v0Index];
-		CustomVertex v1 = vertices[v1Index];
-		CustomVertex v2 = vertices[v2Index];
+		BaseVertex v0 = vertices[v0Index];
+		BaseVertex v1 = vertices[v1Index];
+		BaseVertex v2 = vertices[v2Index];
 		v0.Normal = zero;
 		v1.Normal = zero;
 		v2.Normal = zero;

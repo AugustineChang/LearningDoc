@@ -13,8 +13,8 @@ timer( 0.0f ) , disturbTimer( 0.0f )
 	K2 = ( 4.0f - 8.0f*e ) / d;
 	K3 = ( 2.0f*e ) / d;
 
-	material.diffuse.w = 0.4f;
-	material.specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 2.0f );
+	material->diffuse.w = 0.4f;
+	material->specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 2.0f );
 }
 
 
@@ -22,7 +22,7 @@ WaveTerrain::~WaveTerrain()
 {
 }
 
-void WaveTerrain::UpdateObject( float DeltaTime )
+void WaveTerrain::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
 	UpdateDisturb( DeltaTime );
 
@@ -99,7 +99,7 @@ void WaveTerrain::createObjectMesh()
 	createBasicPlane();
 
 	UINT len = vertices.size();
-	for ( const CustomVertex &vert : vertices )
+	for ( const BaseVertex &vert : vertices )
 	{
 		prevVertice.push_back( vert );
 	}

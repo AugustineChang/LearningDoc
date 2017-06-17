@@ -13,10 +13,6 @@ BasicQuad::~BasicQuad()
 {
 }
 
-void BasicQuad::UpdateObject( float DeltaTime )
-{
-}
-
 void BasicQuad::createEffect( ID3D11Device *device )
 {
 	effect.createEffectAtBuildtime( device );

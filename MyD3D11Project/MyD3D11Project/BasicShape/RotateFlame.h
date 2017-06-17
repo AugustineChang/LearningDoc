@@ -8,7 +8,7 @@ public:
 	RotateFlame();
 	~RotateFlame();
 	
-	virtual void UpdateObject( float DeltaTime ) override;
+	virtual void UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext ) override;
 	virtual void UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum ) override;
 	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum ) override {}
 	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum ) override {}

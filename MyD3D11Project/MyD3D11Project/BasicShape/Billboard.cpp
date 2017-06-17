@@ -12,7 +12,7 @@ struct BillboardVertex
 
 Billboard::Billboard() : BasicShape( "GeoShader" )
 {
-	isUseGlobalBuffer = false;
+	type = ShapeType::Custom;
 	isEnableFog = false;
 	techName = "GeoTech_Tex";
 }

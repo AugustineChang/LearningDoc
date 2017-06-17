@@ -20,7 +20,7 @@ BlendFlame::~BlendFlame()
 	for ( auto tex : textures ) ReleaseCOM( tex );
 }
 
-void BlendFlame::UpdateObject( float DeltaTime )
+void BlendFlame::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
 	float interval = 0.0333f;
 	timer += DeltaTime;

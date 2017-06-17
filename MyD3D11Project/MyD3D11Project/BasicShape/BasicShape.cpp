@@ -4,16 +4,18 @@
 #include "../DirectXApp/Lights.h"
 using namespace DirectX;
 
-BasicShape::BasicShape() : effect( "LitShader" ) , isUseGlobalBuffer( true ) , isEnableFog( true ) , 
+BasicShape::BasicShape() : effect( "LitShader" ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
 fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
+	material = new CustomMaterial();
 	initDirectMath();
 	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
 }
 
-BasicShape::BasicShape( std::string shader ) : effect( shader ) , isUseGlobalBuffer( true ) , isEnableFog( true ) ,
+BasicShape::BasicShape( std::string shader ) : effect( shader ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
 fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
 {
+	material = new CustomMaterial();
 	initDirectMath();
 	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
 }
@@ -25,6 +27,9 @@ BasicShape::~BasicShape()
 	ReleaseCOM( inputLayout );
 	ReleaseCOM( blendState );
 	ReleaseCOM( rasterState );
+	ReleaseCOM( instanceBuffer );
+
+	delete material;
 }
 
 void BasicShape::initDirectMath()
@@ -41,9 +46,9 @@ void BasicShape::initDirectMath()
 	XMVECTOR objScale = XMVectorSet( 1.0f , 1.0f , 1.0f , 0.0f );
 	XMStoreFloat3( &Scale , objScale );
 
-	material.ambient = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
-	material.diffuse = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
-	material.specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 5.0f );
+	material->ambient = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
+	material->diffuse = XMFLOAT4( 1.0f , 1.0f , 1.0f , 1.0f );
+	material->specular = XMFLOAT4( 1.0f , 1.0f , 1.0f , 5.0f );
 }
 
 void BasicShape::buildWorldMatrix( )
@@ -88,7 +93,7 @@ void BasicShape::UpdateObjectEffect( const Camera *camera )
 	efWorldNorm->SetMatrix( reinterpret_cast<const float*>( &inverseTransposeW ) );
 	efTexTrans->SetMatrix( reinterpret_cast<const float*>( &identityMat ) );
 
-	efMaterial->SetRawValue( &material , 0 , sizeof( CustomMaterial ) );
+	efMaterial->SetRawValue( material , 0 , sizeof( CustomMaterial ) );
 	efTexture->SetResource( textureView );
 	efCameraPos->SetRawValue( &( camera->Position ) , 0 , sizeof( XMFLOAT3 ) );
 

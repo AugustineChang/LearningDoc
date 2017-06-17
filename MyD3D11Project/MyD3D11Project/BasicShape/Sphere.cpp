@@ -7,7 +7,7 @@ using namespace DirectX;
 Sphere::Sphere() : stackCount( 17 ) , sliceCount( 20 ) , radius( 2.0f )
 {
 	//material.specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
-	material.specular.w = 3.0f;
+	material->specular.w = 3.0f;
 }
 
 
@@ -30,7 +30,7 @@ void Sphere::createObjectMesh()
 	float deltaAngle = 2.0f * SimpleMath::PI / sliceCount;
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex top;
+		BaseVertex top;
 		top.Pos = XMFLOAT3( 0.0f , radius , 0.0f );
 		top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		top.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 0.0f );
@@ -40,7 +40,7 @@ void Sphere::createObjectMesh()
 	//bottom vertex
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex bottom;
+		BaseVertex bottom;
 		bottom.Pos = XMFLOAT3( 0.0f , -radius , 0.0f );
 		bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		bottom.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 1.0f );
@@ -120,7 +120,7 @@ void Sphere::generateCicle( float vAngle )
 
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex one;
+		BaseVertex one;
 
 		float hAngle = deltaHAngle*i;
 

@@ -29,7 +29,7 @@ void Cylinder::createObjectMesh()
 	float deltaAngle = 2.0f * SimpleMath::PI / sliceCount;
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex top;
+		BaseVertex top;
 		top.Pos = XMFLOAT3( 0.0f , halfHeight , 0.0f );
 		top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		top.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 0.0f );
@@ -39,7 +39,7 @@ void Cylinder::createObjectMesh()
 	//bottom vertex
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex bottom;
+		BaseVertex bottom;
 		bottom.Pos = XMFLOAT3( 0.0f , -halfHeight , 0.0f );
 		bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		bottom.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 1.0f );
@@ -107,7 +107,7 @@ void Cylinder::generateCicle( float radius , float yPos )
 
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
-		CustomVertex one;
+		BaseVertex one;
 		one.Pos = XMFLOAT3( radius * cosf( deltaAngle*i ) , yPos , radius * sinf( deltaAngle*i ) );
 		one.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		one.TexCoord.x = ( i * deltaAngle ) / ( SimpleMath::PI * 2 );

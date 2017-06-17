@@ -7,7 +7,7 @@ public:
 	WaveTerrain();
 	~WaveTerrain();
 
-	virtual void UpdateObject( float DeltaTime ) override;
+	virtual void UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext ) override;
 	void disturb( unsigned int i , unsigned int j , float magnitude );
 
 protected:
@@ -22,7 +22,7 @@ protected:
 
 private:
 
-	std::vector<CustomVertex> prevVertice;
+	std::vector<BaseVertex> prevVertice;
 
 	float timer;
 	float disturbTimer;

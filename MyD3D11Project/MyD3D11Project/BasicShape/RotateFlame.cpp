@@ -18,7 +18,7 @@ RotateFlame::~RotateFlame()
 {
 }
 
-void RotateFlame::UpdateObject( float DeltaTime )
+void RotateFlame::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
 	rotAngle += DeltaTime * 0.1f;
 	rotMatrix = XMMatrixTranslation( -0.5f , -0.5f , 0.0f ) *

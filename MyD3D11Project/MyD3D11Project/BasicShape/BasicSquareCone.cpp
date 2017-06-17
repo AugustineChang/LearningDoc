@@ -13,7 +13,7 @@ BasicSquareCone::~BasicSquareCone()
 {
 }
 
-void BasicSquareCone::UpdateObject( float DeltaTime )
+void BasicSquareCone::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
 	Rotation.y += rotSpeed * DeltaTime;
 

@@ -12,6 +12,7 @@
 #include "../BasicShape/BlendFlame.h"
 #include "../BasicShape/Billboard.h"
 #include "../BasicShape/BasicCurve.h"
+#include "../BasicShape/InstancedCube.h"
 
 using namespace DirectX;
 
@@ -42,6 +43,10 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	//mesh->Position.y = 1.5f;
 	//renderList.push_back( mesh );
 
+	InstancedCube *instCube = new InstancedCube();
+	instCube->Position.x = -2;
+	renderList.push_back( instCube );
+
 	BasicCurve *curve = new BasicCurve();
 	curve->Position.y = 3.5f;
 	renderList.push_back( curve );
@@ -70,7 +75,6 @@ bool SimpleScene::InitDirectApp()
 	if ( !DirectXApp::InitDirectApp() ) return false;
 	
 	createObjects();
-	//createDepthStencilState();
 
 	camera.Position.z = -radius;
 	camera.buildProjectMatrix( screenWidth , screenHeight );
@@ -81,7 +85,7 @@ void SimpleScene::UpdateScene( float deltaTime )
 {
 	for ( BasicShape *shape : renderList )
 	{
-		shape->UpdateObject( deltaTime );
+		shape->UpdateObject( deltaTime , immediateContext );
 	}
 }
 
@@ -91,17 +95,39 @@ void SimpleScene::DrawScene()
 	immediateContext->ClearDepthStencilView( depthBufferView , D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL , 1.0f , 0 );
 
 	camera.buildViewMatrix();
+	
 	for ( BasicShape *shape : renderList )
 	{
 		shape->UpdateDirectionalLight( &dirLight[0] , 2 );
 		shape->UpdateObjectEffect( &camera );
-		if ( shape->isUseGlobalBuffer )
+
+		switch ( shape->type )
 		{
-			UINT stride = sizeof( CustomVertex );
-			UINT offset = 0;
-			immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
-			immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
+			case ShapeType::Standard:
+			{
+				UINT stride = sizeof( BaseVertex );
+				UINT offset = 0;
+				immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
+				immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
+			}
+			break;
+
+			case ShapeType::Instanced:
+			{
+				UINT stride[2] = { sizeof( BaseVertex ), sizeof( InstanceData ) };
+				UINT offset[2] = { 0,0 };
+				ID3D11Buffer *instanceData = shape->getInstancedData();
+				ID3D11Buffer *buffers[2] = { vertexBuffer, instanceData };
+
+				immediateContext->IASetVertexBuffers( 0 , 2 , buffers , stride , offset );
+				immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
+			}
+			break;
+
+			case ShapeType::Custom:
+			break;
 		}
+		
 		shape->RenderObject( immediateContext );
 	}
 
@@ -130,8 +156,8 @@ void SimpleScene::OnMouseMove( WPARAM btnState , int x , int y )
 		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*moveSpeed );
 		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*moveSpeed );
 		
-		camera.UpdateRotation( deltaX , deltaY );
-		camera.UpdatePosition( radius );
+		camera.RotateCamera( deltaX , deltaY );
+		camera.MoveCamera_Orbit( radius );
 
 		lastMousePos.x = x;
 		lastMousePos.y = y;
@@ -146,7 +172,7 @@ void SimpleScene::OnMouseUp( WPARAM btnState , int x , int y )
 void SimpleScene::OnMouseWheel( int zDelta )
 {
 	radius -= zDelta * zoomSpeed;
-	camera.UpdatePosition( radius );
+	camera.MoveCamera_Orbit( radius );
 }
 
 template<typename T>
@@ -209,21 +235,34 @@ void SimpleScene::createObjects()
 {
 	if ( renderList.size() <= 0 ) return;
 
-	std::vector<CustomVertex> gvlist;
+	std::vector<BaseVertex> gvlist;
 	std::vector<UINT> gilist;
 	for ( BasicShape *shape : renderList )
 	{
 		shape->InitShape( device );
-		addToGlobalBuffer( gvlist , gilist , *shape );
+
+		switch ( shape->type )
+		{
+		case ShapeType::Standard:
+			addToGlobalBuffer( gvlist , gilist , *shape );
+			break;
+
+		case ShapeType::Instanced:
+			addToGlobalBuffer( gvlist , gilist , *shape );
+			break;
+
+		case ShapeType::Custom:
+			break;
+		}
 	}
 
 	createVertexBuffer( &gvlist[0] , gvlist.size() );
 	createIndexBuffer( &gilist[0] , gilist.size() );
 }
 
-void SimpleScene::addToGlobalBuffer( std::vector<CustomVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
+void SimpleScene::addToGlobalBuffer( std::vector<BaseVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape )
 {
-	std::vector<CustomVertex> vlist = shape.getVertices();
+	std::vector<BaseVertex> vlist = shape.getVertices();
 	std::vector<UINT> ilist = shape.getIndices();
 
 	shape.indexSize = ilist.size();

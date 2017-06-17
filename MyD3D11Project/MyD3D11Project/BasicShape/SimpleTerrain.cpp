@@ -8,7 +8,7 @@ using namespace DirectX;
 SimpleTerrain::SimpleTerrain()
 	:verticesDim( { 10,10 } ) , terrainSize( { 160.0f,160.0f } )
 {
-	material.specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
+	material->specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
 }
 
 SimpleTerrain::SimpleTerrain( const Point<unsigned int> &vert , const Point<float> &size )
@@ -30,7 +30,7 @@ void SimpleTerrain::createObjectMesh()
 {
 	createBasicPlane();
 
-	for ( CustomVertex &vertex : vertices )
+	for ( BaseVertex &vertex : vertices )
 	{
 		vertex.Pos.y = getHeight( vertex.Pos.x , vertex.Pos.z , 0.0f );
 	}
@@ -57,7 +57,7 @@ void SimpleTerrain::createBasicPlane()
 	{
 		for ( UINT x = 0; x < verticesDim.x; ++x )
 		{
-			CustomVertex one;
+			BaseVertex one;
 
 			one.Pos = XMFLOAT3( x * gridX - halfSizeX , 0.0f , z * gridY - halfSizeY );
 			one.Normal = zero;

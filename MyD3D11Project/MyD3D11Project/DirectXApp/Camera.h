@@ -18,9 +18,9 @@ public:
 	DirectX::XMMATRIX getViewMatrix() const;
 	DirectX::XMMATRIX getProjectMatrix() const;
 
-	void UpdatePosition( float raduis );
-	void UpdatePosition2( float forwardSpeed , float rightSpeed );
-	void UpdateRotation( float deltaX , float deltaY );
+	void MoveCamera_Orbit( float raduis );
+	void MoveCamera_Walk( float forwardSpeed , float rightSpeed );
+	void RotateCamera( float deltaX , float deltaY );
 
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;

@@ -38,3 +38,29 @@ namespace Colors
 }
 
 #endif // !UTILITIES_H
+
+struct BaseVertex
+{
+	DirectX::XMFLOAT3 Pos;
+	DirectX::XMFLOAT3 Normal;
+	DirectX::XMFLOAT2 TexCoord;
+};
+
+struct TessVertex
+{
+	DirectX::XMFLOAT3 Pos;
+	DirectX::XMFLOAT2 TexCoord;
+};
+
+struct InstanceData
+{
+	DirectX::XMFLOAT4X4 World;
+	DirectX::XMFLOAT4 Color;
+};
+
+struct CustomMaterial
+{
+	DirectX::XMFLOAT4 ambient;
+	DirectX::XMFLOAT4 diffuse;
+	DirectX::XMFLOAT4 specular;// w = SpecPower
+};

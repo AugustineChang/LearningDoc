@@ -57,7 +57,7 @@ void TessellationHillScene::UpdateScene( float deltaTime )
 		rightSpeed = 0.1f * moveSpeed;
 	}
 
-	camera.UpdatePosition2( forwordSpeed , rightSpeed );
+	camera.MoveCamera_Walk( forwordSpeed , rightSpeed );
 }
 
 void TessellationHillScene::DrawScene()
@@ -96,7 +96,7 @@ void TessellationHillScene::OnMouseMove( WPARAM btnState , int x , int y )
 		float deltaX = XMConvertToRadians( ( x - lastMousePos.x )*rotSpeed );
 		float deltaY = XMConvertToRadians( ( y - lastMousePos.y )*rotSpeed );
 		
-		camera.UpdateRotation( deltaX , deltaY );
+		camera.RotateCamera( deltaX , deltaY );
 	}
 	
 	lastMousePos.x = x;
@@ -110,7 +110,7 @@ void TessellationHillScene::OnMouseUp( WPARAM btnState , int x , int y )
 
 void TessellationHillScene::OnMouseWheel( int zDelta )
 {
-	camera.UpdatePosition2( zDelta * moveSpeed , 0.0f );
+	camera.MoveCamera_Walk( zDelta * moveSpeed , 0.0f );
 }
 
 void TessellationHillScene::OnKeyDown( WPARAM keyCode )
