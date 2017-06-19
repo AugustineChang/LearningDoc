@@ -68,7 +68,15 @@ int main( int argc , const char *argv )
 	//test.outputVector( ptr );
 	//delete ptr;
 
-	testFolderMessage();
+	//testFolderMessage();
+
+	const int a = 10;
+	const int *b = &a;
+	int *c = const_cast<int*>( b );
+
+	std::cout << a << " " << *b << " " << *c << std::endl;
+	*c = 20;
+	std::cout << a << " " << *b << " " << *c << std::endl;
 
 	system( "Pause" );
     return 0;
