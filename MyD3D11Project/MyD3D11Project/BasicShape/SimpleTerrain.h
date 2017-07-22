@@ -14,7 +14,8 @@ protected:
 	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 	virtual void createObjectMesh() override;
 	virtual void createBasicPlane();
-	virtual float getHeight( float x , float z , float time ) const;
+	virtual void computeBoundingBox() override;
+	virtual float getHeight( float x , float z ) const;
 
 	virtual void createRenderState( ID3D11Device *device ) override;
 

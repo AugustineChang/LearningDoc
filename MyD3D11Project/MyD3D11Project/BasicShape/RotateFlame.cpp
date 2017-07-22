@@ -20,6 +20,8 @@ RotateFlame::~RotateFlame()
 
 void RotateFlame::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
+	if ( !isPassFrustumTest ) return;
+
 	rotAngle += DeltaTime * 0.1f;
 	rotMatrix = XMMatrixTranslation( -0.5f , -0.5f , 0.0f ) *
 	XMMatrixRotationZ( rotAngle ) * XMMatrixTranslation( 0.5f , 0.5f , 0.0f );
@@ -44,6 +46,7 @@ void RotateFlame::createObjectMesh()
 	};
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void RotateFlame::createEffect( ID3D11Device *device )

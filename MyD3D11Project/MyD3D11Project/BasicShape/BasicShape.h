@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <DirectXMath.h>
+#include <DirectXCollision.h>
 #include "../DirectXApp/ShaderEffect.h"
 
 struct ID3D11Buffer;
@@ -49,6 +50,7 @@ public:
 	virtual void UpdatePointLight( const PointLight *pointLight , int lightNum );
 	virtual void UpdateSpotLight( const SpotLight *spotLight , int lightNum );
 	virtual void RenderObject( ID3D11DeviceContext *immediateContext );
+	virtual void doFrustumCull( const Camera *camera );
 
 	const std::vector<BaseVertex>& getVertices() const { return vertices; }
 	const std::vector<unsigned int>& getIndices() const { return indices; }
@@ -62,6 +64,7 @@ public:
 	unsigned int indexSize;
 	unsigned int indexBase;
 	ShapeType type;
+	bool isPassFrustumTest;
 
 protected:
 
@@ -75,6 +78,7 @@ protected:
 	virtual void createObjectTexture( ID3D11Device *device ) {}
 	virtual void createObjectMesh() = 0;
 	virtual void computeNormal();
+	virtual void computeBoundingBox();
 
 	ShaderEffect effect;
 	std::string techName;
@@ -115,5 +119,6 @@ protected:
 	ID3D11BlendState *blendState;
 
 	DirectX::XMFLOAT4X4 obj2World;
+	DirectX::BoundingBox boundingBox;
 };
 

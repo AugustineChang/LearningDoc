@@ -24,6 +24,8 @@ WaveTerrain::~WaveTerrain()
 
 void WaveTerrain::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
+	if ( !isPassFrustumTest ) return;
+
 	UpdateDisturb( DeltaTime );
 
 	timer += DeltaTime;
@@ -65,7 +67,7 @@ void WaveTerrain::UpdateDisturb( float DeltaTime )
 	disturbTimer = 0.0f;
 }
 
-float WaveTerrain::getHeight( float x , float z , float time ) const
+float WaveTerrain::getHeight( float x , float z ) const
 {
 	return 0.0f;
 }
@@ -103,6 +105,8 @@ void WaveTerrain::createObjectMesh()
 	{
 		prevVertice.push_back( vert );
 	}
+
+	computeBoundingBox();
 }
 
 void WaveTerrain::createObjectTexture( struct ID3D11Device *device )
@@ -126,6 +130,15 @@ void WaveTerrain::createBlendState( ID3D11Device *device )
 	blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	HR( device->CreateBlendState( &blendDesc , &blendState ) );
+}
+
+void WaveTerrain::computeBoundingBox()
+{
+	float halfSizeX = terrainSize.x * 0.5f;
+	float halfSizeY = terrainSize.y * 0.5f;
+
+	boundingBox.Center = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+	boundingBox.Extents = XMFLOAT3( halfSizeX , halfSizeY , halfSizeY );
 }
 
 void WaveTerrain::disturb( unsigned int i , unsigned int j , float magnitude )

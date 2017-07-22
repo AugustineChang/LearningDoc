@@ -25,6 +25,7 @@ protected:
 	virtual void createEffect( ID3D11Device *device ) override;
 	virtual void createRenderState( ID3D11Device *device ) override;
 	virtual void createObjectTexture( ID3D11Device *device ) override;
+	virtual void computeBoundingBox() override;
 
 	float width;
 	float height;

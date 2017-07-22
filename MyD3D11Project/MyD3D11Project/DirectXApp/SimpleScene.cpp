@@ -85,6 +85,7 @@ void SimpleScene::UpdateScene( float deltaTime )
 {
 	for ( BasicShape *shape : renderList )
 	{
+		shape->doFrustumCull( &camera );
 		shape->UpdateObject( deltaTime , immediateContext );
 	}
 }
@@ -98,6 +99,8 @@ void SimpleScene::DrawScene()
 	
 	for ( BasicShape *shape : renderList )
 	{
+		if ( !shape->isPassFrustumTest ) continue;
+
 		shape->UpdateDirectionalLight( &dirLight[0] , 2 );
 		shape->UpdateObjectEffect( &camera );
 

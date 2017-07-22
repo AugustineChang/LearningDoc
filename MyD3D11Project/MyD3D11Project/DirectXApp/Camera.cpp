@@ -41,12 +41,16 @@ void Camera::buildProjectMatrix( int screenWidth , int screenHeight )
 	float aspect = (float) screenWidth / screenHeight;
 	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspect , nearPlane , farPlane );
 	XMStoreFloat4x4( &view2Proj , temp );
+
+	BoundingFrustum::CreateFromMatrix( frustum , temp );
 }
 
 void Camera::buildProjectMatrix()
 {
 	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspectRatio , nearPlane , farPlane );
 	XMStoreFloat4x4( &view2Proj , temp );
+
+	BoundingFrustum::CreateFromMatrix( frustum , temp );
 }
 
 DirectX::XMVECTOR Camera::TransformDirection( DirectX::FXMVECTOR dir ) const
@@ -72,6 +76,11 @@ DirectX::XMMATRIX Camera::getViewMatrix() const
 DirectX::XMMATRIX Camera::getProjectMatrix() const
 {
 	return XMLoadFloat4x4( &view2Proj );
+}
+
+const DirectX::BoundingFrustum &Camera::getBoundingFrustum() const
+{
+	return frustum;
 }
 
 void Camera::MoveCamera_Orbit( float radius )

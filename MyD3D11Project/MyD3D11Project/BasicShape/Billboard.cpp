@@ -15,6 +15,7 @@ Billboard::Billboard() : BasicShape( "GeoShader" )
 	type = ShapeType::Custom;
 	isEnableFog = false;
 	techName = "GeoTech_Tex";
+	isPassFrustumTest = true;
 }
 
 

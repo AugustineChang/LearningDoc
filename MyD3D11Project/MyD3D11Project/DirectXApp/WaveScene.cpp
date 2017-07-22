@@ -44,24 +44,31 @@ bool WaveScene::InitDirectApp()
 
 void WaveScene::UpdateScene( float deltaTime )
 {
-	wave->UpdateObject( deltaTime , immediateContext );
-	UINT len = wave->getVertices().size();
+	wave->doFrustumCull( &camera );
+	terrain->doFrustumCull( &camera );
+	box->doFrustumCull( &camera );
 
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	HR( immediateContext->Map( waveVB , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
-	BaseVertex *vert = reinterpret_cast<BaseVertex *>( mappedData.pData );
-	for ( UINT i = 0; i < len; ++i )
+	if ( wave->isPassFrustumTest )
 	{
-		vert[i].Pos = wave->getVertices()[i].Pos;
-		vert[i].Normal = wave->getVertices()[i].Normal;
-		vert[i].TexCoord = wave->getVertices()[i].TexCoord;
-	}
-	immediateContext->Unmap( waveVB , 0 );
+		wave->UpdateObject( deltaTime , immediateContext );
+		UINT len = wave->getVertices().size();
 
-	//move texture
-	moveOffset.x += 0.05f * deltaTime;
-	moveOffset.y += 0.11f * deltaTime;
-	moveMatrix = XMMatrixTranslation( moveOffset.x , moveOffset.y , 0.0f );
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		HR( immediateContext->Map( waveVB , 0 , D3D11_MAP_WRITE_DISCARD , 0 , &mappedData ) );
+		BaseVertex *vert = reinterpret_cast<BaseVertex *>( mappedData.pData );
+		for ( UINT i = 0; i < len; ++i )
+		{
+			vert[i].Pos = wave->getVertices()[i].Pos;
+			vert[i].Normal = wave->getVertices()[i].Normal;
+			vert[i].TexCoord = wave->getVertices()[i].TexCoord;
+		}
+		immediateContext->Unmap( waveVB , 0 );
+
+		//move texture
+		moveOffset.x += 0.05f * deltaTime;
+		moveOffset.y += 0.11f * deltaTime;
+		moveMatrix = XMMatrixTranslation( moveOffset.x , moveOffset.y , 0.0f );
+	}
 }
 
 void WaveScene::DrawScene()
@@ -72,25 +79,44 @@ void WaveScene::DrawScene()
 	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 
 	camera.buildViewMatrix();
-	terrain->UpdateDirectionalLight( &dirLight , 1 );
-	terrain->UpdateObjectEffect( &camera );
-	wave->UpdateDirectionalLight( &dirLight , 1 );
-	wave->UpdateObjectEffect( &camera );
-	box->UpdateDirectionalLight( &dirLight , 1 );
-	box->UpdateObjectEffect( &camera );
 
-	//terrain
-	UINT stride = sizeof( BaseVertex );
-	UINT offset = 0;
-	immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
-	immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
-	terrain->RenderObject( immediateContext );
-	box->RenderObject( immediateContext );
+	if ( terrain->isPassFrustumTest )
+	{
+		terrain->UpdateDirectionalLight( &dirLight , 1 );
+		terrain->UpdateObjectEffect( &camera );
 
-	//wave
-	immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
-	immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
-	wave->RenderObject( immediateContext );
+		//terrain
+		UINT stride = sizeof( BaseVertex );
+		UINT offset = 0;
+		immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
+		immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
+		terrain->RenderObject( immediateContext );
+	}
+	
+	if ( box->isPassFrustumTest )
+	{
+		box->UpdateDirectionalLight( &dirLight , 1 );
+		box->UpdateObjectEffect( &camera );
+
+		UINT stride = sizeof( BaseVertex );
+		UINT offset = 0;
+		immediateContext->IASetVertexBuffers( 0 , 1 , &otherVB , &stride , &offset );
+		immediateContext->IASetIndexBuffer( otherIB , DXGI_FORMAT_R32_UINT , 0 );
+		box->RenderObject( immediateContext );
+	}
+
+	if ( wave->isPassFrustumTest )
+	{
+		wave->UpdateDirectionalLight( &dirLight , 1 );
+		wave->UpdateObjectEffect( &camera );
+
+		//wave
+		UINT stride = sizeof( BaseVertex );
+		UINT offset = 0;
+		immediateContext->IASetVertexBuffers( 0 , 1 , &waveVB , &stride , &offset );
+		immediateContext->IASetIndexBuffer( waveIB , DXGI_FORMAT_R32_UINT , 0 );
+		wave->RenderObject( immediateContext );
+	}
 
 	HR( swapChain->Present( 0 , 0 ) );
 }

@@ -62,6 +62,8 @@ void BasicQuad::createObjectMesh()
 		{XMFLOAT3( +5.0f, 0.0f, -15.0f ) , XMFLOAT2( 0.5f, 1.0f ) },
 		{XMFLOAT3( +25.0f, 10.0f, -15.0f ) , XMFLOAT2( 1.0f, 1.0f ) }
 	};
+
+	computeBoundingBox();
 }
 
 void BasicQuad::createInputLayout( ID3D11Device *device )
@@ -93,6 +95,11 @@ void BasicQuad::createRenderState( ID3D11Device *device )
 void BasicQuad::createObjectTexture( ID3D11Device *device )
 {
 	CreateDDSTextureFromFile( device , L"Textures/grass.dds" , &texture , &textureView );
+}
+
+void BasicQuad::computeBoundingBox()
+{
+	BoundingBox::CreateFromPoints( boundingBox , tessVertices.size() , &( tessVertices[0].Pos ) , sizeof( TessVertex ) );
 }
 
 void BasicQuad::UpdateObjectEffect( const Camera *camera )

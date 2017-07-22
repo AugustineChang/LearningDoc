@@ -6,7 +6,7 @@ using namespace DirectX;
 
 
 SimpleTerrain::SimpleTerrain()
-	:verticesDim( { 10,10 } ) , terrainSize( { 160.0f,160.0f } )
+	:verticesDim( { 50,50 } ) , terrainSize( { 160.0f,160.0f } )
 {
 	material->specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
 }
@@ -32,10 +32,11 @@ void SimpleTerrain::createObjectMesh()
 
 	for ( BaseVertex &vertex : vertices )
 	{
-		vertex.Pos.y = getHeight( vertex.Pos.x , vertex.Pos.z , 0.0f );
+		vertex.Pos.y = getHeight( vertex.Pos.x , vertex.Pos.z );
 	}
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void SimpleTerrain::createBasicPlane()
@@ -90,7 +91,16 @@ void SimpleTerrain::createBasicPlane()
 	}
 }
 
-float SimpleTerrain::getHeight( float x , float z , float time ) const
+void SimpleTerrain::computeBoundingBox()
+{
+	float halfSizeX = terrainSize.x * 0.5f;
+	float halfSizeY = terrainSize.y * 0.5f;
+
+	boundingBox.Center = XMFLOAT3( 0.0f , 0.0f , 0.0f );
+	boundingBox.Extents = XMFLOAT3( halfSizeX , halfSizeY , halfSizeY );
+}
+
+float SimpleTerrain::getHeight( float x , float z ) const
 {
 	return 0.3f*( z*sinf( 0.1f*x ) + x*cosf( 0.1f*z ) );
 }
@@ -99,7 +109,7 @@ void SimpleTerrain::createRenderState( ID3D11Device *device )
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
+	rsDesc.FillMode = D3D11_FILL_SOLID;
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;

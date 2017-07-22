@@ -5,7 +5,7 @@
 using namespace DirectX;
 
 BasicShape::BasicShape() : effect( "LitShader" ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
-fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
+fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) ) , isPassFrustumTest( false )
 {
 	material = new CustomMaterial();
 	initDirectMath();
@@ -239,4 +239,23 @@ void BasicShape::computeNormal()
 		XMStoreFloat3( &vertices[i].Normal , normal );
 	}
 		
+}
+
+void BasicShape::computeBoundingBox()
+{
+	BoundingBox::CreateFromPoints( boundingBox , vertices.size() , &(vertices[0].Pos) , sizeof( BaseVertex ) );
+}
+
+void BasicShape::doFrustumCull( const Camera *camera )
+{
+	BoundingFrustum frustum = camera->getBoundingFrustum();
+
+	XMMATRIX &tempW = XMLoadFloat4x4( &obj2World );
+	XMMATRIX &tempV = camera->getViewMatrix();
+	XMMATRIX tempWV = tempW * tempV;
+
+	XMMATRIX inverseWV = XMMatrixInverse( &XMMatrixDeterminant( tempWV ) , tempWV );
+	frustum.Transform( frustum , inverseWV );
+
+	isPassFrustumTest = frustum.Intersects( boundingBox );
 }

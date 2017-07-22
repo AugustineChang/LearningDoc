@@ -64,6 +64,7 @@ void BasicCurve::createObjectMesh()
 	}
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void BasicCurve::createRenderState( ID3D11Device *device )

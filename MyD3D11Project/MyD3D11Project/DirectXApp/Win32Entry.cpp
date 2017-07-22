@@ -4,7 +4,7 @@
 #include <crtdbg.h>
 #include "../Utilities/Utilities.h"
 
-#define SCENE 0
+#define SCENE 1
 
 int WINAPI WinMain( HINSTANCE hInstance , HINSTANCE hPrevInstance , LPSTR lpCmdLine , int nShowCmd )
 {

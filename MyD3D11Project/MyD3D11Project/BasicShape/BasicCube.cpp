@@ -74,6 +74,7 @@ void BasicCube::createObjectMesh()
 	};
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void BasicCube::UpdateDirectionalLight( const DirectionalLight *dirLight , int lightNum )

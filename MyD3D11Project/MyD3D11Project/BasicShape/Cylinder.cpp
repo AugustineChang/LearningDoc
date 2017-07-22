@@ -93,6 +93,7 @@ void Cylinder::createObjectMesh()
 	}
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void Cylinder::createObjectTexture( struct ID3D11Device *device )

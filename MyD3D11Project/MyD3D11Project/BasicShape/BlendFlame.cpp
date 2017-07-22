@@ -22,6 +22,8 @@ BlendFlame::~BlendFlame()
 
 void BlendFlame::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
+	if ( !isPassFrustumTest ) return;
+
 	float interval = 0.0333f;
 	timer += DeltaTime;
 	if ( timer > interval )
@@ -52,6 +54,7 @@ void BlendFlame::createObjectMesh()
 	};
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void BlendFlame::createBlendState( struct ID3D11Device *device )

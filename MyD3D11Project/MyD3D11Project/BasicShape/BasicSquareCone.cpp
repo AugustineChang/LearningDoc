@@ -15,6 +15,8 @@ BasicSquareCone::~BasicSquareCone()
 
 void BasicSquareCone::UpdateObject( float DeltaTime , ID3D11DeviceContext *immediateContext )
 {
+	if ( !isPassFrustumTest ) return;
+
 	Rotation.y += rotSpeed * DeltaTime;
 
 	float twoPI = SimpleMath::PI * 2.0f;
@@ -65,4 +67,5 @@ void BasicSquareCone::createObjectMesh()
 	};
 
 	computeNormal();
+	computeBoundingBox();
 }

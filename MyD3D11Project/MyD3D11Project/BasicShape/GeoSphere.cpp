@@ -61,6 +61,7 @@ void GeoSphere::createObjectMesh()
 	}
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void GeoSphere::doTessllation()

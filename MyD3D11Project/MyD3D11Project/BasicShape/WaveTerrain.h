@@ -16,9 +16,10 @@ protected:
 	virtual void createObjectMesh() override;
 	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 	virtual void createBlendState( ID3D11Device *device ) override;
+	virtual void computeBoundingBox() override;
 
 	void UpdateDisturb( float DeltaTime );
-	virtual float getHeight( float x , float z , float time ) const override;
+	virtual float getHeight( float x , float z ) const override;
 
 private:
 

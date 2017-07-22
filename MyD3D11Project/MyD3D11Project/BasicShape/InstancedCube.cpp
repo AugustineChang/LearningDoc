@@ -50,11 +50,19 @@ void InstancedCube::UpdateObject( float DeltaTime , ID3D11DeviceContext *immedia
 	InstanceData* dataView = reinterpret_cast<InstanceData*>( mappedData.pData );
 
 	size_t len = instanceDataList.size();
+	realDrawNum = 0;
 	for ( size_t i = 0; i < len; ++i )
 	{
-		dataView[i].World = instanceDataList[i].World;
-		dataView[i].Color = instanceDataList[i].Color;
+		bool isPass = doInstancedFrustumCull( &instanceDataList[i] );
+		if ( isPass )
+		{
+			dataView[realDrawNum].World = instanceDataList[i].World;
+			dataView[realDrawNum].Color = instanceDataList[i].Color;
+
+			++realDrawNum;
+		}
 	}
+	isPassFrustumTest = realDrawNum > 0;
 
 	immediateContext->Unmap( instanceBuffer , 0 );
 }
@@ -158,12 +166,11 @@ void InstancedCube::RenderObject( ID3D11DeviceContext *immediateContext )
 	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
-	int drawNum = instanceDataList.size();
 	for ( UINT i = 0; i < techDesc.Passes; ++i )
 	{
 		technique->GetPassByIndex( i )->Apply( 0 , immediateContext );
 
-		immediateContext->DrawIndexedInstanced( indexSize , drawNum , indexStart , indexBase , 0 );
+		immediateContext->DrawIndexedInstanced( indexSize , realDrawNum , indexStart , indexBase , 0 );
 	}
 }
 
@@ -195,6 +202,11 @@ void InstancedCube::UpdateObjectEffect( const Camera *camera )
 	}
 }
 
+void InstancedCube::doFrustumCull( const Camera *camera )
+{
+	cachedCamera = camera;
+}
+
 void InstancedCube::createRenderState( ID3D11Device *device )
 {
 	D3D11_RASTERIZER_DESC rsDesc;
@@ -210,6 +222,20 @@ void InstancedCube::createRenderState( ID3D11Device *device )
 void InstancedCube::createObjectTexture( ID3D11Device *device )
 {
 	CreateDDSTextureFromFile( device , L"Textures/WoodCrate01.dds" , &texture , &textureView );
+}
+
+bool InstancedCube::doInstancedFrustumCull( const InstanceData *data )
+{
+	BoundingFrustum frustum = cachedCamera->getBoundingFrustum();
+
+	XMMATRIX &tempW = XMLoadFloat4x4( &data->World );
+	XMMATRIX &tempV = cachedCamera->getViewMatrix();
+	XMMATRIX tempWV = tempW * tempV;
+
+	XMMATRIX inverseWV = XMMatrixInverse( &XMMatrixDeterminant( tempWV ) , tempWV );
+	frustum.Transform( frustum , inverseWV );
+
+	return frustum.Intersects( boundingBox );
 }
 
 void InstancedCube::createInstanceData( ID3D11Device *device )

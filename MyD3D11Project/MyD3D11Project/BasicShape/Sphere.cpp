@@ -94,6 +94,7 @@ void Sphere::createObjectMesh()
 	}
 
 	computeNormal();
+	computeBoundingBox();
 }
 
 void Sphere::createObjectTexture( struct ID3D11Device *device )

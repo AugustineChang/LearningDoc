@@ -47,4 +47,6 @@ void SimpleMesh::createObjectMesh()
 	}
 
 	fin.close();
+
+	computeBoundingBox();
 }
