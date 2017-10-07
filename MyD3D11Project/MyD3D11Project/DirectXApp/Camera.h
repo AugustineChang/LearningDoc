@@ -16,6 +16,9 @@ public:
 	// Set frustum.
 	void SetFrustum( float fovY , float aspect , float zn , float zf );
 
+	DirectX::XMVECTOR getScreenClickPoint( float screenX , float screenY , float depth );
+	DirectX::XMVECTOR getScreenRay( float screenX , float screenY );
+
 	DirectX::XMMATRIX getViewMatrix() const;
 	DirectX::XMMATRIX getProjectMatrix() const;
 	const DirectX::BoundingFrustum &getBoundingFrustum() const;
@@ -33,6 +36,8 @@ private:
 	float nearPlane;
 	float farPlane;
 	float aspectRatio;
+	int screenWidth;
+	int screenHeight;
 
 	DirectX::XMFLOAT4X4 rotationMat;
 	DirectX::XMFLOAT4X4 world2View;

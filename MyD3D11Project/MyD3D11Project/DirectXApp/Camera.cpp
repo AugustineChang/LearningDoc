@@ -1,9 +1,11 @@
 #include "Camera.h"
 #include "../Utilities/CommonHeader.h"
+#include <math.h>
+
 using namespace DirectX;
 
 Camera::Camera() : fovAngle( SimpleMath::PI / 3.0f ) ,
-nearPlane( 1.0f ) , farPlane( 300.0f ) , aspectRatio( 16.0f / 9.0f )
+nearPlane( 0.1f ) , farPlane( 300.0f ) , aspectRatio( 16.0f / 9.0f )
 {
 	XMMATRIX identityMaxtrix = DirectX::XMMatrixIdentity();
 	XMStoreFloat4x4( &world2View , identityMaxtrix );
@@ -36,10 +38,13 @@ void Camera::buildViewMatrix()
 	XMStoreFloat4x4( &world2View , temp );
 }
 
-void Camera::buildProjectMatrix( int screenWidth , int screenHeight )
+void Camera::buildProjectMatrix( int screenW , int screenH )
 {
-	float aspect = (float) screenWidth / screenHeight;
-	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspect , nearPlane , farPlane );
+	screenWidth = screenW;
+	screenHeight = screenH;
+
+	aspectRatio = (float) screenWidth / screenHeight;
+	XMMATRIX temp = DirectX::XMMatrixPerspectiveFovLH( fovAngle , aspectRatio , nearPlane , farPlane );
 	XMStoreFloat4x4( &view2Proj , temp );
 
 	BoundingFrustum::CreateFromMatrix( frustum , temp );
@@ -66,6 +71,24 @@ void Camera::SetFrustum( float fovY , float aspect , float zn , float zf )
 
 	nearPlane = zn;
 	farPlane = zf;
+}
+
+DirectX::XMVECTOR Camera::getScreenClickPoint( float screenX , float screenY , float depth )
+{
+	float clickX_view = ( 2.0f * screenX / screenWidth - 1.0f ) / view2Proj( 0 , 0 );
+	float clickY_view = ( -2.0f * screenY / screenHeight + 1.0f ) / view2Proj( 1 , 1 );
+
+	XMVECTOR clickPoint_view = XMVectorSet( clickX_view * depth , clickY_view * depth , depth , 1.0f );
+
+	XMMATRIX viewMat = XMLoadFloat4x4( &world2View );
+	XMMATRIX view2world = XMMatrixInverse( &XMMatrixDeterminant( viewMat ) , viewMat );
+	return XMVector4Transform( clickPoint_view , view2world );
+}
+
+DirectX::XMVECTOR Camera::getScreenRay( float screenX , float screenY )
+{
+	XMVECTOR position = XMLoadFloat4( &Position );
+	return getScreenClickPoint( screenX , screenY , 1.0f ) - position;
 }
 
 DirectX::XMMATRIX Camera::getViewMatrix() const

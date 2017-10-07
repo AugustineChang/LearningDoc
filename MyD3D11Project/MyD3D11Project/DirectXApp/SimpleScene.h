@@ -6,6 +6,7 @@
 
 #include <vector>
 
+class BasicShape;
 class DebugQuad;
 struct BaseVertex;
 struct ID3D11Buffer;
@@ -31,7 +32,7 @@ public:
 
 private:
 		
-	std::vector<class BasicShape*> renderList;
+	std::vector<BasicShape*> renderList;
 	DebugQuad *debugDepth;
 
 	bool isMove;
@@ -41,6 +42,11 @@ private:
 	float zoomSpeed;
 
 protected:
+
+	BasicShape *curPickObj;
+	float pickDistance;
+	void pickupObj( float x , float y );
+	void dropObj();
 
 	void createObjects();
 	void addToGlobalBuffer( std::vector<BaseVertex> &gVBuffer , std::vector<UINT> &gIBuffer , BasicShape &shape );

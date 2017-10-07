@@ -56,6 +56,9 @@ public:
 	const std::vector<unsigned int>& getIndices() const { return indices; }
 	ID3D11Buffer *getInstancedData() const { return instanceBuffer; }
 
+	DirectX::XMVECTOR transformToLocal( DirectX::FXMVECTOR worldVector );
+	float intersectWithRay( DirectX::FXMVECTOR origin , DirectX::FXMVECTOR direction );
+
 	DirectX::XMFLOAT4 Position;
 	DirectX::XMFLOAT3 Rotation;
 	DirectX::XMFLOAT3 Scale;

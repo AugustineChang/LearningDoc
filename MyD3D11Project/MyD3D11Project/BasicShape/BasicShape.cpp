@@ -2,6 +2,7 @@
 #include "../Utilities/CommonHeader.h"
 #include "../DirectXApp/Camera.h"
 #include "../DirectXApp/Lights.h"
+#include <DirectXCollision.h>
 using namespace DirectX;
 
 BasicShape::BasicShape() : effect( "LitShader" ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
@@ -258,4 +259,38 @@ void BasicShape::doFrustumCull( const Camera *camera )
 	frustum.Transform( frustum , inverseWV );
 
 	isPassFrustumTest = frustum.Intersects( boundingBox );
+}
+
+DirectX::XMVECTOR BasicShape::transformToLocal( FXMVECTOR worldVector )
+{
+	XMMATRIX worldMat = XMLoadFloat4x4( &obj2World );
+	XMMATRIX world2obj = XMMatrixInverse( &XMMatrixDeterminant( worldMat ) , worldMat );
+	return XMVector4Transform( worldVector , world2obj );
+}
+
+float BasicShape::intersectWithRay( DirectX::FXMVECTOR origin , DirectX::FXMVECTOR direction )
+{
+	float distance = -1.0f;
+	if ( boundingBox.Intersects( origin , direction , distance ) )
+	{
+		unsigned int indexNum = indices.size();
+		unsigned int triangleNum = indexNum / 3;
+		for ( unsigned int i = 0; i < triangleNum; ++i )
+		{
+			unsigned int i0 = indices[i * 3];
+			unsigned int i1 = indices[i * 3 + 1];
+			unsigned int i2 = indices[i * 3 + 2];
+
+			XMVECTOR v0 = XMLoadFloat3( &vertices[i0].Pos );
+			XMVECTOR v1 = XMLoadFloat3( &vertices[i1].Pos );
+			XMVECTOR v2 = XMLoadFloat3( &vertices[i2].Pos );
+
+			if ( TriangleTests::Intersects( origin , direction , v0 , v1 , v2 , distance ) )
+			{
+				return distance;
+			}
+		}
+	}
+	
+	return -1.0f;
 }

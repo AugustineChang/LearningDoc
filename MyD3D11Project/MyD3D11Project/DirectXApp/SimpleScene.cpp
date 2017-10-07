@@ -19,7 +19,7 @@ using namespace DirectX;
 
 SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	:DirectXApp( hinstance , show ) , moveSpeed( 0.1f ) , 
-	radius( 5.0f ) , zoomSpeed( 0.005f )
+	radius( 5.0f ) , zoomSpeed( 0.005f ) , curPickObj( nullptr ) , pickDistance( 0.0f )
 {
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
@@ -43,9 +43,9 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	//mesh->Position.y = 1.5f;
 	//renderList.push_back( mesh );
 
-	InstancedCube *instCube = new InstancedCube();
-	instCube->Position.x = -2;
-	renderList.push_back( instCube );
+	//InstancedCube *instCube = new InstancedCube();
+	//instCube->Position.x = -2;
+	//renderList.push_back( instCube );
 
 	BasicCurve *curve = new BasicCurve();
 	curve->Position.y = 3.5f;
@@ -149,6 +149,11 @@ void SimpleScene::OnMouseDown( WPARAM btnState , int x , int y )
 	lastMousePos.x = x;
 	lastMousePos.y = y;
 
+	if ( ( btnState & MK_LBUTTON ) != 0 )
+	{
+		pickupObj( (float) x , (float) y );
+	}
+
 	SetCapture( ghMainWnd );
 }
 
@@ -165,11 +170,22 @@ void SimpleScene::OnMouseMove( WPARAM btnState , int x , int y )
 		lastMousePos.x = x;
 		lastMousePos.y = y;
 	}
+
+	if ( ( btnState & MK_LBUTTON ) != 0 )
+	{
+		//pick-up moving
+		if ( curPickObj != nullptr )
+		{
+			XMVECTOR clickPoint = camera.getScreenClickPoint( (float) x , (float) y , 10.0f );
+			XMStoreFloat4( &curPickObj->Position , clickPoint );
+		}
+	}
 }
 
 void SimpleScene::OnMouseUp( WPARAM btnState , int x , int y )
 {
 	ReleaseCapture();
+	dropObj();
 }
 
 void SimpleScene::OnMouseWheel( int zDelta )
@@ -232,6 +248,31 @@ void SimpleScene::createDepthStencilState()
 	dssDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
 	HR( device->CreateDepthStencilState( &dssDesc , &depthState ) );
+}
+
+void SimpleScene::pickupObj( float x , float y )
+{
+	pickDistance = FLT_MAX;
+	for ( BasicShape *shape : renderList )
+	{
+		XMVECTOR rayOrigin = shape->transformToLocal( XMLoadFloat4( &camera.Position ) );
+		XMVECTOR rayDirection = shape->transformToLocal( camera.getScreenRay( x , y ) );
+		rayDirection = XMVector3Normalize( rayDirection );
+
+		float distance = shape->intersectWithRay( rayOrigin , rayDirection );
+		if ( distance < 0 ) continue;
+		if ( distance < pickDistance )
+		{
+			curPickObj = shape;
+			pickDistance = distance;
+		}
+	}
+}
+
+void SimpleScene::dropObj()
+{
+	curPickObj = nullptr;
+	pickDistance = 0.0f;
 }
 
 void SimpleScene::createObjects()
