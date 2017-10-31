@@ -322,6 +322,9 @@
     <CustomBuild Include="FX\SkySphereShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
+    <CustomBuild Include="FX\LitReflectShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Models\car.txt">

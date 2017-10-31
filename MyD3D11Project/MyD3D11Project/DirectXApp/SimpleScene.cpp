@@ -34,9 +34,9 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCube *cube = new BasicCube();
 	renderList.push_back( cube );
 
-	//SimpleMesh *mesh = new SimpleMesh();
-	//mesh->Position.y = 1.5f;
-	//renderList.push_back( mesh );
+	SimpleMesh *mesh = new SimpleMesh();
+	mesh->Position.y = 1.5f;
+	renderList.push_back( mesh );
 
 	//InstancedCube *instCube = new InstancedCube();
 	//instCube->Position.x = -2;

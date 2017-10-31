@@ -1,13 +1,14 @@
 #include "SimpleMesh.h"
 #include "../Utilities/CommonHeader.h"
+#include "DDSTextureLoader.h"
 #include <fstream>
 #include <string>
 
 
-SimpleMesh::SimpleMesh() : filePath( "Models/car.txt" )
+SimpleMesh::SimpleMesh() : filePath( "Models/skull.txt" )
 {
+	effect.setShader( "LitReflectShader" , isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex" );
 }
-
 
 SimpleMesh::~SimpleMesh()
 {
@@ -49,4 +50,24 @@ void SimpleMesh::createObjectMesh()
 	fin.close();
 
 	computeBoundingBox();
+}
+
+void SimpleMesh::createEffect( ID3D11Device *device )
+{
+	BasicShape::createEffect( device );
+
+	efReflTexture = effect.getEffect()->GetVariableByName( "cubeMap" )->AsShaderResource();
+}
+
+void SimpleMesh::createObjectTexture( ID3D11Device *device )
+{
+	DirectX::CreateDDSTextureFromFile( device , L"Textures/water1.dds" , &texture , &textureView );
+	DirectX::CreateDDSTextureFromFile( device , L"Textures/cubemap.dds" , &reflTexture , &reflTextureView );
+}
+
+void SimpleMesh::UpdateObjectEffect( const Camera *camera )
+{
+	BasicShape::UpdateObjectEffect( camera );
+
+	efReflTexture->SetResource( reflTextureView );
 }
