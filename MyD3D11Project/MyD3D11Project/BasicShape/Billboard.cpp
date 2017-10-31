@@ -10,11 +10,11 @@ struct BillboardVertex
 	DirectX::XMFLOAT2 Size;
 };
 
-Billboard::Billboard() : BasicShape( "GeoShader" )
+Billboard::Billboard()
 {
 	type = ShapeType::Custom;
 	isEnableFog = false;
-	techName = "GeoTech_Tex";
+	effect.setShader( "GeoShader" , "GeoTech_Tex" );
 	isPassFrustumTest = true;
 }
 
@@ -66,7 +66,7 @@ void Billboard::RenderObject( ID3D11DeviceContext *immediateContext )
 	immediateContext->IASetVertexBuffers( 0 , 1 , &vertexBuffer , &stride , &offset );
 	immediateContext->IASetIndexBuffer( indexBuffer , DXGI_FORMAT_R32_UINT , 0 );
 
-	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
+	ID3DX11EffectTechnique *technique = effect.getEffectTech();
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )
@@ -101,7 +101,7 @@ void Billboard::createInputLayout( ID3D11Device *device )
 	};
 
 	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech( techName.c_str() )->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 2 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }

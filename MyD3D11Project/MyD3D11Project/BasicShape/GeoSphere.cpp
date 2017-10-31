@@ -8,7 +8,6 @@ GeoSphere::GeoSphere() : radius( 2.0f ) , tesselTimes( 2 )
 	material->specular.w = 1.0f;
 }
 
-
 GeoSphere::~GeoSphere()
 {
 }

@@ -3,16 +3,11 @@
 #include "../Utilities/CommonHeader.h"
 #include "../BasicShape/BasicCube.h"
 #include "../BasicShape/BasicSquareCone.h"
-#include "../BasicShape/SimpleTerrain.h"
 #include "../BasicShape/Cylinder.h"
 #include "../BasicShape/Sphere.h"
-#include "../BasicShape/GeoSphere.h"
 #include "../BasicShape/SimpleMesh.h"
-#include "../BasicShape/RotateFlame.h"
-#include "../BasicShape/BlendFlame.h"
-#include "../BasicShape/Billboard.h"
 #include "../BasicShape/BasicCurve.h"
-#include "../BasicShape/InstancedCube.h"
+#include "../BasicShape/SkySphere.h"
 
 using namespace DirectX;
 
@@ -50,6 +45,10 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	BasicCurve *curve = new BasicCurve();
 	curve->Position.y = 3.5f;
 	renderList.push_back( curve );
+
+	SkySphere *sky = new SkySphere();
+	sky->Scale = DirectX::XMFLOAT3( 100.0f , 100.0f , 100.0f );
+	renderList.push_back( sky );
 
 	DirectX::XMVECTOR dir = DirectX::XMVectorSet( -1.0f , 1.0f , 0.5f , 0.0f );
 	DirectX::XMStoreFloat3( &dirLight[1].direction , DirectX::XMVector3Normalize( dir ) );

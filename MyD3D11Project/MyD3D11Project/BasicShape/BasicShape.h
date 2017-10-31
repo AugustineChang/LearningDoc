@@ -40,7 +40,6 @@ class BasicShape
 public:
 	
 	BasicShape();
-	BasicShape( std::string shader );
 	~BasicShape();
 	
 	virtual void InitShape( ID3D11Device *device );
@@ -84,7 +83,6 @@ protected:
 	virtual void computeBoundingBox();
 
 	ShaderEffect effect;
-	std::string techName;
 	ID3DX11EffectMatrixVariable *efWVP;
 	ID3DX11EffectMatrixVariable *efWorld;
 	ID3DX11EffectMatrixVariable *efWorldNorm;
@@ -123,5 +121,6 @@ protected:
 
 	DirectX::XMFLOAT4X4 obj2World;
 	DirectX::BoundingBox boundingBox;
+	bool canPickup;
 };
 

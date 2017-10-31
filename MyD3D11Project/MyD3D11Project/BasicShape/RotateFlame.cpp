@@ -3,15 +3,14 @@
 #include "../DirectXApp/Camera.h"
 #include "../DirectXApp/Lights.h"
 #include "DDSTextureLoader.h"
-#include "WICTextureLoader.h"
 #include <sstream>
 using namespace DirectX;
 
 
-RotateFlame::RotateFlame() :BasicShape( "RotateFlame" )
+RotateFlame::RotateFlame()
 {
 	isEnableFog = false;
-	techName = "LightTech_Lit_Tex";
+	effect.setShader( "RotateFlame" , "LightTech_Lit_Tex" );
 }
 
 RotateFlame::~RotateFlame()

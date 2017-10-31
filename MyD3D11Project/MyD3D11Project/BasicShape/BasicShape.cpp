@@ -5,20 +5,12 @@
 #include <DirectXCollision.h>
 using namespace DirectX;
 
-BasicShape::BasicShape() : effect( "LitShader" ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
+BasicShape::BasicShape() : type( ShapeType::Standard ) , isEnableFog( true ) , canPickup( true ) ,
 fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) ) , isPassFrustumTest( false )
 {
 	material = new CustomMaterial();
 	initDirectMath();
-	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
-}
-
-BasicShape::BasicShape( std::string shader ) : effect( shader ) , type( ShapeType::Standard ) , isEnableFog( true ) ,
-fogStart( 20.0f ) , fogDistance( 100.0f ) , fogColor( XMFLOAT4( 0.5921f , 0.7412f , 0.7686f , 1.0f ) )
-{
-	material = new CustomMaterial();
-	initDirectMath();
-	techName = isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex";
+	effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex" );
 }
 
 BasicShape::~BasicShape()
@@ -139,7 +131,7 @@ void BasicShape::RenderObject( ID3D11DeviceContext *immediateContext )
 	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	immediateContext->OMSetBlendState( blendState , blendFactors , 0xffffffff );
 
-	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
+	ID3DX11EffectTechnique *technique = effect.getEffectTech();
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )
@@ -189,7 +181,7 @@ void BasicShape::createInputLayout( ID3D11Device *device )
 	};
 
 	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech( techName.c_str() )->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 3 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
@@ -270,6 +262,8 @@ DirectX::XMVECTOR BasicShape::transformToLocal( FXMVECTOR worldVector )
 
 float BasicShape::intersectWithRay( DirectX::FXMVECTOR origin , DirectX::FXMVECTOR direction )
 {
+	if ( !canPickup ) return -1.0f;
+
 	float distance = -1.0f;
 	if ( boundingBox.Intersects( origin , direction , distance ) )
 	{

@@ -19,12 +19,6 @@
     <Filter Include="Common">
       <UniqueIdentifier>{caf785ab-ca0b-4cd5-9d56-4e9e12bb830d}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件\DX11Apps">
-      <UniqueIdentifier>{cb54a1f7-5273-4fd8-8235-67d02d2b645b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="源文件\DX11Apps">
-      <UniqueIdentifier>{afd68e3b-493e-4472-98fc-1260c978849b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="头文件\BasicShape">
       <UniqueIdentifier>{3c6be90f-96d8-47e2-bd28-76550a0a41a1}</UniqueIdentifier>
     </Filter>
@@ -51,6 +45,12 @@
     </Filter>
     <Filter Include="Common\DirectXTK\Inc">
       <UniqueIdentifier>{3c6d68ec-b818-4ae2-aca6-88ca231806af}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\DirectXApp">
+      <UniqueIdentifier>{afd68e3b-493e-4472-98fc-1260c978849b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\DirectXApp">
+      <UniqueIdentifier>{cb54a1f7-5273-4fd8-8235-67d02d2b645b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -85,16 +85,16 @@
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\Camera.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\DirectXApp.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\Win32Entry.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\SimpleScene.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="Utilities\GameTimer.cpp">
       <Filter>源文件\Utilities</Filter>
@@ -109,10 +109,10 @@
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\WaveScene.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\ShaderEffect.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="BasicShape\RotateFlame.cpp">
       <Filter>源文件\BasicShape</Filter>
@@ -124,7 +124,7 @@
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
     <ClCompile Include="DirectXApp\TessellationHillScene.cpp">
-      <Filter>源文件\DX11Apps</Filter>
+      <Filter>源文件\DirectXApp</Filter>
     </ClCompile>
     <ClCompile Include="BasicShape\BasicQuad.cpp">
       <Filter>源文件\BasicShape</Filter>
@@ -133,6 +133,9 @@
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
     <ClCompile Include="BasicShape\InstancedCube.cpp">
+      <Filter>源文件\BasicShape</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicShape\SkySphere.cpp">
       <Filter>源文件\BasicShape</Filter>
     </ClCompile>
   </ItemGroup>
@@ -174,13 +177,13 @@
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\DirectXApp.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\Camera.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\SimpleScene.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="Utilities\CommonHeader.h">
       <Filter>头文件\Utilities</Filter>
@@ -201,13 +204,13 @@
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\WaveScene.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\Lights.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\ShaderEffect.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="..\Common\DirectXTK\Inc\Audio.h">
       <Filter>Common\DirectXTK\Inc</Filter>
@@ -276,7 +279,7 @@
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
     <ClInclude Include="DirectXApp\TessellationHillScene.h">
-      <Filter>头文件\DX11Apps</Filter>
+      <Filter>头文件\DirectXApp</Filter>
     </ClInclude>
     <ClInclude Include="BasicShape\BasicQuad.h">
       <Filter>头文件\BasicShape</Filter>
@@ -285,6 +288,9 @@
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
     <ClInclude Include="BasicShape\InstancedCube.h">
+      <Filter>头文件\BasicShape</Filter>
+    </ClInclude>
+    <ClInclude Include="BasicShape\SkySphere.h">
       <Filter>头文件\BasicShape</Filter>
     </ClInclude>
   </ItemGroup>
@@ -311,6 +317,9 @@
       <Filter>FX</Filter>
     </CustomBuild>
     <CustomBuild Include="FX\InstancedLitShader.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\SkySphereShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>
@@ -725,6 +734,9 @@
       <Filter>Textures</Filter>
     </Image>
     <Image Include="Textures\ice.dds">
+      <Filter>Textures</Filter>
+    </Image>
+    <Image Include="Textures\cubemap.dds">
       <Filter>Textures</Filter>
     </Image>
   </ItemGroup>

@@ -4,9 +4,9 @@
 #include "DDSTextureLoader.h"
 using namespace DirectX;
 
-BasicQuad::BasicQuad() : BasicShape( "TessellationShader" ) , width( 10.0f ) , height( 10.0f )
+BasicQuad::BasicQuad() : width( 10.0f ) , height( 10.0f )
 {
-	techName = "TessTech";
+	effect.setShader( "TessellationShader" , "TessTech" );
 }
 
 BasicQuad::~BasicQuad()
@@ -75,7 +75,7 @@ void BasicQuad::createInputLayout( ID3D11Device *device )
 	};
 
 	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech( techName.c_str() )->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 2 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
@@ -129,7 +129,7 @@ void BasicQuad::RenderObject( ID3D11DeviceContext *immediateContext )
 	immediateContext->IASetInputLayout( inputLayout );
 	immediateContext->RSSetState( rasterState );
 
-	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
+	ID3DX11EffectTechnique *technique = effect.getEffectTech();
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )

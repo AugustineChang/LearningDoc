@@ -2,16 +2,15 @@
 #include "../Utilities/CommonHeader.h"
 #include "../DirectXApp/Camera.h"
 #include "../DirectXApp/Lights.h"
-#include "DDSTextureLoader.h"
 #include "WICTextureLoader.h"
 #include <sstream>
 using namespace DirectX;
 
 
-BlendFlame::BlendFlame() :BasicShape( "BlendShader" ) , timer( 0.0f ) , curTexture( 0 )
+BlendFlame::BlendFlame() : timer( 0.0f ) , curTexture( 0 )
 {
 	isEnableFog = false;
-	techName = "LightTech_Lit_Tex";
+	effect.setShader( "BlendShader" , "LightTech_Lit_Tex" );
 }
 
 BlendFlame::~BlendFlame()

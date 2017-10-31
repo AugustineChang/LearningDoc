@@ -7,15 +7,20 @@
 #include <vector>
 using namespace DirectX;
 
-ShaderEffect::ShaderEffect( const std::string &shader )
+ShaderEffect::ShaderEffect()
 {
-	shaderName = shader;
 }
-
 
 ShaderEffect::~ShaderEffect()
 {
 	ReleaseCOM( effect );
+}
+
+
+void ShaderEffect::setShader( const std::string &shader , const std::string &techName )
+{
+	shaderName = shader;
+	techniqueName = techName;
 }
 
 void ShaderEffect::createEffectAtRuntime( ID3D11Device *device )
@@ -59,10 +64,10 @@ void ShaderEffect::createEffectAtBuildtime( ID3D11Device *device )
 	HR( D3DX11CreateEffectFromMemory( &compiledShader[0] , size , 0 , device , &effect ) );
 }
 
-ID3DX11EffectTechnique * ShaderEffect::getEffectTech( const std::string &techName )
+ID3DX11EffectTechnique * ShaderEffect::getEffectTech()
 {
 	//"LightTech_Lit_Tex"
-	return effect->GetTechniqueByName( techName.c_str() );
+	return effect->GetTechniqueByName( techniqueName.c_str() );
 }
 
 ID3DX11Effect * ShaderEffect::getEffect()

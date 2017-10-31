@@ -3,15 +3,14 @@
 #include "../DirectXApp/Lights.h"
 #include "../DirectXApp/Camera.h"
 #include "DDSTextureLoader.h"
-#include "WICTextureLoader.h"
 #include <sstream>
 using namespace DirectX;
 
 
-InstancedCube::InstancedCube() : BasicShape( "InstancedLitShader" ) , edgeNum( 3 ) , edgeLength( 10.0f )
+InstancedCube::InstancedCube() : edgeNum( 3 ) , edgeLength( 10.0f )
 {
 	type = ShapeType::Instanced;
-	techName = "InstanceTech_Lit_Tex_Fog";
+	effect.setShader( "InstancedLitShader" , "InstanceTech_Lit_Tex_Fog" );
 }
 
 InstancedCube::~InstancedCube()
@@ -149,7 +148,7 @@ void InstancedCube::createInputLayout( ID3D11Device *device )
 	};
 
 	D3DX11_PASS_DESC passDesc;
-	effect.getEffectTech( techName.c_str() )->GetPassByIndex( 0 )->GetDesc( &passDesc );
+	effect.getEffectTech()->GetPassByIndex( 0 )->GetDesc( &passDesc );
 
 	HR( device->CreateInputLayout( descList , 8 , passDesc.pIAInputSignature , passDesc.IAInputSignatureSize , &inputLayout ) );
 }
@@ -163,7 +162,7 @@ void InstancedCube::RenderObject( ID3D11DeviceContext *immediateContext )
 	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	immediateContext->OMSetBlendState( blendState , blendFactors , 0xffffffff );
 
-	ID3DX11EffectTechnique *technique = effect.getEffectTech( techName.c_str() );
+	ID3DX11EffectTechnique *technique = effect.getEffectTech();
 	D3DX11_TECHNIQUE_DESC techDesc;
 	technique->GetDesc( &techDesc );
 	for ( UINT i = 0; i < techDesc.Passes; ++i )

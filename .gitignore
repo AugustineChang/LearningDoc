@@ -13,3 +13,5 @@
 *.opendb
 *.vcxproj
 *.filters
+*.fxo
+*.cod

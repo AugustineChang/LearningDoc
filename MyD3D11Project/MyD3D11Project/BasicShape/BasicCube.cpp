@@ -2,13 +2,13 @@
 #include "../Utilities/CommonHeader.h"
 #include "../DirectXApp/Lights.h"
 #include "DDSTextureLoader.h"
-#include "WICTextureLoader.h"
 #include <sstream>
 using namespace DirectX;
 
 
-BasicCube::BasicCube() : BasicShape( "ClipShader" )
+BasicCube::BasicCube()
 {
+	effect.setShader( "ClipShader" , isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex" );
 }
 
 BasicCube::~BasicCube()

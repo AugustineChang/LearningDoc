@@ -8,18 +8,20 @@ struct ID3DX11EffectTechnique;
 class ShaderEffect
 {
 public:
-	ShaderEffect( const std::string &shaderName );
+	ShaderEffect();
 	~ShaderEffect();
 
+	void setShader( const std::string &shaderName , const std::string &techName );
 	void createEffectAtRuntime( struct ID3D11Device *device );
 	void createEffectAtBuildtime( struct ID3D11Device *device );
 
-	ID3DX11EffectTechnique *getEffectTech( const std::string &techName );
+	ID3DX11EffectTechnique *getEffectTech();
 	ID3DX11Effect *getEffect();
 
 private:
 
 	std::string shaderName;
+	std::string techniqueName;
 	struct ID3DX11Effect *effect;
 };
 
