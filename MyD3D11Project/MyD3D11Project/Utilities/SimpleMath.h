@@ -31,6 +31,8 @@ public:
 		return from * ( 1 - alpha ) + to * alpha;
 	}
 
+	static float AngleFromXY( float x , float y );
+
 	inline static DirectX::XMFLOAT4 Add( const DirectX::XMFLOAT4 &a , const DirectX::XMFLOAT4 &b )
 	{
 		return DirectX::XMFLOAT4( a.x + b.x , a.y + b.y , a.z + b.z , a.w + b.w );

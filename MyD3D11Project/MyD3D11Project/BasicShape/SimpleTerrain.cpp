@@ -63,6 +63,7 @@ void SimpleTerrain::createBasicPlane()
 			one.Pos = XMFLOAT3( x * gridX - halfSizeX , 0.0f , z * gridY - halfSizeY );
 			one.Normal = zero;
 			one.TexCoord = XMFLOAT2( x * du , z * dv );
+			one.TangentU = XMFLOAT3( 1.0f , 0.0f , 0.0f );
 
 			vertices.push_back( one );
 		}

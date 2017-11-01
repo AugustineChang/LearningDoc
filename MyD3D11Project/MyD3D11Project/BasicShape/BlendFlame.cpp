@@ -40,10 +40,10 @@ void BlendFlame::createObjectMesh()
 
 	vertices =
 	{
-		{ XMFLOAT3( 1.0f,1.0f,0.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) },
-		{ XMFLOAT3( -1.0f,1.0f,0.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) },
-		{ XMFLOAT3( 1.0f,-1.0f,0.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) },
-		{ XMFLOAT3( -1.0f,-1.0f,0.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) }
+		{ XMFLOAT3( 1.0f,1.0f,0.0f ), zero , XMFLOAT2( 1.0f, 0.0f ) , XMFLOAT3( 1.0f,0.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,1.0f,0.0f ), zero , XMFLOAT2( 0.0f, 0.0f ) , XMFLOAT3( 1.0f,0.0f,0.0f ) },
+		{ XMFLOAT3( 1.0f,-1.0f,0.0f ), zero , XMFLOAT2( 1.0f, 1.0f ) , XMFLOAT3( 1.0f,0.0f,0.0f ) },
+		{ XMFLOAT3( -1.0f,-1.0f,0.0f ), zero , XMFLOAT2( 0.0f, 1.0f ) , XMFLOAT3( 1.0f,0.0f,0.0f ) }
 	};
 
 	indices =

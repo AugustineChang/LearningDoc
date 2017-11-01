@@ -24,7 +24,7 @@ SimpleScene::SimpleScene( HINSTANCE hinstance , int show )
 	renderList.push_back( squareCone );
 
 	Cylinder *cylinder = new Cylinder();
-	cylinder->Position.y = 2.1f;
+	cylinder->Position.x = -2.1f;
 	renderList.push_back( cylinder );
 
 	Sphere *sphere = new Sphere();

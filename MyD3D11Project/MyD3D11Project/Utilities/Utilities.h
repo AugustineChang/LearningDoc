@@ -44,6 +44,7 @@ struct BaseVertex
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT3 Normal;
 	DirectX::XMFLOAT2 TexCoord;
+	DirectX::XMFLOAT3 TangentU;
 };
 
 struct TessVertex

@@ -8,6 +8,7 @@ Sphere::Sphere() : stackCount( 17 ) , sliceCount( 20 ) , radius( 2.0f )
 {
 	//material.specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
 	material->specular.w = 3.0f;
+	effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Norm_Fog" : "LightTech_Lit_Tex_Norm" );
 }
 
 
@@ -15,6 +16,13 @@ Sphere::~Sphere()
 {
 }
 
+
+void Sphere::UpdateObjectEffect( const Camera *camera )
+{
+	BasicShape::UpdateObjectEffect( camera );
+
+	efNormalTex->SetResource( normalTexView );
+}
 
 void Sphere::createObjectMesh()
 {
@@ -34,6 +42,7 @@ void Sphere::createObjectMesh()
 		top.Pos = XMFLOAT3( 0.0f , radius , 0.0f );
 		top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		top.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 0.0f );
+		top.TangentU = XMFLOAT3( 1.0f , 0.0f , 0.0f );
 		vertices.push_back( top );
 	}
 
@@ -44,6 +53,7 @@ void Sphere::createObjectMesh()
 		bottom.Pos = XMFLOAT3( 0.0f , -radius , 0.0f );
 		bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		bottom.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 1.0f );
+		bottom.TangentU = XMFLOAT3( 1.0f , 0.0f , 0.0f );
 		vertices.push_back( bottom );
 	}
 
@@ -97,9 +107,18 @@ void Sphere::createObjectMesh()
 	computeBoundingBox();
 }
 
+
+void Sphere::createEffect( ID3D11Device *device )
+{
+	BasicShape::createEffect( device );
+
+	efNormalTex = effect.getEffect()->GetVariableByName( "normalTex" )->AsShaderResource();
+}
+
 void Sphere::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/WoodCrate01.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_D.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_N.dds" , &normalTex , &normalTexView );
 }
 
 void Sphere::createRenderState( ID3D11Device *device )
@@ -130,9 +149,12 @@ void Sphere::generateCicle( float vAngle )
 						   radius * sinf( vAngle ) * sinf( hAngle ) );
 		one.Normal = zero;
 		one.TexCoord = SimpleMath::Div( XMFLOAT2( hAngle , vAngle ) , XMFLOAT2( 2.0f*SimpleMath::PI , SimpleMath::PI ) );
+		one.TangentU.x = -radius*sinf( vAngle )*sinf( hAngle );
+		one.TangentU.y = 0.0f;
+		one.TangentU.z = +radius*sinf( vAngle )*cosf( hAngle );
 
-		//one.TexCoord.x = ( i * deltaAngle ) / ( SimpleMath::PI * 2 );
-		//one.TexCoord.y = 1 - ( ( yPos + halfHeight + topRadius ) / ( topRadius + height + bottomRadius ) );
+		XMVECTOR T = XMLoadFloat3( &one.TangentU );
+		XMStoreFloat3( &one.TangentU , XMVector3Normalize( T ) );
 
 		vertices.push_back( one );
 	}

@@ -116,3 +116,16 @@ void ComputeSpotLight( SpotLight light , Material mat , float3 pos , float4 colo
 	specular *= attenu;
 	ambient *= spotFactor;
 }
+
+float3 TangentToWorld( float3 normalSample , float3 normalW , float3 tangentUW )
+{
+	float3 normalT = normalSample * 2.0f - 1.0f;
+
+	float3 N = normalW;
+	float3 T = normalize( tangentUW - dot( tangentUW , N ) * N );
+	float3 B = cross( N , T );
+
+	float3x3 TBN = float3x3( T , B , N );
+
+	return mul( normalT , TBN );
+}

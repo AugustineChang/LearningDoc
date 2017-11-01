@@ -32,6 +32,9 @@ void BasicCurve::createObjectMesh()
 		tempList.push_back( XMLoadFloat3( &controlPoints[i] ) );
 	}
 
+	XMFLOAT3 tangent;
+	XMStoreFloat3( &tangent , tempList[len - 1] - tempList[0] );
+
 	for ( int i = 0; i < sliceCount; ++i )
 	{
 		float alpha = (float) i / ( sliceCount - 1 );
@@ -40,8 +43,8 @@ void BasicCurve::createObjectMesh()
 		XMFLOAT3 location;
 		XMStoreFloat3( &location , result );
 
-		BaseVertex vertex = { location , zero , XMFLOAT2( alpha , 0.1f ) };
-		BaseVertex vertex2 = { XMFLOAT3( location.x , location.y , location.z + lineWidth ) , zero , XMFLOAT2( alpha , 0.0f ) };
+		BaseVertex vertex = { location , zero , XMFLOAT2( alpha , 0.1f ) , tangent };
+		BaseVertex vertex2 = { XMFLOAT3( location.x , location.y , location.z + lineWidth ) , zero , XMFLOAT2( alpha , 0.0f ) , tangent };
 
 		vertices.push_back( vertex );
 		vertices.push_back( vertex2 );

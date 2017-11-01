@@ -5,13 +5,22 @@ using namespace DirectX;
 
 
 Cylinder::Cylinder() : topRadius( 0.8f ) , bottomRadius( 1.2f ) , height( 2.0f ) ,
-	stackCount( 10 ) , sliceCount( 12 )
+	stackCount( 10 ) , sliceCount( 36 )
 {
+	effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Norm_Fog" : "LightTech_Lit_Tex_Norm" );
 }
 
 
 Cylinder::~Cylinder()
 {
+}
+
+
+void Cylinder::UpdateObjectEffect( const Camera *camera )
+{
+	BasicShape::UpdateObjectEffect( camera );
+
+	efNormalTex->SetResource( normalTexView );
 }
 
 void Cylinder::createObjectMesh()
@@ -33,6 +42,7 @@ void Cylinder::createObjectMesh()
 		top.Pos = XMFLOAT3( 0.0f , halfHeight , 0.0f );
 		top.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		top.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 0.0f );
+		top.TangentU = XMFLOAT3( 1.0f , 0.0f , 0.0f );
 		vertices.push_back( top );
 	}
 
@@ -43,6 +53,7 @@ void Cylinder::createObjectMesh()
 		bottom.Pos = XMFLOAT3( 0.0f , -halfHeight , 0.0f );
 		bottom.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		bottom.TexCoord = XMFLOAT2( ( ( i + 0.5f ) * deltaAngle ) / ( SimpleMath::PI * 2 ) , 1.0f );
+		bottom.TangentU = XMFLOAT3( 1.0f , 0.0f , 0.0f );
 		vertices.push_back( bottom );
 	}
 
@@ -96,9 +107,18 @@ void Cylinder::createObjectMesh()
 	computeBoundingBox();
 }
 
+
+void Cylinder::createEffect( ID3D11Device *device )
+{
+	BasicShape::createEffect( device );
+
+	efNormalTex = effect.getEffect()->GetVariableByName( "normalTex" )->AsShaderResource();
+}
+
 void Cylinder::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/grass.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_D.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_N.dds" , &normalTex , &normalTexView );
 }
 
 void Cylinder::generateCicle( float radius , float yPos )
@@ -109,10 +129,14 @@ void Cylinder::generateCicle( float radius , float yPos )
 	for ( UINT i = 0; i < sliceCount; ++i )
 	{
 		BaseVertex one;
-		one.Pos = XMFLOAT3( radius * cosf( deltaAngle*i ) , yPos , radius * sinf( deltaAngle*i ) );
+		float cos = cosf( deltaAngle*i );
+		float sin = sinf( deltaAngle*i );
+
+		one.Pos = XMFLOAT3( radius * cos , yPos , radius * sin );
 		one.Normal = XMFLOAT3( 0.0f , 0.0f , 0.0f );
 		one.TexCoord.x = ( i * deltaAngle ) / ( SimpleMath::PI * 2 );
 		one.TexCoord.y = 1 - ( ( yPos + halfHeight + topRadius ) / ( topRadius + height + bottomRadius ) );
+		one.TangentU = XMFLOAT3( -sin , 0.0f , cos );
 		vertices.push_back( one );
 	}
 

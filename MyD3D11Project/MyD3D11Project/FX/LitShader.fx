@@ -26,6 +26,7 @@ cbuffer cbPerObject
 };
 
 Texture2D diffuseTex;
+Texture2D normalTex;
 SamplerState linearSampler
 {
 	Filter = MIN_MAG_MIP_LINEAR;
@@ -40,6 +41,7 @@ struct VertexIn
 	float3 posL : POSITION;
 	float3 normalL : NORMAL;
 	float2 texcoord : TEXCOORD;
+	float3 tangentL : TANGENT;
 };
 
 struct VertexOut
@@ -47,11 +49,10 @@ struct VertexOut
 	float4 posH : SV_POSITION;
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
+	float3 tangentW : TANGENT;
 	float4 color : COLOR;
 	float2 tex : TEXCOORD;
 };
-
-
 
 VertexOut VS( VertexIn vin )
 {
@@ -59,7 +60,8 @@ VertexOut VS( VertexIn vin )
 
 	vout.posH = mul( float4( vin.posL , 1.0f ) , gWVP );
 	vout.posW = mul( float4( vin.posL , 1.0f ) , gWorld ).xyz;
-	vout.normalW = mul( vin.normalL , (float3x3)gWorldNormal );
+	vout.normalW = mul( vin.normalL , ( float3x3 )gWorldNormal );
+	vout.tangentW = mul( vin.tangentL , (float3x3)gWorld );
 	vout.color = float4( vin.normalL , 1.0f );
 	vout.tex = mul( float4( vin.texcoord , 0.0f, 1.0f ) , gTexTransform ).xy;
 
@@ -114,7 +116,7 @@ void UpdateLights( float3 pos , float4 color , float3 normal , float3 view , out
 }
 
 float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
-	uniform bool isUseFog ) : SV_Target
+	uniform bool isUseFog , uniform bool isUseNormalMap ) : SV_Target
 {
 	float4 texCol = float4( 1.0f , 1.0f , 1.0f , 1.0f );
 	if ( isUseTexture )
@@ -132,7 +134,17 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 		viewW /= dist2View;
 
 		float4 diffuse, specular, ambient;
-		UpdateLights( v2p.posW , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
+		
+		if ( isUseNormalMap )
+		{
+			float3 normalSample = normalTex.Sample( linearSampler , v2p.tex ).rgb;
+			float3 bumpedNormal = TangentToWorld( normalSample , v2p.normalW , v2p.tangentW );
+			UpdateLights( v2p.posW , 1.0f , bumpedNormal , viewW , diffuse , specular , ambient );
+		}
+		else
+		{
+			UpdateLights( v2p.posW , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
+		}
 
 		litColor = texCol * ( diffuse + ambient ) + specular;
 		litColor.w = gMaterial.diffuse.w;
@@ -158,7 +170,17 @@ technique11 LightTech_Lit_Tex
 	{
 		SetVertexShader( CompileShader( vs_5_0, VS() ) );
 		SetGeometryShader( NULL );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false , false ) ) );
+	}
+}
+
+technique11 LightTech_Lit_Tex_Norm
+{
+	pass P0
+	{
+		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetGeometryShader( NULL );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false , true ) ) );
 	}
 }
 
@@ -168,7 +190,17 @@ technique11 LightTech_Lit_Tex_Fog
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
 		SetGeometryShader( NULL );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true , false ) ) );
+	}
+}
+
+technique11 LightTech_Lit_Tex_Norm_Fog
+{
+	pass P0
+	{
+		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetGeometryShader( NULL );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true , true ) ) );
 	}
 }
 
@@ -178,7 +210,7 @@ technique11 LightTech_Lit_NoTex
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
 		SetGeometryShader( NULL );
-		SetPixelShader( CompileShader( ps_5_0 , PS( true , false , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( true , false , false , false ) ) );
 	}
 }
 
@@ -188,7 +220,7 @@ technique11 LightTech_Unlit_Tex
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
 		SetGeometryShader( NULL );
-		SetPixelShader( CompileShader( ps_5_0 , PS( false , true , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( false , true , false , false ) ) );
 	}
 }
 
@@ -198,6 +230,6 @@ technique11 LightTech_Unlit_NoTex
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
 		SetGeometryShader( NULL );
-		SetPixelShader( CompileShader( ps_5_0 , PS( false , false , false ) ) );
+		SetPixelShader( CompileShader( ps_5_0 , PS( false , false , false , false ) ) );
 	}
 }

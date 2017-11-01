@@ -1,15 +1,25 @@
 #include "GeoSphere.h"
 #include "../Utilities/CommonHeader.h"
+#include "DDSTextureLoader.h"
 using namespace DirectX;
 
 
 GeoSphere::GeoSphere() : radius( 2.0f ) , tesselTimes( 2 )
 {
 	material->specular.w = 1.0f;
+	effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Norm_Fog" : "LightTech_Lit_Tex_Norm" );
 }
 
 GeoSphere::~GeoSphere()
 {
+}
+
+
+void GeoSphere::UpdateObjectEffect( const Camera *camera )
+{
+	BasicShape::UpdateObjectEffect( camera );
+
+	efNormalTex->SetResource( normalTexView );
 }
 
 void GeoSphere::createObjectMesh()
@@ -54,13 +64,40 @@ void GeoSphere::createObjectMesh()
 		{
 			temp = XMVector3Normalize( temp );
 		}
-		temp = temp * radius;
 
-		XMStoreFloat3( &vertices[i].Pos , temp );
+		XMStoreFloat3( &vertices[i].Pos , temp * radius );
+		XMStoreFloat3( &vertices[i].Normal , temp );
+
+		float hAngle = SimpleMath::AngleFromXY( vertices[i].Pos.x , vertices[i].Pos.z );
+		float vAngle = acosf( vertices[i].Pos.y / radius );
+
+		vertices[i].TexCoord.x = hAngle / ( SimpleMath::PI *2.0f );
+		vertices[i].TexCoord.y = vAngle / SimpleMath::PI;
+
+		vertices[i].TangentU.x = -radius*sinf( vAngle )*sinf( hAngle );
+		vertices[i].TangentU.y = 0.0f;
+		vertices[i].TangentU.z = +radius*sinf( vAngle )*cosf( hAngle );
+
+		XMVECTOR T = XMLoadFloat3( &vertices[i].TangentU );
+		XMStoreFloat3( &vertices[i].TangentU , XMVector3Normalize( T ) );
 	}
 
-	computeNormal();
 	computeBoundingBox();
+}
+
+
+void GeoSphere::createEffect( ID3D11Device *device )
+{
+	BasicShape::createEffect( device );
+
+	efNormalTex = effect.getEffect()->GetVariableByName( "normalTex" )->AsShaderResource();
+}
+
+
+void GeoSphere::createObjectTexture( struct ID3D11Device *device )
+{
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_D.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_N.dds" , &normalTex , &normalTexView );
 }
 
 void GeoSphere::doTessllation()
