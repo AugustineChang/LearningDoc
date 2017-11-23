@@ -96,8 +96,8 @@ void GeoSphere::createEffect( ID3D11Device *device )
 
 void GeoSphere::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_D.dds" , &texture , &textureView );
-	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_N.dds" , &normalTex , &normalTexView );
+	CreateDDSTextureFromFile( device , L"Textures/stones.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/stones_nmap.dds" , &normalTex , &normalTexView );
 }
 
 void GeoSphere::doTessllation()

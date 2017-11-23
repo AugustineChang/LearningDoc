@@ -322,7 +322,10 @@
     <CustomBuild Include="FX\SkySphereShader.fx">
       <Filter>FX</Filter>
     </CustomBuild>
-    <CustomBuild Include="FX\LitReflectShader.fx">
+    <CustomBuild Include="FX\LitShader_CM.fx">
+      <Filter>FX</Filter>
+    </CustomBuild>
+    <CustomBuild Include="FX\LitShader_DM.fx">
       <Filter>FX</Filter>
     </CustomBuild>
   </ItemGroup>

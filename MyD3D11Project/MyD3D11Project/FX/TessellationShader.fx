@@ -214,6 +214,7 @@ technique11 TessTech
 		SetVertexShader( CompileShader( vs_5_0, VS() ) );
 		SetHullShader( CompileShader( hs_5_0 , HS() ) );
 		SetDomainShader( CompileShader( ds_5_0 , DS() ) );
+		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true ) ) );
 	}
 }

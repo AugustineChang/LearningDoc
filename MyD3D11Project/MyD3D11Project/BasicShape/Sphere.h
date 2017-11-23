@@ -15,10 +15,12 @@ private:
 	virtual void createEffect( ID3D11Device *device ) override;
 	virtual void createObjectTexture( struct ID3D11Device *device ) override;
 	virtual void createRenderState( ID3D11Device *device ) override;
+	virtual void RenderObject( ID3D11DeviceContext *immediateContext ) override;
 
 	void generateCicle( float vAngle );
 
 	ID3D11Resource *normalTex;
+	ID3DX11EffectMatrixVariable *efVP;
 	ID3D11ShaderResourceView *normalTexView;
 	ID3DX11EffectShaderResourceVariable* efNormalTex;
 

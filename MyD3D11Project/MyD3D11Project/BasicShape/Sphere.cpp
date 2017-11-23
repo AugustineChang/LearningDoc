@@ -1,6 +1,7 @@
 #include "Sphere.h"
 #include "DDSTextureLoader.h"
 #include "../Utilities/CommonHeader.h"
+#include "../DirectXApp/Camera.h"
 using namespace DirectX;
 
 
@@ -8,7 +9,8 @@ Sphere::Sphere() : stackCount( 17 ) , sliceCount( 20 ) , radius( 2.0f )
 {
 	//material.specular = XMFLOAT4( 0.0f , 0.0f , 0.0f , 1.0f );
 	material->specular.w = 3.0f;
-	effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Norm_Fog" : "LightTech_Lit_Tex_Norm" );
+	//effect.setShader( "LitShader" , isEnableFog ? "LightTech_Lit_Tex_Norm_Fog" : "LightTech_Lit_Tex_Norm" );
+	effect.setShader( "LitShader_DM" , "LightTech_DisplacementMap" );
 }
 
 
@@ -22,6 +24,12 @@ void Sphere::UpdateObjectEffect( const Camera *camera )
 	BasicShape::UpdateObjectEffect( camera );
 
 	efNormalTex->SetResource( normalTexView );
+
+	XMMATRIX &tempV = camera->getViewMatrix();
+	XMMATRIX &tempP = camera->getProjectMatrix();
+	XMMATRIX tempVP = XMMatrixMultiply( tempV , tempP );
+
+	efVP->SetMatrix( reinterpret_cast<float*>( &tempVP ) );
 }
 
 void Sphere::createObjectMesh()
@@ -113,24 +121,46 @@ void Sphere::createEffect( ID3D11Device *device )
 	BasicShape::createEffect( device );
 
 	efNormalTex = effect.getEffect()->GetVariableByName( "normalTex" )->AsShaderResource();
+	efVP = effect.getEffect()->GetVariableByName( "gVP" )->AsMatrix();
 }
 
 void Sphere::createObjectTexture( struct ID3D11Device *device )
 {
-	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_D.dds" , &texture , &textureView );
-	CreateDDSTextureFromFile( device , L"Textures/T_CobbleStone_Pebble_N.dds" , &normalTex , &normalTexView );
+	CreateDDSTextureFromFile( device , L"Textures/stones.dds" , &texture , &textureView );
+	CreateDDSTextureFromFile( device , L"Textures/stones_nmap.dds" , &normalTex , &normalTexView );
 }
 
 void Sphere::createRenderState( ID3D11Device *device )
 {
 	D3D11_RASTERIZER_DESC rsDesc;
 	ZeroMemory( &rsDesc , sizeof( D3D11_RASTERIZER_DESC ) );
-	rsDesc.FillMode = D3D11_FILL_SOLID;
+	rsDesc.FillMode = D3D11_FILL_WIREFRAME;
 	rsDesc.CullMode = D3D11_CULL_BACK;
 	rsDesc.FrontCounterClockwise = false;
 	rsDesc.DepthClipEnable = true;
 
 	device->CreateRasterizerState( &rsDesc , &rasterState );
+}
+
+
+void Sphere::RenderObject( ID3D11DeviceContext *immediateContext )
+{
+	immediateContext->IASetPrimitiveTopology( D3D11_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST );
+	immediateContext->IASetInputLayout( inputLayout );
+	immediateContext->RSSetState( rasterState );
+
+	float blendFactors[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	immediateContext->OMSetBlendState( blendState , blendFactors , 0xffffffff );
+
+	ID3DX11EffectTechnique *technique = effect.getEffectTech();
+	D3DX11_TECHNIQUE_DESC techDesc;
+	technique->GetDesc( &techDesc );
+	for ( UINT i = 0; i < techDesc.Passes; ++i )
+	{
+		technique->GetPassByIndex( i )->Apply( 0 , immediateContext );
+
+		immediateContext->DrawIndexed( indexSize , indexStart , indexBase );
+	}
 }
 
 void Sphere::generateCicle( float vAngle )

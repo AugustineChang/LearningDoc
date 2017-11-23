@@ -108,6 +108,8 @@ technique11 LightTech_Lit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false ) ) );
 	}
@@ -118,6 +120,8 @@ technique11 LightTech_Lit_Tex_Fog
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true ) ) );
 	}
@@ -128,6 +132,8 @@ technique11 LightTech_Lit
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , false , false ) ) );
 	}
@@ -138,6 +144,8 @@ technique11 LightTech_Unlit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , true , false ) ) );
 	}
@@ -148,6 +156,8 @@ technique11 LightTech_Unlit
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , false , false ) ) );
 	}

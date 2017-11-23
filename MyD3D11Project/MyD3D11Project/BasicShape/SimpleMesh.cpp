@@ -7,7 +7,7 @@
 
 SimpleMesh::SimpleMesh() : filePath( "Models/skull.txt" )
 {
-	effect.setShader( "LitReflectShader" , isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex" );
+	effect.setShader( "LitShader_CM" , isEnableFog ? "LightTech_Lit_Tex_Fog" : "LightTech_Lit_Tex" );
 }
 
 SimpleMesh::~SimpleMesh()

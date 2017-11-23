@@ -50,7 +50,6 @@ struct VertexOut
 	float3 posW : POSITION;
 	float3 normalW : NORMAL;
 	float3 tangentW : TANGENT;
-	float4 color : COLOR;
 	float2 tex : TEXCOORD;
 };
 
@@ -62,18 +61,19 @@ VertexOut VS( VertexIn vin )
 	vout.posW = mul( float4( vin.posL , 1.0f ) , gWorld ).xyz;
 	vout.normalW = mul( vin.normalL , ( float3x3 )gWorldNormal );
 	vout.tangentW = mul( vin.tangentL , (float3x3)gWorld );
-	vout.color = float4( vin.normalL , 1.0f );
 	vout.tex = mul( float4( vin.texcoord , 0.0f, 1.0f ) , gTexTransform ).xy;
 
 	return vout;
 }
 
 
-void UpdateLights( float3 pos , float4 color , float3 normal , float3 view , out float4 diffuse , out float4 specular , out float4 ambient )
+void UpdateLights( float3 pos , float3 normal , float3 view , out float4 diffuse , out float4 specular , out float4 ambient )
 {
 	diffuse = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 	specular = float4( 0.0f , 0.0f , 0.0f , 0.0f );
 	ambient = float4( 0.0f , 0.0f , 0.0f , 0.0f );
+
+	float4 color = float4( 1.0f , 1.0f , 1.0f , 1.0f );
 
 	if ( gDirLightNum > 0 )
 	{
@@ -139,11 +139,11 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 		{
 			float3 normalSample = normalTex.Sample( linearSampler , v2p.tex ).rgb;
 			float3 bumpedNormal = TangentToWorld( normalSample , v2p.normalW , v2p.tangentW );
-			UpdateLights( v2p.posW , 1.0f , bumpedNormal , viewW , diffuse , specular , ambient );
+			UpdateLights( v2p.posW , bumpedNormal , viewW , diffuse , specular , ambient );
 		}
 		else
 		{
-			UpdateLights( v2p.posW , 1.0f , v2p.normalW , viewW , diffuse , specular , ambient );
+			UpdateLights( v2p.posW , v2p.normalW , viewW , diffuse , specular , ambient );
 		}
 
 		litColor = texCol * ( diffuse + ambient ) + specular;
@@ -158,7 +158,7 @@ float4 PS( VertexOut v2p , uniform bool isLit , uniform bool isUseTexture ,
 	}
 	else
 	{
-		litColor = texCol * v2p.color;
+		litColor = texCol;
 	}
 
 	return litColor;
@@ -169,6 +169,8 @@ technique11 LightTech_Lit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0, VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false , false ) ) );
 	}
@@ -179,6 +181,8 @@ technique11 LightTech_Lit_Tex_Norm
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , false , true ) ) );
 	}
@@ -189,6 +193,8 @@ technique11 LightTech_Lit_Tex_Fog
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true , false ) ) );
 	}
@@ -199,6 +205,8 @@ technique11 LightTech_Lit_Tex_Norm_Fog
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , true , true , true ) ) );
 	}
@@ -209,6 +217,8 @@ technique11 LightTech_Lit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( true , false , false , false ) ) );
 	}
@@ -219,6 +229,8 @@ technique11 LightTech_Unlit_Tex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , true , false , false ) ) );
 	}
@@ -229,6 +241,8 @@ technique11 LightTech_Unlit_NoTex
 	pass P0
 	{
 		SetVertexShader( CompileShader( vs_5_0 , VS() ) );
+		SetHullShader( NULL );
+		SetDomainShader( NULL );
 		SetGeometryShader( NULL );
 		SetPixelShader( CompileShader( ps_5_0 , PS( false , false , false , false ) ) );
 	}
