@@ -8,7 +8,7 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 	float c = Vector3::dot( center2Origin , center2Origin ) - radius * radius;
 
 	float discriminant = b * b - 4.0f * a * c;
-	if ( discriminant >= 0 )
+	if ( discriminant > 0 )
 	{
 		float sqrtDis = sqrtf( discriminant );
 		float t1 = ( -b - sqrtDis ) / ( 2.0f*a );
@@ -17,6 +17,7 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 			hitResult.t = t1;
 			hitResult.hitPoint = ray.pointOnRay( t1 );
 			hitResult.hitNormal = ( hitResult.hitPoint - center ) / radius;
+			hitResult.mat = objMat;
 			return true;
 		}
 
@@ -26,6 +27,7 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 			hitResult.t = t2;
 			hitResult.hitPoint = ray.pointOnRay( t2 );
 			hitResult.hitNormal = ( hitResult.hitPoint - center ) / radius;
+			hitResult.mat = objMat;
 			return true;
 		}
 	}

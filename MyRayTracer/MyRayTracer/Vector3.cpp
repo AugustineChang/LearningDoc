@@ -80,6 +80,22 @@ Vector3 Vector3::getRandomInUnitSphere()
 	return randVec;
 }
 
+Vector3 Vector3::getRandomInDisk()
+{
+	Vector3 randVec;
+	do
+	{
+		randVec = 2.0f * Vector3( getRandom01() , getRandom01() , 0.0f ) - Vector3( 1.0f , 1.0f , 0.0f );
+	} while ( randVec.squared_length() >= 1.0f );
+
+	return randVec;
+}
+
+Vector3 Vector3::getRandomColor()
+{
+	return Vector3( getRandom01() , getRandom01() , getRandom01() );
+}
+
 Vector3& Vector3::operator/=( const Vector3& v2 )
 {
 	vec[0] /= v2.vec[0];

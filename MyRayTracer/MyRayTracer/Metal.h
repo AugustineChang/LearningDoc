@@ -2,15 +2,17 @@
 #include "Material.h"
 #include "Vector3.h"
 
-class Lambertain : public Material
+class Metal : public Material
 {
 public:
-	Lambertain( const Vector3 &col );
+	Metal( const Vector3 &col );
+	Metal( const Vector3 &col , float fuzzy );
 
 	virtual bool scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &attenuation , Ray &scatteredRay ) override;
 
 private:
-
+	
 	Vector3 albedo;
+	float fuzziness;
 };
 

@@ -4,13 +4,14 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "MyRand.h"
+#include "Material.h"
 
 #include <iostream>
 #include <time.h>
 
 Vector3 getColor( const Ray &ray , const Scene *world , int depth )
 {
-	if ( depth >= 100 )
+	if ( depth >= 50 )
 	{
 		return Vector3( 1.0f , 1.0f , 1.0f );
 	}
@@ -18,9 +19,23 @@ Vector3 getColor( const Ray &ray , const Scene *world , int depth )
 	HitResult hitResult;
 	if ( world->hitTest( ray , hitResult ) )
 	{
-		Vector3 nextDir = hitResult.hitNormal + Vector3::getRandomInUnitSphere();
-		Ray nextRay( hitResult.hitPoint , nextDir );
-		return 0.5f * getColor( nextRay , world , depth + 1 );
+		if ( hitResult.mat == nullptr )
+		{
+			return Vector3( 1.0f , 0.0f , 1.0f );
+		}
+		else
+		{
+			Vector3 attenuation;
+			Ray nextRay;
+
+			if ( hitResult.mat->scatter( ray , hitResult , attenuation , nextRay ) )
+			{
+				return attenuation * getColor( nextRay , world , depth + 1 );
+			}
+			else
+				return Vector3( 0.0f , 0.0f , 0.0f );
+		}
+		
 	}
 	else
 	{
@@ -33,15 +48,16 @@ Vector3 getColor( const Ray &ray , const Scene *world , int depth )
 
 int main()
 {
-	srand48( time( 0 ) );
+	srand48( static_cast<unsigned int>( time( 0 ) ) );
 
-	int width = 600;
-	int height = 300;
-	int subPixel = 100;
+	int width = 1200;
+	int height = 800;
+	int subPixel = 10;
 
 	PPMImage image( width , height );
 	
-	Camera camera( float( width ) / float( height ) , Vector3( 0.0f , 0.0f , 0.0f ) );
+	Camera camera( Vector3( 13.0f , 2.0f , 3.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
+		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f );
 	Scene simpleWorld;
 
 	float totalPixel = float( width * height );
@@ -67,7 +83,7 @@ int main()
 		}
 	}
 
-	image.SaveImage( "test8.ppm" );
+	image.SaveImage( "test12.ppm" );
 
 	system( "Pause" );
 	return 0;

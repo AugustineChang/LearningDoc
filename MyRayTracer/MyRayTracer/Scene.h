@@ -15,10 +15,14 @@ public:
 
 private:
 
-	void createList();
+	void createObjList();
+	void createMaterials();
+	void randomScene();
 
 	Hitable **hitableList;
-	int listLen;
+	Material **matList;
+	int hitableNum;
+	int matNum;
 
 	float t_min;
 	float t_max;

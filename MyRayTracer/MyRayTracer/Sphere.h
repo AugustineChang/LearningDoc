@@ -2,6 +2,7 @@
 #include "Hitable.h"
 #include "Vector3.h"
 
+
 class Sphere : public Hitable
 {
 public:

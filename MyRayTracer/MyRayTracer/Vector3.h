@@ -63,6 +63,8 @@ public:
 	static Vector3 cross( const Vector3& v1 , const Vector3& v2 );
 	static Vector3 lerp( const Vector3& v1 , const Vector3& v2 , float alpha );
 	static Vector3 getRandomInUnitSphere();
+	static Vector3 getRandomInDisk();
+	static Vector3 getRandomColor();
 
 private:
 
