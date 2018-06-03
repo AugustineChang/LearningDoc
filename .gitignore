@@ -7,6 +7,11 @@
 /MyD3D11Project/ipch
 /MyD3D11Project/.vs
 
+
+/MyRayTracer/Debug
+/MyRayTracer/MyRayTracer/Debug
+/MyRayTracer/.vs
+
 *.sdf
 *.sln
 *.db
