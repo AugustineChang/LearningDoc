@@ -10,7 +10,7 @@ public:
 	Camera( const Vector3 &pos , const Vector3 &lookAt , float aspect , float vfov , 
 		float aperture , float focus_dist );
 
-	Ray getRay( float u , float v );
+	Ray getRay( float u , float v ) const;
 
 private:
 

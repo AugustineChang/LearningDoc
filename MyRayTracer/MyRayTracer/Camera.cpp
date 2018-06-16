@@ -18,7 +18,7 @@ Camera::Camera( const Vector3 &pos , const Vector3 &lookAt , float aspect , floa
 	calcCameraDetail();
 }
 
-Ray Camera::getRay( float u , float v )
+Ray Camera::getRay( float u , float v ) const
 {
 	Vector3 randCircle = Vector3::getRandomInDisk() * lensRadius;
 	Vector3 offset = randCircle.x() * xAxis + randCircle.y() * yAxis;

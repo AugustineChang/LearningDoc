@@ -8,7 +8,9 @@
 /MyD3D11Project/.vs
 
 
+/MyRayTracer/x64
 /MyRayTracer/Debug
+/MyRayTracer/MyRayTracer/x64
 /MyRayTracer/MyRayTracer/Debug
 /MyRayTracer/.vs
 
@@ -20,3 +22,4 @@
 *.filters
 *.fxo
 *.cod
+
