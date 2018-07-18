@@ -1,0 +1,121 @@
+﻿软件渲染大纲
+1.数学类
+主要类
+Vector3 可以表示 方向、点、颜色、欧拉角 等
+Matrix4x4 用于 坐标系转换
+
+辅助类
+Vector2 用于表示 uv等二维变量
+Vector4 用于 包装Vector3 以便和Matrix4x4相乘
+Matrix3x3 在不实现四元数的情况下 表示旋转 （可选实现 毕竟欧拉角也能凑活用）
+
+2.物体类
+Vertex 一个顶点结构体 描述顶点数据（pos normal color uv等）
+
+BaseObject 一个物体基类 用于封装一些通用方法
+	vertexList 顶点列表（localSpace）
+	indexList 引用列表 用于形成三角形	
+
+	Positioin 位置   \
+	Rotation 欧拉角 -- 此三者用于形成 localToWorld 矩阵
+	Scaling 放缩     /
+
+Triangle 最简单的物体类 只有三个顶点
+Cube Sphere等基础物体（自选实现）
+
+3.Camera 类（继承BaseObject 以便拥有位置旋转）
+	水平FOV hfov             \
+	横纵比 aspect           --\
+	近截面距离 nearDist     ---此四者 用于形成 viewToClip矩阵
+	远截面距离 farDist        /
+
+	注意 由于camera也继承自BaseObject，所以也有一个localToWorld矩阵。这个矩阵的逆矩阵，就是worldToView矩阵
+	这样 三大矩阵已经都有了 localToWorld（来自物体） worldToView（来自camera） viewToClip（来自camera）
+	三者相乘 即可 将local坐标转换到 裁剪空间
+
+4.Screen类 用于表示屏幕
+	pixelList 一个Pixel二维数组 用于表示屏幕上所有的像素点
+	depthList 一个float二维数组 用于表示深度缓存
+
+	width,height 表示屏幕宽度、高度
+	
+	注意 pixelList 与 depthList 像素个数必须一样多
+	有两种实现方式
+	1.定义一个结构体 包含 RGB三个分量（float uint8 均可） + 一个 depth分量（float）
+	这样就相当于 合并了 Pixel和Depth
+	2.分别定义两个数组：pixelList 是一个uint8数组，depthList是一个float数组，pixelList长度是depthList的三倍（因为RGB三个分量）
+	
+	点评：第一种易于理解，扩展性好（修改起来方便）
+	      第二种易于调用opengl，glDrawPixels接口，方便显示到屏幕上
+
+	可选实现：SSAA功能 后处理功能 等
+	SSAA简介：最粗暴的AA，但是胜在简单，本质就是把屏幕宽高扩大一个倍数，然后在这个大屏幕上渲染，完成后再向原屏幕映射（一般是多个像素取平均）
+	以X4为例，宽高分别扩大2倍，整体扩大4倍，渲染完成后，每四个像素取平均，获得原像素值
+
+
+5.光源类
+	实现一个DirectionalLight，只有一个成员 worldDirection，表示光照方向
+	
+	可选实现：点光源 聚光灯
+
+6.ShapeRender类 用于渲染某一个物体，多次调用即可渲染多个物体
+	按渲染步骤介绍：
+	1.收集类引用或指针
+		物体的引用或指针
+		Camera的引用或指针
+		Light的引用或指针
+		Screen的引用或指针
+	此阶段可以通过写 一系列Set方法完成
+	2.收集信息
+		Screen的宽度 高度
+		物体的 顶点列表 引用列表
+		物体的 localToWorld矩阵
+		Camera的 worldToView viewToClip矩阵
+		
+		计算一些列矩阵
+		world矩阵 不用算 就是localToWorld矩阵
+		mvp矩阵 mvp= localToWorld × worldToView × viewToClip
+		mv矩阵  mv = localToWorld × worldToView
+		
+		遍历物体的引用列表 根据引用获取顶点
+		每3个顶点 调用一次DrawTriangle方法（该方法参数为 3个顶点以及 刚才算得一堆矩阵， 可以考虑定义一个结构体存储这些矩阵 一起传进去）
+	
+	3.DrawTriangle方法
+		
+		背面剔除（根据 dot(三角面法向量, camera到三角面任意一点的向量) 判断, 大于0，即同向，即三角面为背面冲摄像机）（3D数学基础 349页）
+			一旦剔除 直接return 不执行以下方法
+		
+		对三个顶点执行，顶点shader（可以做很多事，但是有一件事必须做，对顶点乘以mvp矩阵，进行坐标变换），返回VertexOutput
+		
+		视锥体裁剪
+			乘完mvp矩阵，顶点位于裁剪空间（一个专门用于视锥体裁剪的4维空间）。
+			此处涉及 3个算法
+			1.生成viewToClip的方法 以理解如何判断单个点 是否在视锥体之外 （unity shader 入门精要 77页）
+			2.裁剪线段的方法 如果线段一端点在外，一端点在内，如何计算一个新的边界点，以代替外部点（计算机图形学第四版 268页）
+			3.裁剪三角形的方法 如何根据三角形输入顺序（逆时针）， 生成一个同样顺序的裁剪后的多边形 （计算机图形学第四版 203页）
+			4.将裁剪多边形分解成三角形的方法 （这个简单）
+
+		投影除法 （对裁剪后的N个顶点进行）
+		（x,y,z,w） -> （x/w, y/w, z/w, 1）这个投影挺奇怪，是沿着直线投影，而不是一般理解的cos投影（3D数学基础 124页和326页）
+
+		顶点画线算法（网格模式）（计算机图形学第四版 101页 DDA算法 或者 Bresenham算法 都可以）
+		顶点填充算法（填充模式）（计算机图形学第四版 129页 扫描线填充算法）
+			这两个算法，都要实现，实际使用的时候二选一执行
+			
+		
+		片元Shader
+			不论是画线，还是填充，在设置像素颜色之前要执行片元Shader，以计算当前像素颜色
+			然而，执行Shader之前需要，进行深度检测，以判断当前点是否被遮挡（unity shader 入门精要 14页 逐片元操作）
+			通过深度测试后，需要计算片元Shader的输入数据，这是三角形内三向插值（重心坐标空间 3D数学基础 246页）
+			此处计算的插值是在屏幕空间内进行的（进行过投影除法了），理论上是不准的，需要一个透视矫正
+			（透视矫正介绍：https://www.cnblogs.com/rickerliang/archive/2013/03/30/2989941.html）
+
+			执行片元Shader 输出颜色
+
+7.光照模型
+最简单的 Blinn-Phong 模型（unity shader 入门精要 123页 标准光照模型）
+极其复杂的 BPR 模型（unity shader 入门精要 342页）
+
+8.输出到屏幕或图片，以查看结果
+图片：推荐ppm
+屏幕：推荐opengl 的 glut（一个opengl的工具，帮你创建窗口，帮你引用opengl，用这个就不用WinMain了，普通的main就行）
