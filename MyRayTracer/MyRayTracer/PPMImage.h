@@ -2,6 +2,8 @@
 #include <string>
 
 typedef unsigned char UINT8;
+typedef unsigned int UINT;
+
 struct PPMPixel 
 {
 	PPMPixel() : R( 0 ) , G( 0 ) , B( 0 )
@@ -27,6 +29,7 @@ public:
 	void SetPixel( int x , int y , UINT8 R , UINT8 G , UINT8 B );
 	PPMPixel GetPixel( int x , int y ) const;
 
+	static void CreateNoiseTexture( UINT width , UINT height , UINT depth );
 	void SaveImage( const std::string &filePath );
 	void LoadImage( const std::string &filePath );
 
