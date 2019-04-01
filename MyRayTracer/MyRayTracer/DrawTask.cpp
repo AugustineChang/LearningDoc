@@ -4,7 +4,7 @@
 #include "Ray.h"
 #include "Scene.h"
 #include "Camera.h"
-#include "MyRand.h"
+#include "MyMath.h"
 #include "Material.h"
 
 
@@ -25,8 +25,8 @@ void DrawTask::operator()()
 			Vector3 color;
 			for ( int s = 0; s < subPixel; ++s )
 			{
-				float u = float( x + getRandom01() ) / float( width );
-				float v = float( y + getRandom01() ) / float( height );
+				float u = float( x + MyMath::getRandom01() ) / float( width );
+				float v = float( y + MyMath::getRandom01() ) / float( height );
 
 				color += getColor( camera->getRay( u , v ) , 0 );
 			}

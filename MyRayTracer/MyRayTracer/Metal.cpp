@@ -19,7 +19,7 @@ bool Metal::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 	}
 	nextDir.normalized();
 
-	scatteredRay = Ray( hitResult.hitPoint , nextDir );
+	scatteredRay = Ray( hitResult.hitPoint , nextDir , ray_in.getSendTime() );
 	attenuation = albedo;
 	return true;
 }

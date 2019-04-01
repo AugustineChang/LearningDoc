@@ -1,6 +1,5 @@
 #include "Glass.h"
-#include "MyRand.h"
-#include <math.h>
+#include "MyMath.h"
 
 Glass::Glass( float refra_index )
 	: refractiveIndex( refra_index ) , albedo( Vector3( 1.0f , 1.0f , 1.0f ) )
@@ -22,7 +21,7 @@ bool Glass::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 	{
 		niOverNt = refractiveIndex;
 		realNormal = -hitResult.hitNormal;
-		cosRN = sqrtf( 1.0f - ( niOverNt * niOverNt *( 1.0f - cosRN * cosRN ) ) );
+		cosRN = MyMath::squareRoot( 1.0f - ( niOverNt * niOverNt *( 1.0f - cosRN * cosRN ) ) );
 	}
 	else //入射
 	{
@@ -44,16 +43,16 @@ bool Glass::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 
 	//按概率决定 反射 还是 折射
 	attenuation = albedo;
-	if ( getRandom01() < reflect_prob )
+	if ( MyMath::getRandom01() < reflect_prob )
 	{
 		Vector3 reflectRay = reflect( ray_in.getDirection() , realNormal );
 		reflectRay.normalized();
-		scatteredRay = Ray( hitResult.hitPoint , reflectRay );
+		scatteredRay = Ray( hitResult.hitPoint , reflectRay , ray_in.getSendTime() );
 	}
 	else
 	{
 		refractRay.normalized();
-		scatteredRay = Ray( hitResult.hitPoint , refractRay );
+		scatteredRay = Ray( hitResult.hitPoint , refractRay , ray_in.getSendTime() );
 	}
 	return true;
 }
@@ -62,5 +61,5 @@ float Glass::schilick( float cosine )//菲涅尔反射 概率
 {
 	float r0 = ( 1.0f - refractiveIndex ) / ( 1.0f + refractiveIndex );
 	r0 = r0 * r0;
-	return r0 + ( 1.0f - r0 )*powf( 1.0f - cosine , 5.0f );
+	return r0 + ( 1.0f - r0 )*MyMath::power( 1.0f - cosine , 5.0f );
 }

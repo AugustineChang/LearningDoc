@@ -36,9 +36,6 @@
     <ClInclude Include="Metal.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="MyRand.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="PPMImage.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -52,6 +49,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Vector3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="MyMath.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -77,9 +77,6 @@
     <ClCompile Include="Metal.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="MyRand.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="PPMImage.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -93,6 +90,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="Vector3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MyMath.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

@@ -122,7 +122,7 @@
     <ClInclude Include="Lanbertain.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Metal.h" />
-    <ClInclude Include="MyRand.h" />
+    <ClInclude Include="MyMath.h" />
     <ClInclude Include="PPMImage.h" />
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Scene.h" />
@@ -137,7 +137,7 @@
     <ClCompile Include="Lanbertain.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Metal.cpp" />
-    <ClCompile Include="MyRand.cpp" />
+    <ClCompile Include="MyMath.cpp" />
     <ClCompile Include="PPMImage.cpp" />
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Scene.cpp" />

@@ -7,18 +7,21 @@ class Sphere : public Hitable
 {
 public:
 	Sphere()
-		: center( 0.0f , 0.0f , 0.0f ) , radius( 1.0f )
+		: center( 0.0f , 0.0f , 0.0f ) , radius( 1.0f ) , moveable( false )
 	{}
 
-	Sphere( const Vector3 &c , float r )
-		: center( c ) , radius( r )
+	Sphere( const Vector3 &c , float r , bool isMove = false )
+		: center( c ) , radius( r ) , moveable( isMove )
 	{}
 
 	virtual bool hitTest( const Ray &ray , float t_min , float t_max , HitResult& hitResult ) override;
+
+	Vector3 getCenterByTime( float time );
 
 private:
 
 	Vector3 center;
 	float radius;
+	bool moveable;
 };
 

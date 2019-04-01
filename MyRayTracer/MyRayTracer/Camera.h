@@ -8,7 +8,7 @@ public:
 
 	Camera( float aspect , float vfov );
 	Camera( const Vector3 &pos , const Vector3 &lookAt , float aspect , float vfov , 
-		float aperture , float focus_dist );
+		float aperture , float focus_dist , float exposure );
 
 	Ray getRay( float u , float v ) const;
 
@@ -20,6 +20,7 @@ private:
 	float vFOV;
 	float focusDistance;
 	float lensRadius;
+	float exposureTime;
 
 	Vector3 lowerLeftCorner;
 	Vector3 horizental;

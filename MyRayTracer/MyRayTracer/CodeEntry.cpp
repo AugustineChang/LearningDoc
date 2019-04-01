@@ -3,7 +3,7 @@
 #include "Scene.h"
 #include "Camera.h"
 #include "DrawTask.h"
-#include "MyRand.h"
+#include "MyMath.h"
 
 #include <iomanip>
 #include <iostream>
@@ -50,10 +50,10 @@ void doPrintData( float *progress , int numOfThreads )
 
 int main()
 {
-	srand48( static_cast<unsigned int>( time( 0 ) ) );
+	MyMath::srand48( static_cast<unsigned int>( time( 0 ) ) );
 
-	int width = 1200;
-	int height = 800;
+	int width = 600;
+	int height = 400;
 	int subPixel = 100;
 	const int numOfThreads = 4;
 
@@ -63,7 +63,7 @@ int main()
 	//shared Data
 	PPMImage image( width , height );
 	Camera camera( Vector3( 13.0f , 2.0f , 3.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
-		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f );
+		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f , 1.0f );
 	Scene simpleWorld;
 
 	//start printThread
@@ -90,7 +90,7 @@ int main()
 	printThread.join();
 
 	//save to image
-	image.SaveImage( "test.ppm" );
+	image.SaveImage( "MotionBlur.ppm" );
 
 	system( "Pause" );
 	return 0;

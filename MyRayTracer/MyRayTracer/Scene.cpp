@@ -3,7 +3,7 @@
 #include "Lanbertain.h"
 #include "Metal.h"
 #include "Glass.h"
-#include "MyRand.h"
+#include "MyMath.h"
 
 Scene::Scene() : t_min( 0.001f ) , t_max( 1000.0f ) , hitableList( nullptr ) , matList( nullptr )
 {
@@ -92,12 +92,13 @@ void Scene::randomScene()
 	{
 		for ( int yPos = -11; yPos < 11; ++yPos )
 		{
-			Vector3 center = Vector3( xPos + getRandom01() * 0.9f , 0.2f , yPos + getRandom01() * 0.9f );
+			Vector3 center = Vector3( xPos + MyMath::getRandom01() * 0.9f , 0.2f , yPos + MyMath::getRandom01() * 0.9f );
 			if ( ( center - Vector3( 4.0f , 0.2f , 0.0f ) ).length() <= 0.9f ) continue;
 			
-			hitableList[index] = new Sphere( center , 0.2f );
+			float moveable = MyMath::getRandom01();
+			hitableList[index] = new Sphere( center , 0.2f , moveable >= 0.5f );
 			
-			float chooseMat = getRandom01();
+			float chooseMat = MyMath::getRandom01();
 			if ( chooseMat < 0.8f )//diffuse
 			{
 				matList[index] = new Lambertain( Vector3::getRandomColor() * Vector3::getRandomColor() );
@@ -105,7 +106,7 @@ void Scene::randomScene()
 			else if ( chooseMat < 0.95f )//metal
 			{
 				Vector3 color = ( Vector3::getRandomColor() + Vector3( 1.0f , 1.0f , 1.0f ) )*0.5f;
-				matList[index] = new Metal( color , 0.5f * getRandom01() );
+				matList[index] = new Metal( color , 0.5f * MyMath::getRandom01() );
 			}
 			else//glass
 			{

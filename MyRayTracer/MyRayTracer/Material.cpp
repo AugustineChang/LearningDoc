@@ -1,5 +1,5 @@
 #include "Material.h"
-#include <math.h>
+#include "MyMath.h"
 
 bool Material::refract( const Vector3& in , const Vector3& normal , float niOverNt , Vector3 &refractRay )
 {
@@ -7,7 +7,7 @@ bool Material::refract( const Vector3& in , const Vector3& normal , float niOver
 	float discriminant = 1.0f - ( niOverNt * niOverNt *( 1.0f - cosIn * cosIn ) );
 	if ( discriminant > 0.0f )
 	{
-		refractRay = niOverNt * ( in - cosIn * normal ) - sqrtf( discriminant )*normal;
+		refractRay = niOverNt * ( in - cosIn * normal ) - MyMath::squareRoot( discriminant )*normal;
 		return true;
 	}
 	else

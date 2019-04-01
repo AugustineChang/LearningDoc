@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "MyMath.h"
 
 
 PPMImage::PPMImage() : width( 100 ) , height( 100 ) , imageData( nullptr )
@@ -103,8 +104,6 @@ void PPMImage::CreateNoiseTexture( UINT width , UINT height , UINT halfDepth )
 	float* NoiseData = new float[width * height * depth];
 
 	#define NOISE(i,j,k) NoiseData[i + j * width + k * (width * height)]
-	#define max(a,b) (((a) > (b)) ? (a) : (b))
-	#define min(a,b) (((a) < (b)) ? (a) : (b))
 
 	// Populate texture with random noise
 	UINT InitialStep = 8;

@@ -1,6 +1,9 @@
 #include "Vector3.h"
-#include "MyRand.h"
-#include <math.h>
+#include "MyMath.h"
+
+Vector3 Vector3::forwardVector = Vector3( 0.0f , 0.0f , 1.0f );
+Vector3 Vector3::rightVector = Vector3( 1.0f , 0.0f , 0.0f );
+Vector3 Vector3::upVector = Vector3( 0.0f , 1.0f , 0.0f );
 
 Vector3 Vector3::operator+( const Vector3& v2 ) const
 {
@@ -34,7 +37,7 @@ Vector3 Vector3::operator/( float scale ) const
 
 float Vector3::length() const
 {
-	return sqrtf( vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] );
+	return MyMath::squareRoot( vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2] );
 }
 
 float Vector3::squared_length() const
@@ -74,7 +77,7 @@ Vector3 Vector3::getRandomInUnitSphere()
 	Vector3 randVec;
 	do
 	{
-		randVec = 2.0f * Vector3( getRandom01() , getRandom01() , getRandom01() ) - Vector3( 1.0f , 1.0f , 1.0f );
+		randVec = 2.0f * Vector3( MyMath::getRandom01() , MyMath::getRandom01() , MyMath::getRandom01() ) - Vector3( 1.0f , 1.0f , 1.0f );
 	} while ( randVec.squared_length() >= 1.0f );
 
 	return randVec;
@@ -85,7 +88,7 @@ Vector3 Vector3::getRandomInDisk()
 	Vector3 randVec;
 	do
 	{
-		randVec = 2.0f * Vector3( getRandom01() , getRandom01() , 0.0f ) - Vector3( 1.0f , 1.0f , 0.0f );
+		randVec = 2.0f * Vector3( MyMath::getRandom01() , MyMath::getRandom01() , 0.0f ) - Vector3( 1.0f , 1.0f , 0.0f );
 	} while ( randVec.squared_length() >= 1.0f );
 
 	return randVec;
@@ -93,7 +96,7 @@ Vector3 Vector3::getRandomInDisk()
 
 Vector3 Vector3::getRandomColor()
 {
-	return Vector3( getRandom01() , getRandom01() , getRandom01() );
+	return Vector3( MyMath::getRandom01() , MyMath::getRandom01() , MyMath::getRandom01() );
 }
 
 Vector3& Vector3::operator/=( const Vector3& v2 )

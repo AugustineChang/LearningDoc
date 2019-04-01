@@ -5,7 +5,8 @@ class Material;
 
 struct HitResult
 {
-	float t;//hitPoint = ray.origin + t * ray.direction;
+	//hitPoint = ray.origin + t * ray.direction;
+	float t;
 	Vector3 hitPoint;
 	Vector3 hitNormal;
 	Material *mat;

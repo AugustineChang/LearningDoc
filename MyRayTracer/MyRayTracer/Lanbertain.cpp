@@ -9,7 +9,7 @@ bool Lambertain::scatter( const Ray &ray_in , const HitResult& hitResult , Vecto
 	Vector3 nextDir = hitResult.hitNormal + Vector3::getRandomInUnitSphere();
 	nextDir.normalized();
 
-	scatteredRay = Ray( hitResult.hitPoint , nextDir );
+	scatteredRay = Ray( hitResult.hitPoint , nextDir , ray_in.getSendTime() );
 	attenuation = albedo;
 	return true;
 }

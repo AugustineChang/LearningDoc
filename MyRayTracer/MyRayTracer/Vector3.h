@@ -66,6 +66,12 @@ public:
 	static Vector3 getRandomInDisk();
 	static Vector3 getRandomColor();
 
+public:
+
+	static Vector3 forwardVector;
+	static Vector3 rightVector;
+	static Vector3 upVector;
+
 private:
 
 	float vec[3];
