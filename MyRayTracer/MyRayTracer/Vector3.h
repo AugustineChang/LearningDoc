@@ -71,6 +71,8 @@ public:
 	static Vector3 forwardVector;
 	static Vector3 rightVector;
 	static Vector3 upVector;
+	static Vector3 oneVector;
+	static Vector3 zeroVector;
 
 private:
 

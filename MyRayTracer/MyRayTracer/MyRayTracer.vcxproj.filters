@@ -13,87 +13,123 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\Hitable">
+      <UniqueIdentifier>{2114fdee-466c-4b39-87c5-465e8187dfb8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Material">
+      <UniqueIdentifier>{76d4cd6c-7dca-4c21-8b37-98595e231e50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Util">
+      <UniqueIdentifier>{da61c39d-0947-4f37-bc12-c4d2e8a9dcee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Core">
+      <UniqueIdentifier>{09be2fdb-5e54-4306-be15-410793d52297}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Hitable">
+      <UniqueIdentifier>{1b450786-c158-4063-aef6-028b21c07626}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Material">
+      <UniqueIdentifier>{c15183f1-84ec-4cc7-b24b-708aeff771fd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Core">
+      <UniqueIdentifier>{9c80c01f-8e8a-4aa2-b057-19e20bdf30fa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\Util">
+      <UniqueIdentifier>{428799b4-4be4-418d-879d-f198e44925a5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Camera.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="DrawTask.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Glass.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Hitable.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Lanbertain.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Metal.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="PPMImage.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Ray.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="Scene.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\Hitable</Filter>
     </ClInclude>
     <ClInclude Include="Sphere.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\Hitable</Filter>
     </ClInclude>
-    <ClInclude Include="Vector3.h">
-      <Filter>头文件</Filter>
+    <ClInclude Include="Glass.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Lanbertain.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Metal.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="DrawTask.h">
+      <Filter>头文件\Util</Filter>
     </ClInclude>
     <ClInclude Include="MyMath.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="PPMImage.h">
+      <Filter>头文件\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundingBox.h">
+      <Filter>头文件\Hitable</Filter>
+    </ClInclude>
+    <ClInclude Include="Vector3.h">
+      <Filter>头文件\Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Ray.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="Scene.h">
+      <Filter>头文件\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="BoundingVolumeTree.h">
+      <Filter>头文件\Hitable</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Camera.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="CodeEntry.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="DrawTask.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Glass.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Lanbertain.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Metal.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="PPMImage.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Ray.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="Scene.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="BoundingBox.cpp">
+      <Filter>源文件\Hitable</Filter>
     </ClCompile>
     <ClCompile Include="Sphere.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\Hitable</Filter>
     </ClCompile>
-    <ClCompile Include="Vector3.cpp">
-      <Filter>源文件</Filter>
+    <ClCompile Include="Glass.cpp">
+      <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Lanbertain.cpp">
+      <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Metal.cpp">
+      <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Ray.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="Scene.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="CodeEntry.cpp">
+      <Filter>源文件\Core</Filter>
+    </ClCompile>
+    <ClCompile Include="DrawTask.cpp">
+      <Filter>源文件\Util</Filter>
     </ClCompile>
     <ClCompile Include="MyMath.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="PPMImage.cpp">
+      <Filter>源文件\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Vector3.cpp">
+      <Filter>源文件\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="BoundingVolumeTree.cpp">
+      <Filter>源文件\Hitable</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

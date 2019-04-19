@@ -1,6 +1,8 @@
 #pragma once
 #include "Hitable.h"
 
+class BoundingVolumeTree;
+
 class Scene
 {
 public:
@@ -11,14 +13,15 @@ public:
 
 	void operator=( const Scene& copy ) = delete;
 
+	void createBVT( float exposureTime );
 	bool hitTest( const Ray &ray , HitResult &outResult ) const;
 
 private:
 
 	void createObjList();
-	void createMaterials();
 	void randomScene();
 
+	BoundingVolumeTree *bvTree;
 	Hitable **hitableList;
 	Material **matList;
 	int hitableNum;

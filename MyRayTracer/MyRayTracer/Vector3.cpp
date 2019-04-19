@@ -4,6 +4,8 @@
 Vector3 Vector3::forwardVector = Vector3( 0.0f , 0.0f , 1.0f );
 Vector3 Vector3::rightVector = Vector3( 1.0f , 0.0f , 0.0f );
 Vector3 Vector3::upVector = Vector3( 0.0f , 1.0f , 0.0f );
+Vector3 Vector3::oneVector = Vector3( 1.0f , 1.0f , 1.0f );
+Vector3 Vector3::zeroVector = Vector3( 0.0f , 0.0f , 0.0f );
 
 Vector3 Vector3::operator+( const Vector3& v2 ) const
 {

@@ -11,6 +11,7 @@ public:
 		float aperture , float focus_dist , float exposure );
 
 	Ray getRay( float u , float v ) const;
+	float getExposureTime() const;
 
 private:
 

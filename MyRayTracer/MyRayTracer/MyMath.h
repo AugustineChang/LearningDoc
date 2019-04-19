@@ -23,6 +23,7 @@ public:
 
 	static float squareRoot( float value );
 	static float power( float base , float index );
+
 private:
 
 	static double drand48();

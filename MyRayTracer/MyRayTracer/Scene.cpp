@@ -4,16 +4,20 @@
 #include "Metal.h"
 #include "Glass.h"
 #include "MyMath.h"
+#include "BoundingVolumeTree.h"
+#include <iostream>
 
 Scene::Scene() : t_min( 0.001f ) , t_max( 1000.0f ) , hitableList( nullptr ) , matList( nullptr )
 {
 	randomScene();
+	//createObjList();
 }
 
 
 Scene::Scene( float min , float max ) : t_min( min ) , t_max( max ) , hitableList( nullptr ) , matList( nullptr )
 {
 	randomScene();
+	//createObjList();
 }
 
 Scene::~Scene()
@@ -29,50 +33,68 @@ Scene::~Scene()
 		delete matList[i];
 	}
 	delete[] matList;
+
+	if ( bvTree != nullptr )
+	{
+		delete bvTree;
+	}
+}
+
+void Scene::createBVT( float exposureTime )
+{
+	if ( hitableList == nullptr || hitableNum <= 0 )
+		return;
+
+	bvTree = new BoundingVolumeTree( hitableList , hitableNum , exposureTime );
 }
 
 bool Scene::hitTest( const Ray &ray , HitResult &outResult ) const
 {
-	HitResult tempResult;
-	float t_real = t_max;
-
-	bool isHit = false;
-	for ( int i = 0; i < hitableNum; ++i )
+	if ( bvTree != nullptr )
 	{
-		if ( hitableList[i]->hitTest( ray , t_min , t_real , tempResult ) )
-		{
-			t_real = tempResult.t;
-			isHit = true;
-			outResult = tempResult;
-		}
+		return bvTree->hitTest( ray , t_min , t_max , outResult );
 	}
-	
-	return isHit;
+	else
+	{
+		HitResult tempResult;
+		float t_real = t_max;
+
+		bool isHit = false;
+		for ( int i = 0; i < hitableNum; ++i )
+		{
+			if ( hitableList[i]->hitTest( ray , t_min , t_real , tempResult ) )
+			{
+				t_real = tempResult.t;
+				isHit = true;
+				outResult = tempResult;
+			}
+		}
+
+		return isHit;
+	}
 }
 
 void Scene::createObjList()
 {
 	hitableNum = 4;
+	matNum = 4;
+
 	hitableList = new Hitable* [hitableNum];
 	hitableList[0] = new Sphere( Vector3( 0.8f , 0.0f , -1.0f ) , 0.3f );
 	hitableList[1] = new Sphere( Vector3( 0.0f , 0.0f , -1.0f ) , 0.5f );
 	hitableList[2] = new Sphere( Vector3( -0.8f , 0.0f , -1.0f ) , 0.3f );
 	hitableList[3] = new Sphere( Vector3( 0.0f , -100.5f , -1.0f ) , 100.0f );
 
+	matList = new Material *[matNum];
+	matList[0] = new Lambertain( Vector3( 0.0f , 0.5f , 1.0f ) );
+	matList[1] = new Metal( Vector3( 1.0f , 1.0f , 1.0f ) , 0.3f );
+	matList[2] = new Glass( Vector3( 1.0f , 1.0f , 1.0f ) , 1.5f );
+	matList[3] = new Lambertain( Vector3( 0.4f , 0.4f , 0.4f ) );
+
 	hitableList[0]->setMaterial( matList[1] );
 	hitableList[1]->setMaterial( matList[0] );
 	hitableList[2]->setMaterial( matList[2] );
 	hitableList[3]->setMaterial( matList[3] );
-}
-
-void Scene::createMaterials()
-{
-	matNum = 4;
-	matList = new Material *[matNum];
-	matList[0] = new Lambertain( Vector3( 0.0f , 0.5f , 1.0f ) );
-	matList[1] = new Metal( Vector3( 1.0f , 1.0f , 1.0f ) , 0.3f );
-	matList[2] = new Glass( Vector3( 1.0f , 1.0f , 1.0f ), 1.5f );
-	matList[3] = new Lambertain( Vector3( 0.4f , 0.4f , 0.4f ) );
 }
 
 void Scene::randomScene()

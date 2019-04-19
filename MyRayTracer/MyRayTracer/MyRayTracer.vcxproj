@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{6BA99B8D-2541-4E20-9FB4-D178238AFDB5}</ProjectGuid>
     <RootNamespace>MyRayTracer</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -115,6 +115,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="BoundingBox.h" />
+    <ClInclude Include="BoundingVolumeTree.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="DrawTask.h" />
     <ClInclude Include="Glass.h" />
@@ -130,6 +132,8 @@
     <ClInclude Include="Vector3.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="BoundingBox.cpp" />
+    <ClCompile Include="BoundingVolumeTree.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CodeEntry.cpp" />
     <ClCompile Include="DrawTask.cpp" />

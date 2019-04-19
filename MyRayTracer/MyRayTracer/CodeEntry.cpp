@@ -65,6 +65,7 @@ int main()
 	Camera camera( Vector3( 13.0f , 2.0f , 3.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
 		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f , 1.0f );
 	Scene simpleWorld;
+	simpleWorld.createBVT( camera.getExposureTime() );
 
 	//start printThread
 	std::thread printThread( doPrintData , drawProgress , numOfThreads );

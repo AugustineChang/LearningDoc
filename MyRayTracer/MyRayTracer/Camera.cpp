@@ -29,6 +29,11 @@ Ray Camera::getRay( float u , float v ) const
 	return Ray( origin + offset , rayDir , randomSendTime );
 }
 
+float Camera::getExposureTime() const
+{
+	return exposureTime;
+}
+
 void Camera::calcCameraDetail()
 {
 	float theta = vFOV * PI / 180.0f;

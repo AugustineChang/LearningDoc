@@ -15,6 +15,7 @@ public:
 	{}
 
 	virtual bool hitTest( const Ray &ray , float t_min , float t_max , HitResult& hitResult ) override;
+	virtual bool getBoundingBox( float exposureTime , BoundingBox &aabb ) override;
 
 	Vector3 getCenterByTime( float time );
 

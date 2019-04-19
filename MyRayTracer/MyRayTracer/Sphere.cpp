@@ -1,5 +1,6 @@
 #include "Sphere.h"
 #include "MyMath.h"
+#include "BoundingBox.h"
 
 bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hitResult )
 {
@@ -37,7 +38,30 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 	return false;
 }
 
+bool Sphere::getBoundingBox( float exposureTime , BoundingBox &aabb )
+{
+	if ( moveable )
+	{
+		Vector3 center0 = getCenterByTime( 0.0f );
+		Vector3 center1 = getCenterByTime( exposureTime );
+
+		BoundingBox box0( center0 - Vector3::oneVector * radius ,
+			center0 + Vector3::oneVector * radius );
+		BoundingBox box1( center1 - Vector3::oneVector * radius ,
+			center1 + Vector3::oneVector * radius );
+
+		aabb = BoundingBox( box0 , box1 );
+	}
+	else
+	{
+		aabb = BoundingBox(center - Vector3::oneVector * radius ,
+			center + Vector3::oneVector * radius );
+	}
+	return true;
+}
+
 Vector3 Sphere::getCenterByTime( float time )
 {
 	return center + Vector3::upVector * MyMath::sin( time * 2.0f * PI ) * 0.06f;
 }
+
