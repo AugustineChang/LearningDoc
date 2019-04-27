@@ -24,6 +24,9 @@ public:
 	static float squareRoot( float value );
 	static float power( float base , float index );
 
+	static int floorToInt( float value );
+	static int ceilToInt( float value );
+
 private:
 
 	static double drand48();

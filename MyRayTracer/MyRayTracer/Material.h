@@ -1,5 +1,8 @@
 #pragma once
-#include "Hitable.h"
+
+class Ray;
+class Vector3;
+struct HitResult;
 
 class Material
 {

@@ -1,5 +1,6 @@
 #include "Material.h"
 #include "MyMath.h"
+#include "Vector3.h"
 
 bool Material::refract( const Vector3& in , const Vector3& normal , float niOverNt , Vector3 &refractRay )
 {

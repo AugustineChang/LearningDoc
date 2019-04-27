@@ -1,6 +1,7 @@
 #include "Sphere.h"
 #include "MyMath.h"
 #include "BoundingBox.h"
+#include "Ray.h"
 
 bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hitResult )
 {

@@ -1,20 +1,42 @@
 #include "Scene.h"
+#include "MyMath.h"
+#include "BoundingVolumeTree.h"
+//shape
 #include "Sphere.h"
+//texture
+#include "ConstTexture.h"
+#include "GridTexture.h"
+//material
 #include "Lanbertain.h"
 #include "Metal.h"
 #include "Glass.h"
-#include "MyMath.h"
-#include "BoundingVolumeTree.h"
-#include <iostream>
 
-Scene::Scene() : t_min( 0.001f ) , t_max( 1000.0f ) , hitableList( nullptr ) , matList( nullptr )
+Scene::Scene() : 
+	bvTree( nullptr ) ,
+	hitableList( nullptr ) , 
+	matList( nullptr ) ,
+	texList( nullptr ) ,
+	hitableNum( 0 ) ,
+	matNum( 0 ) ,
+	texNum( 0 ) ,
+	t_min( 0.001f ) , 
+	t_max( 1000.0f )
 {
 	randomScene();
 	//createObjList();
 }
 
 
-Scene::Scene( float min , float max ) : t_min( min ) , t_max( max ) , hitableList( nullptr ) , matList( nullptr )
+Scene::Scene( float min , float max ) : 
+	bvTree( nullptr ) ,
+	hitableList( nullptr ) ,
+	matList( nullptr ) ,
+	texList( nullptr ) ,
+	hitableNum( 0 ) ,
+	matNum( 0 ) ,
+	texNum( 0 ) ,
+	t_min( min ) ,
+	t_max( max )
 {
 	randomScene();
 	//createObjList();
@@ -33,6 +55,12 @@ Scene::~Scene()
 		delete matList[i];
 	}
 	delete[] matList;
+
+	for ( int i = 0; i < texNum; ++i )
+	{
+		delete texList[i];
+	}
+	delete[] texList;
 
 	if ( bvTree != nullptr )
 	{
@@ -78,6 +106,7 @@ void Scene::createObjList()
 {
 	hitableNum = 4;
 	matNum = 4;
+	texNum = 3;
 
 	hitableList = new Hitable* [hitableNum];
 	hitableList[0] = new Sphere( Vector3( 0.8f , 0.0f , -1.0f ) , 0.3f );
@@ -85,11 +114,16 @@ void Scene::createObjList()
 	hitableList[2] = new Sphere( Vector3( -0.8f , 0.0f , -1.0f ) , 0.3f );
 	hitableList[3] = new Sphere( Vector3( 0.0f , -100.5f , -1.0f ) , 100.0f );
 
+	texList = new Texture *[texNum];
+	texList[0] = new ConstTexture( Vector3( 0.0f , 0.5f , 1.0f ) );
+	texList[1] = new ConstTexture( Vector3( 1.0f , 1.0f , 1.0f ) );
+	texList[2] = new ConstTexture( Vector3( 0.4f , 0.4f , 0.4f ) );
+
 	matList = new Material *[matNum];
-	matList[0] = new Lambertain( Vector3( 0.0f , 0.5f , 1.0f ) );
-	matList[1] = new Metal( Vector3( 1.0f , 1.0f , 1.0f ) , 0.3f );
-	matList[2] = new Glass( Vector3( 1.0f , 1.0f , 1.0f ) , 1.5f );
-	matList[3] = new Lambertain( Vector3( 0.4f , 0.4f , 0.4f ) );
+	matList[0] = new Lambertain( texList[0] );
+	matList[1] = new Metal( texList[1] , 0.3f );
+	matList[2] = new Glass( texList[1] , 1.5f );
+	matList[3] = new Lambertain( texList[2] );
 
 	hitableList[0]->setMaterial( matList[1] );
 	hitableList[1]->setMaterial( matList[0] );
@@ -101,14 +135,19 @@ void Scene::randomScene()
 {
 	hitableNum = 501;
 	matNum = hitableNum;
+	texNum = hitableNum;
 
 	hitableList = new Hitable*[hitableNum];
+	texList = new Texture*[texNum];
 	matList = new Material*[matNum];
 
 	hitableList[0] = new Sphere( Vector3( 0.0f , -1000.0f , 0.0f ) , 1000.0f );
-	matList[0] = new Lambertain( Vector3( 0.5f , 0.5f , 0.5f ) );
+	//texList[0] = new ConstTexture( Vector3( 0.5f , 0.5f , 0.5f ) );
+	texList[0] = new GridTexture( 0.5f , Vector3::oneVector , Vector3( 0.0f , 0.383f , 0.449f ) );
+	matList[0] = new Lambertain( texList[0] );
 
 	int index = 1;
+	int texIndex = 1;
 
 	for ( int xPos = -11; xPos < 11; ++xPos )
 	{
@@ -123,12 +162,19 @@ void Scene::randomScene()
 			float chooseMat = MyMath::getRandom01();
 			if ( chooseMat < 0.8f )//diffuse
 			{
-				matList[index] = new Lambertain( Vector3::getRandomColor() * Vector3::getRandomColor() );
+				Vector3 color = Vector3::getRandomColor() * Vector3::getRandomColor();
+				texList[texIndex] = new ConstTexture( color );
+				matList[index] = new Lambertain( texList[texIndex] );
+
+				++texIndex;
 			}
 			else if ( chooseMat < 0.95f )//metal
 			{
 				Vector3 color = ( Vector3::getRandomColor() + Vector3( 1.0f , 1.0f , 1.0f ) )*0.5f;
-				matList[index] = new Metal( color , 0.5f * MyMath::getRandom01() );
+				texList[texIndex] = new ConstTexture( color );
+				matList[index] = new Metal( texList[texIndex] , 0.5f * MyMath::getRandom01() );
+
+				++texIndex;
 			}
 			else//glass
 			{
@@ -144,15 +190,20 @@ void Scene::randomScene()
 	++index;
 
 	hitableList[index] = new Sphere( Vector3( -4.0f , 1.0f , 0.0f ) , 1.0f );
-	matList[index] = new Lambertain( Vector3( 0.4f , 0.2f , 0.1f ) );
+	texList[texIndex] = new ConstTexture( Vector3( 0.4f , 0.2f , 0.1f ) );
+	matList[index] = new Lambertain( texList[texIndex] );
 	++index;
+	++texIndex;
 
 	hitableList[index] = new Sphere( Vector3( 4.0f , 1.0f , 0.0f ) , 1.0f );
-	matList[index] = new Metal( Vector3( 0.7f , 0.6f , 0.5f ) , 0.0f );
+	texList[texIndex] = new ConstTexture( Vector3( 0.7f , 0.6f , 0.5f ) );
+	matList[index] = new Metal( texList[texIndex] , 0.0f );
 	++index;
+	++texIndex;
 
 	hitableNum = index;
 	matNum = index;
+	texNum = texIndex;
 
 	for ( int i = 0; i < hitableNum; ++i )
 	{

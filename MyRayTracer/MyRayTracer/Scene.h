@@ -2,6 +2,7 @@
 #include "Hitable.h"
 
 class BoundingVolumeTree;
+class Texture;
 
 class Scene
 {
@@ -24,8 +25,10 @@ private:
 	BoundingVolumeTree *bvTree;
 	Hitable **hitableList;
 	Material **matList;
+	Texture **texList;
 	int hitableNum;
 	int matNum;
+	int texNum;
 
 	float t_min;
 	float t_max;

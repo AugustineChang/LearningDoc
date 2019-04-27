@@ -118,8 +118,10 @@
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="BoundingVolumeTree.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ConstTexture.h" />
     <ClInclude Include="DrawTask.h" />
     <ClInclude Include="Glass.h" />
+    <ClInclude Include="GridTexture.h" />
     <ClInclude Include="Hitable.h" />
     <ClInclude Include="Lanbertain.h" />
     <ClInclude Include="Material.h" />
@@ -129,6 +131,7 @@
     <ClInclude Include="Ray.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Sphere.h" />
+    <ClInclude Include="Texture.h" />
     <ClInclude Include="Vector3.h" />
   </ItemGroup>
   <ItemGroup>
@@ -136,8 +139,10 @@
     <ClCompile Include="BoundingVolumeTree.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CodeEntry.cpp" />
+    <ClCompile Include="ConstTexture.cpp" />
     <ClCompile Include="DrawTask.cpp" />
     <ClCompile Include="Glass.cpp" />
+    <ClCompile Include="GridTexture.cpp" />
     <ClCompile Include="Lanbertain.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Metal.cpp" />

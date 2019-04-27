@@ -1,6 +1,7 @@
 #pragma once
-#include "Ray.h"
+#include "Vector3.h"
 
+class Ray;
 class Material;
 class BoundingBox;
 

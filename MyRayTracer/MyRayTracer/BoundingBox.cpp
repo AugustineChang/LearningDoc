@@ -1,5 +1,6 @@
 #include "BoundingBox.h"
 #include "MyMath.h"
+#include "Ray.h"
 
 BoundingBox::BoundingBox() : boxMin(), boxMax()
 {

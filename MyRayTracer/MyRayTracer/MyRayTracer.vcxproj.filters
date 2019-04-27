@@ -37,6 +37,12 @@
     <Filter Include="源文件\Util">
       <UniqueIdentifier>{428799b4-4be4-418d-879d-f198e44925a5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\Texture">
+      <UniqueIdentifier>{a4ff190e-6161-4ba7-aa65-abb58576daf7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="头文件\Texture">
+      <UniqueIdentifier>{b60e2c4f-4d1f-460b-bbfc-ce38731d6dc5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Hitable.h">
@@ -84,6 +90,15 @@
     <ClInclude Include="BoundingVolumeTree.h">
       <Filter>头文件\Hitable</Filter>
     </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>头文件\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstTexture.h">
+      <Filter>头文件\Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="GridTexture.h">
+      <Filter>头文件\Texture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp">
@@ -130,6 +145,12 @@
     </ClCompile>
     <ClCompile Include="BoundingVolumeTree.cpp">
       <Filter>源文件\Hitable</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstTexture.cpp">
+      <Filter>源文件\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="GridTexture.cpp">
+      <Filter>源文件\Texture</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

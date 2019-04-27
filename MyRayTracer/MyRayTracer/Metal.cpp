@@ -1,10 +1,13 @@
 #include "Metal.h"
+#include "Ray.h"
+#include "Hitable.h"
+#include "Texture.h"
 
-Metal::Metal( const Vector3 &col ) : albedo( col ) , fuzziness( 0.0f )
+Metal::Metal( const Texture *tex ) : albedo( tex ) , fuzziness( 0.0f )
 {
 }
 
-Metal::Metal( const Vector3 &col , float fuzzy ) : albedo( col ) , fuzziness( fuzzy )
+Metal::Metal( const Texture *tex , float fuzzy ) : albedo( tex ) , fuzziness( fuzzy )
 {
 	if ( fuzziness > 1.0f ) fuzziness = 1.0f;
 	else if ( fuzziness < 0.0f ) fuzziness = 0.0f;
@@ -20,6 +23,6 @@ bool Metal::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 	nextDir.normalized();
 
 	scatteredRay = Ray( hitResult.hitPoint , nextDir , ray_in.getSendTime() );
-	attenuation = albedo;
+	attenuation = albedo->sample( 0.0f , 0.0f , hitResult.hitPoint );
 	return true;
 }

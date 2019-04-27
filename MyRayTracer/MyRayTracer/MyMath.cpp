@@ -10,7 +10,7 @@ unsigned long long MyMath::seed = 1;
 double MyMath::drand48()
 {
 	seed = ( a * seed + c ) & 0xFFFFFFFFFFFFLL;
-	unsigned int x = seed >> 16;
+	unsigned int x = static_cast<unsigned int>( seed >> 16 );
 	return  ( (double) x / (double) m );
 }
 
@@ -62,4 +62,14 @@ float MyMath::squareRoot( float value )
 float MyMath::power( float base , float index )
 {
 	return powf( base , index );
+}
+
+int MyMath::floorToInt( float value )
+{
+	return static_cast<int>( floor( value ) );
+}
+
+int MyMath::ceilToInt( float value )
+{
+	return static_cast<int>( ceil( value ) );
 }

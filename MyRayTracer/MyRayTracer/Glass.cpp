@@ -1,13 +1,16 @@
 #include "Glass.h"
 #include "MyMath.h"
+#include "Ray.h"
+#include "Hitable.h"
+#include "Texture.h"
 
 Glass::Glass( float refra_index )
-	: refractiveIndex( refra_index ) , albedo( Vector3( 1.0f , 1.0f , 1.0f ) )
+	: refractiveIndex( refra_index ) , albedo( nullptr )
 {
 }
 
-Glass::Glass( const Vector3 &color , float refra_index  ) 
-	: refractiveIndex( refra_index ) , albedo( color )
+Glass::Glass( const Texture *tex , float refra_index  )
+	: refractiveIndex( refra_index ) , albedo( tex )
 {
 }
 
@@ -40,9 +43,13 @@ bool Glass::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 	{
 		reflect_prob = 1.0f;
 	}
+	
+	if ( albedo == nullptr )
+		attenuation = Vector3::oneVector;
+	else
+		attenuation = albedo->sample( 0.0f , 0.0f , hitResult.hitPoint );
 
 	//按概率决定 反射 还是 折射
-	attenuation = albedo;
 	if ( MyMath::getRandom01() < reflect_prob )
 	{
 		Vector3 reflectRay = reflect( ray_in.getDirection() , realNormal );

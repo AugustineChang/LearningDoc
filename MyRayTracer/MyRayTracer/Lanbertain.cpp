@@ -1,6 +1,9 @@
 #include "Lanbertain.h"
+#include "Ray.h"
+#include "Hitable.h"
+#include "Texture.h"
 
-Lambertain::Lambertain( const Vector3 &col ) : albedo( col )
+Lambertain::Lambertain( const Texture *tex ) : albedo( tex )
 {
 }
 
@@ -10,6 +13,6 @@ bool Lambertain::scatter( const Ray &ray_in , const HitResult& hitResult , Vecto
 	nextDir.normalized();
 
 	scatteredRay = Ray( hitResult.hitPoint , nextDir , ray_in.getSendTime() );
-	attenuation = albedo;
+	attenuation = albedo->sample( 0.0f , 0.0f , hitResult.hitPoint );
 	return true;
 }
