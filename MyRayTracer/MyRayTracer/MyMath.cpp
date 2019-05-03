@@ -24,6 +24,11 @@ float MyMath::getRandom01()
 	return static_cast<float>( drand48() );
 }
 
+int MyMath::getRandomInteger( int maxVal )
+{
+	return floorToInt( getRandom01() * maxVal );
+}
+
 float MyMath::clamp01( float value )
 {
 	return clamp( value , 0.0f , 1.0f );
@@ -37,6 +42,16 @@ float MyMath::clamp( float value , float minVal , float maxVal )
 		return maxVal;
 	else
 		return value;
+}
+
+float MyMath::lerp( float valA , float valB , float alpha )
+{
+	return valA + ( valB - valA ) * alpha;
+}
+
+float MyMath::abs( float value )
+{
+	return fabsf( value );
 }
 
 float MyMath::tan( float radian )

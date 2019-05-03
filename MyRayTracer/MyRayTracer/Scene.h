@@ -17,10 +17,12 @@ public:
 	void createBVT( float exposureTime );
 	bool hitTest( const Ray &ray , HitResult &outResult ) const;
 
-private:
+public:
 
 	void createObjList();
 	void randomScene();
+
+private:
 
 	BoundingVolumeTree *bvTree;
 	Hitable **hitableList;

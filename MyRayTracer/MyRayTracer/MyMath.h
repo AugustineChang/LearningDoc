@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdlib.h>  
+#include <stdlib.h>
 
 #define PI       3.1415926f
 
@@ -13,9 +13,12 @@ public:
 	
 	static void srand48( unsigned int i );
 	static float getRandom01();
+	static int getRandomInteger( int maxVal );
 
 	static float clamp01( float value );
 	static float clamp( float value , float minVal , float maxVal );
+	static float lerp( float valA , float valB , float alpha );
+	static float abs( float value );
 
 	static float tan( float radian );
 	static float sin( float radian );

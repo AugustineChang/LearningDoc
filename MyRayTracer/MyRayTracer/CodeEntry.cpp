@@ -5,6 +5,7 @@
 #include "DrawTask.h"
 #include "MyMath.h"
 
+#include <string>
 #include <iomanip>
 #include <iostream>
 #include <stdlib.h>
@@ -48,6 +49,8 @@ void doPrintData( float *progress , int numOfThreads )
 	}
 }
 
+#define TEST_PERLIN 1
+
 int main()
 {
 	MyMath::srand48( static_cast<unsigned int>( time( 0 ) ) );
@@ -61,11 +64,24 @@ int main()
 	float drawProgress[numOfThreads] = { 0.0f };
 	
 	//shared Data
+	
 	PPMImage image( width , height );
+#if TEST_PERLIN
+	std::string outputName( "TestPerlin.ppm" );
+
+	Camera camera( Vector3( 0.0f , 2.0f , 6.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
+		float( width ) / float( height ) , 20.0f , 0.0f , 10.0f , 1.0f );
+	Scene simpleWorld;
+	simpleWorld.createObjList();
+#else
+	std::string outputName( "MotionBlur.ppm" );
+
 	Camera camera( Vector3( 13.0f , 2.0f , 3.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
 		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f , 1.0f );
 	Scene simpleWorld;
+	simpleWorld.randomScene();
 	simpleWorld.createBVT( camera.getExposureTime() );
+#endif
 
 	//start printThread
 	std::thread printThread( doPrintData , drawProgress , numOfThreads );
@@ -91,7 +107,7 @@ int main()
 	printThread.join();
 
 	//save to image
-	image.SaveImage( "MotionBlur.ppm" );
+	image.SaveImage( outputName );
 
 	system( "Pause" );
 	return 0;

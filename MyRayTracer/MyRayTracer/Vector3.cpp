@@ -155,6 +155,15 @@ Vector3& Vector3::operator/=( float scale )
 	return *this;
 }
 
+Vector3& Vector3::operator=( const Vector3& vec2 )
+{
+	vec[0] = vec2[0];
+	vec[1] = vec2[1];
+	vec[2] = vec2[2];
+
+	return *this;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////
 
 Vector3 operator*( float scale , const Vector3 &v )

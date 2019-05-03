@@ -6,6 +6,7 @@
 //texture
 #include "ConstTexture.h"
 #include "GridTexture.h"
+#include "PerlinTexture.h"
 //material
 #include "Lanbertain.h"
 #include "Metal.h"
@@ -22,8 +23,6 @@ Scene::Scene() :
 	t_min( 0.001f ) , 
 	t_max( 1000.0f )
 {
-	randomScene();
-	//createObjList();
 }
 
 
@@ -38,8 +37,6 @@ Scene::Scene( float min , float max ) :
 	t_min( min ) ,
 	t_max( max )
 {
-	randomScene();
-	//createObjList();
 }
 
 Scene::~Scene()
@@ -106,7 +103,7 @@ void Scene::createObjList()
 {
 	hitableNum = 4;
 	matNum = 4;
-	texNum = 3;
+	texNum = 4;
 
 	hitableList = new Hitable* [hitableNum];
 	hitableList[0] = new Sphere( Vector3( 0.8f , 0.0f , -1.0f ) , 0.3f );
@@ -118,12 +115,13 @@ void Scene::createObjList()
 	texList[0] = new ConstTexture( Vector3( 0.0f , 0.5f , 1.0f ) );
 	texList[1] = new ConstTexture( Vector3( 1.0f , 1.0f , 1.0f ) );
 	texList[2] = new ConstTexture( Vector3( 0.4f , 0.4f , 0.4f ) );
+	texList[3] = new PerlinTexture();
 
 	matList = new Material *[matNum];
 	matList[0] = new Lambertain( texList[0] );
 	matList[1] = new Metal( texList[1] , 0.3f );
 	matList[2] = new Glass( texList[1] , 1.5f );
-	matList[3] = new Lambertain( texList[2] );
+	matList[3] = new Lambertain( texList[3] );
 
 	hitableList[0]->setMaterial( matList[1] );
 	hitableList[1]->setMaterial( matList[0] );

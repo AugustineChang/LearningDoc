@@ -67,9 +67,7 @@ Vector3 DrawTask::getColor( const Ray &ray , int depth )
 			Ray nextRay;
 
 			if ( hitResult.mat->scatter( ray , hitResult , attenuation , nextRay ) )
-			{
 				return attenuation * getColor( nextRay , depth + 1 );
-			}
 			else
 				return Vector3( 0.0f , 0.0f , 0.0f );
 		}

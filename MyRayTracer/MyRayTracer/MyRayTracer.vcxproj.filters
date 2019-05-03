@@ -99,6 +99,9 @@
     <ClInclude Include="GridTexture.h">
       <Filter>头文件\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="PerlinTexture.h">
+      <Filter>头文件\Texture</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp">
@@ -150,6 +153,9 @@
       <Filter>源文件\Texture</Filter>
     </ClCompile>
     <ClCompile Include="GridTexture.cpp">
+      <Filter>源文件\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="PerlinTexture.cpp">
       <Filter>源文件\Texture</Filter>
     </ClCompile>
   </ItemGroup>

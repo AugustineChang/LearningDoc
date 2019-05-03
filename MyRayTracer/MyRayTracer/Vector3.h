@@ -54,6 +54,7 @@ public:
 	Vector3& operator*=( float scale );
 	Vector3& operator/=( float scale );
 
+	Vector3& operator=( const Vector3& vec2 );
 
 	float length() const;
 	float squared_length() const;
