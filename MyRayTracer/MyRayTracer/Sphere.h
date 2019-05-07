@@ -17,7 +17,10 @@ public:
 	virtual bool hitTest( const Ray &ray , float t_min , float t_max , HitResult& hitResult ) override;
 	virtual bool getBoundingBox( float exposureTime , BoundingBox &aabb ) override;
 
+private:
+
 	Vector3 getCenterByTime( float time );
+	void getSphereUV( const Vector3 &hitPoint , const Vector3 &sphereCenter , float( &uv )[2] );
 
 private:
 

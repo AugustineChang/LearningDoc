@@ -23,6 +23,7 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 			hitResult.hitPoint = ray.pointOnRay( t1 );
 			hitResult.hitNormal = ( hitResult.hitPoint - realCenter ) / radius;
 			hitResult.mat = objMat;
+			getSphereUV( hitResult.hitPoint , realCenter , hitResult.hitUVCoord );
 			return true;
 		}
 
@@ -33,6 +34,7 @@ bool Sphere::hitTest( const Ray &ray , float t_min , float t_max , HitResult& hi
 			hitResult.hitPoint = ray.pointOnRay( t2 );
 			hitResult.hitNormal = ( hitResult.hitPoint - realCenter ) / radius;
 			hitResult.mat = objMat;
+			getSphereUV( hitResult.hitPoint , realCenter , hitResult.hitUVCoord );
 			return true;
 		}
 	}
@@ -64,5 +66,17 @@ bool Sphere::getBoundingBox( float exposureTime , BoundingBox &aabb )
 Vector3 Sphere::getCenterByTime( float time )
 {
 	return center + Vector3::upVector * MyMath::sin( time * 2.0f * PI ) * 0.06f;
+}
+
+void Sphere::getSphereUV( const Vector3 &hitPoint , const Vector3 &sphereCenter , float( &uv )[2] )
+{
+	Vector3 fromCenter = hitPoint - sphereCenter;
+	fromCenter.normalized();
+
+	float theta = MyMath::asin( fromCenter.y() );//[-Pi/2,Pi/2]
+	float phi = MyMath::atan2( fromCenter.z() , fromCenter.x() );//[-Pi,Pi]
+
+	uv[0] = ( phi + PI ) / ( 2.0f * PI );
+	uv[1] = ( theta + PI * 0.5f ) / PI;
 }
 

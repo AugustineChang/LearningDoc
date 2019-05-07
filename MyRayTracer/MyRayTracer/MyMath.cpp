@@ -31,17 +31,7 @@ int MyMath::getRandomInteger( int maxVal )
 
 float MyMath::clamp01( float value )
 {
-	return clamp( value , 0.0f , 1.0f );
-}
-
-float MyMath::clamp( float value , float minVal , float maxVal )
-{
-	if ( value < minVal )
-		return minVal;
-	else if ( value > maxVal )
-		return maxVal;
-	else
-		return value;
+	return clamp<float>( value , 0.0f , 1.0f );
 }
 
 float MyMath::lerp( float valA , float valB , float alpha )
@@ -67,6 +57,16 @@ float MyMath::sin( float radian )
 float MyMath::cos( float radian )
 {
 	return cosf( radian );
+}
+
+float MyMath::atan2( float y , float x )
+{
+	return atan2f( y , x );
+}
+
+float MyMath::asin( float sineVal )
+{
+	return asinf( sineVal );
 }
 
 float MyMath::squareRoot( float value )

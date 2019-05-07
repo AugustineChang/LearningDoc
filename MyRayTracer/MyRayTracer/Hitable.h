@@ -11,6 +11,7 @@ struct HitResult
 	float t;
 	Vector3 hitPoint;
 	Vector3 hitNormal;
+	float hitUVCoord[2];
 	Material *mat;
 };
 

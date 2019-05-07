@@ -47,7 +47,7 @@ bool Glass::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &a
 	if ( albedo == nullptr )
 		attenuation = Vector3::oneVector;
 	else
-		attenuation = albedo->sample( 0.0f , 0.0f , hitResult.hitPoint );
+		attenuation = albedo->sample( hitResult.hitUVCoord[0] , hitResult.hitUVCoord[1] , hitResult.hitPoint );
 
 	//按概率决定 反射 还是 折射
 	if ( MyMath::getRandom01() < reflect_prob )

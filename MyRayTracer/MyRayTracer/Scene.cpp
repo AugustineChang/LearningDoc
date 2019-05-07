@@ -7,6 +7,7 @@
 #include "ConstTexture.h"
 #include "GridTexture.h"
 #include "PerlinTexture.h"
+#include "ImageTexture.h"
 //material
 #include "Lanbertain.h"
 #include "Metal.h"
@@ -114,11 +115,11 @@ void Scene::createObjList()
 	texList = new Texture *[texNum];
 	texList[0] = new ConstTexture( Vector3( 0.0f , 0.5f , 1.0f ) );
 	texList[1] = new ConstTexture( Vector3( 1.0f , 1.0f , 1.0f ) );
-	texList[2] = new ConstTexture( Vector3( 0.4f , 0.4f , 0.4f ) );
+	texList[2] = new ImageTexture( "111.png" );
 	texList[3] = new PerlinTexture();
 
 	matList = new Material *[matNum];
-	matList[0] = new Lambertain( texList[0] );
+	matList[0] = new Lambertain( texList[2] );
 	matList[1] = new Metal( texList[1] , 0.3f );
 	matList[2] = new Glass( texList[1] , 1.5f );
 	matList[3] = new Lambertain( texList[3] );
