@@ -1,13 +1,13 @@
-#include "Lanbertain.h"
+#include "Diffuse.h"
 #include "Ray.h"
 #include "Hitable.h"
 #include "Texture.h"
 
-Lambertain::Lambertain( const Texture *tex ) : albedo( tex )
+Diffuse::Diffuse( const Texture *tex ) : albedo( tex )
 {
 }
 
-bool Lambertain::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &attenuation , Ray &scatteredRay )
+bool Diffuse::scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &attenuation , Ray &scatteredRay )
 {
 	Vector3 nextDir = hitResult.hitNormal + Vector3::getRandomInUnitSphere();
 	nextDir.normalized();

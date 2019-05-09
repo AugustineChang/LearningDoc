@@ -2,6 +2,11 @@
 #include "MyMath.h"
 #include "Vector3.h"
 
+Vector3 Material::emitted( const HitResult& hitResult )
+{
+	return Vector3::zeroVector;
+}
+
 bool Material::refract( const Vector3& in , const Vector3& normal , float niOverNt , Vector3 &refractRay )
 {
 	float cosIn = Vector3::dot( in , normal );

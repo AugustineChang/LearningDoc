@@ -17,9 +17,16 @@ public:
 	void createBVT( float exposureTime );
 	bool hitTest( const Ray &ray , HitResult &outResult ) const;
 
+	bool isUseSkyLight() const
+	{
+		return useSkyLight;
+	}
+
 public:
 
-	void createObjList();
+	void createTestScene();
+	void createDarkScene();
+	void createCornellBox();
 	void randomScene();
 
 private:
@@ -34,5 +41,7 @@ private:
 
 	float t_min;
 	float t_max;
+
+	bool useSkyLight;
 };
 

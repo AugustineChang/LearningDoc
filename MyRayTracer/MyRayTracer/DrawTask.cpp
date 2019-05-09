@@ -7,7 +7,6 @@
 #include "MyMath.h"
 #include "Material.h"
 
-
 DrawTask::DrawTask( int from , int to , int w , int h , int subP , std::mutex *mtx ,
 	PPMImage *img , const Scene *world , const Camera *cam , float *prog )
 	:fromRow( from ) , toRow( to ) , width( w ) , height( h ) , subPixel( subP ) , mtx( mtx ) ,
@@ -32,7 +31,17 @@ void DrawTask::operator()()
 			}
 
 			color /= float( subPixel );
-			color = Vector3( sqrt( color[0] ) , sqrt( color[1] ) , sqrt( color[2] ) );
+			//TODO: color may > 1, need tonemapper
+
+			//gamma correct: pow(color, 0.45)
+			color[0] = MyMath::power( color[0] , 0.45f );
+			color[1] = MyMath::power( color[1] , 0.45f );
+			color[2] = MyMath::power( color[2] , 0.45f );
+
+			//no tonemapper, so simple clamp
+			color[0] = MyMath::clamp01( color[0] );
+			color[1] = MyMath::clamp01( color[1] );
+			color[2] = MyMath::clamp01( color[2] );
 
 			int ir = int( color[0] * 255.99f );
 			int ig = int( color[1] * 255.99f );
@@ -66,18 +75,26 @@ Vector3 DrawTask::getColor( const Ray &ray , int depth )
 			Vector3 attenuation;
 			Ray nextRay;
 
+			Vector3 emitLight = hitResult.mat->emitted( hitResult );
 			if ( hitResult.mat->scatter( ray , hitResult , attenuation , nextRay ) )
-				return attenuation * getColor( nextRay , depth + 1 );
+				return emitLight + attenuation * getColor( nextRay , depth + 1 );
 			else
-				return Vector3( 0.0f , 0.0f , 0.0f );
+				return emitLight;
 		}
 
 	}
 	else
 	{
-		Vector3 dirVec = ray.getDirection();
-		dirVec.normalized();
-		float y01 = ( dirVec.y() + 1.0f ) * 0.5f;
-		return Vector3::lerp( Vector3( 1.0f , 1.0f , 1.0f ) , Vector3( 0.5f , 0.7f , 1.0f ) , y01 );
+		if ( simpleWorld->isUseSkyLight() )
+		{
+			Vector3 dirVec = ray.getDirection();
+			dirVec.normalized();
+			float y01 = ( dirVec.y() + 1.0f ) * 0.5f;
+			return Vector3::lerp( Vector3( 1.0f , 1.0f , 1.0f ) , Vector3( 0.5f , 0.7f , 1.0f ) , y01 );
+		}
+		else
+		{
+			return Vector3::zeroVector;
+		}
 	}
 }

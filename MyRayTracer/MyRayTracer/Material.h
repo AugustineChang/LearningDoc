@@ -8,6 +8,7 @@ class Material
 {
 public:
 	virtual bool scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &attenuation , Ray &scatteredRay ) = 0;
+	virtual Vector3 emitted( const HitResult& hitResult );
 
 protected:
 

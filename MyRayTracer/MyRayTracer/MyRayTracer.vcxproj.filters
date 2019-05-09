@@ -57,9 +57,6 @@
     <ClInclude Include="Glass.h">
       <Filter>头文件\Material</Filter>
     </ClInclude>
-    <ClInclude Include="Lanbertain.h">
-      <Filter>头文件\Material</Filter>
-    </ClInclude>
     <ClInclude Include="Material.h">
       <Filter>头文件\Material</Filter>
     </ClInclude>
@@ -174,6 +171,15 @@
     <ClInclude Include="ImageTexture.h">
       <Filter>头文件\Texture</Filter>
     </ClInclude>
+    <ClInclude Include="AxisAlignedRect.h">
+      <Filter>头文件\Hitable</Filter>
+    </ClInclude>
+    <ClInclude Include="Emission.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Diffuse.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp">
@@ -183,9 +189,6 @@
       <Filter>源文件\Hitable</Filter>
     </ClCompile>
     <ClCompile Include="Glass.cpp">
-      <Filter>源文件\Material</Filter>
-    </ClCompile>
-    <ClCompile Include="Lanbertain.cpp">
       <Filter>源文件\Material</Filter>
     </ClCompile>
     <ClCompile Include="Material.cpp">
@@ -232,6 +235,15 @@
     </ClCompile>
     <ClCompile Include="ImageTexture.cpp">
       <Filter>源文件\Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="AxisAlignedRect.cpp">
+      <Filter>源文件\Hitable</Filter>
+    </ClCompile>
+    <ClCompile Include="Emission.cpp">
+      <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Diffuse.cpp">
+      <Filter>源文件\Material</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

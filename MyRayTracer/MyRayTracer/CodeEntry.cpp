@@ -49,7 +49,7 @@ void doPrintData( float *progress , int numOfThreads )
 	}
 }
 
-#define TEST_PERLIN 1
+#define SCENE_NUM 3
 
 int main()
 {
@@ -66,21 +66,38 @@ int main()
 	//shared Data
 	
 	PPMImage image( width , height );
-#if TEST_PERLIN
-	std::string outputName( "TestPerlin.ppm" );
-
-	Camera camera( Vector3( 0.0f , 2.0f , 6.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
-		float( width ) / float( height ) , 20.0f , 0.0f , 10.0f , 1.0f );
 	Scene simpleWorld;
-	simpleWorld.createObjList();
-#else
+	
+#if SCENE_NUM == 0
 	std::string outputName( "MotionBlur.ppm" );
 
 	Camera camera( Vector3( 13.0f , 2.0f , 3.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
 		float( width ) / float( height ) , 20.0f , 0.1f , 10.0f , 1.0f );
-	Scene simpleWorld;
+
 	simpleWorld.randomScene();
 	simpleWorld.createBVT( camera.getExposureTime() );
+#elif SCENE_NUM == 1
+	std::string outputName( "TestPerlin.ppm" );
+
+	Camera camera( Vector3( 0.0f , 2.0f , 6.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
+		float( width ) / float( height ) , 20.0f , 0.0f , 10.0f , 1.0f );
+
+	simpleWorld.createTestScene();
+#elif SCENE_NUM == 2
+	std::string outputName( "DarkWorld.ppm" );
+
+	Camera camera( Vector3( 0.0f , 2.0f , 6.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
+		float( width ) / float( height ) , 20.0f , 0.0f , 10.0f , 1.0f );
+
+	simpleWorld.createDarkScene();
+#elif SCENE_NUM == 3
+	subPixel = 200;
+	std::string outputName( "CornellBox.ppm" );
+
+	Camera camera( Vector3( 0.0f , 0.0f , 5.0f ) , Vector3( 0.0f , 0.0f , 0.0f ) ,
+		float( width ) / float( height ) , 30.0f , 0.0f , 10.0f , 0.0f );
+
+	simpleWorld.createCornellBox();
 #endif
 
 	//start printThread

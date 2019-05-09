@@ -3,15 +3,15 @@
 
 class Texture;
 
-class Lambertain : public Material
+class Emission : public Material
 {
 public:
-	Lambertain( const Texture *tex );
-
+	Emission( const Texture *tex );
+	
 	virtual bool scatter( const Ray &ray_in , const HitResult& hitResult , Vector3 &attenuation , Ray &scatteredRay ) override;
+	virtual Vector3 emitted( const HitResult& hitResult ) override;
 
 private:
-
-	const Texture *albedo;
+	const Texture *emit;
 };
 
