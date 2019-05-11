@@ -276,9 +276,9 @@ Matrix Matrix::rotationMatrix( const Vector3& eularAngle )
 	// 0   -sinR cosR
 
 	//pitch y÷·
-	// cosP 0   -sinP
-	// 0    1    0
-	// sinP 0    cosP
+	// cosP 0   -sinP	//cosP      0	 -sinP
+	// 0    1    0		//sinRsinP  cosR  sinRcosP
+	// sinP 0    cosP	//sinPcosR -sinR  cosRcosP
 
 	//yaw z÷·
 	// cosY sinY 0
@@ -287,7 +287,7 @@ Matrix Matrix::rotationMatrix( const Vector3& eularAngle )
 
 
 	//Ω·π˚
-	//cosPcosY               cosPsinY               -sinP
+	//cosPcosY               cosPsinY              -sinP
 	//sinRsinPcosY-cosRsinY  sinRsinPsinY+cosRcosY  sinRcosP
 	//cosRsinPcosY+sinRsinY  cosRsinPsinY-sinRcosY  cosRcosP
 
