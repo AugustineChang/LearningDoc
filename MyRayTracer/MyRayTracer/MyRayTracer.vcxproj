@@ -119,6 +119,7 @@
     <ClInclude Include="AxisAlignedRect.h" />
     <ClInclude Include="BoundingBox.h" />
     <ClInclude Include="BoundingVolumeTree.h" />
+    <ClInclude Include="Box.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ConstTexture.h" />
     <ClInclude Include="Emission.h" />
@@ -159,12 +160,14 @@
     <ClInclude Include="stb\stb_voxel_render.h" />
     <ClInclude Include="stb\stretchy_buffer.h" />
     <ClInclude Include="Texture.h" />
+    <ClInclude Include="RotateMatrix.h" />
     <ClInclude Include="Vector3.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AxisAlignedRect.cpp" />
     <ClCompile Include="BoundingBox.cpp" />
     <ClCompile Include="BoundingVolumeTree.cpp" />
+    <ClCompile Include="Box.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CodeEntry.cpp" />
     <ClCompile Include="ConstTexture.cpp" />
@@ -182,6 +185,7 @@
     <ClCompile Include="Ray.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="Sphere.cpp" />
+    <ClCompile Include="RotateMatrix.cpp" />
     <ClCompile Include="Vector3.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -3,6 +3,7 @@
 #include "BoundingVolumeTree.h"
 //shape
 #include "Sphere.h"
+#include "Box.h"
 #include "AxisAlignedRect.h"
 //texture
 #include "ConstTexture.h"
@@ -167,7 +168,7 @@ void Scene::createCornellBox()
 {
 	useSkyLight = false;
 
-	hitableNum = 6;
+	hitableNum = 8;
 	matNum = 4;
 	texNum = 4;
 
@@ -184,6 +185,10 @@ void Scene::createCornellBox()
 		-1.0f , -1.0f , 1.0f , 1.0f , -1.0f );//back
 	hitableList[5] = new AxisAlignedRect( EAxis::XZ , ESide::Backside ,
 		-0.2f , -0.2f , 0.2f , 0.2f , 0.99f );//light
+	hitableList[6] = new Box( Vector3( -0.4f , -0.7f , -0.4f ) , Vector3( 0.0f , -30.0f , 0.0f ) ,
+		Vector3::oneVector * 0.3f );//box1
+	hitableList[7] = new Box( Vector3( -0.4f , -0.1f , -0.4f ) , Vector3( 0.0f , -15.0f , 0.0f ) ,
+		Vector3::oneVector * 0.3f );//box2
 
 	texList = new Texture *[texNum];
 	texList[0] = new ConstTexture( Vector3( 1.0f , 0.0f , 0.0f ) );
@@ -203,6 +208,8 @@ void Scene::createCornellBox()
 	hitableList[3]->setMaterial( matList[2] );
 	hitableList[4]->setMaterial( matList[2] );
 	hitableList[5]->setMaterial( matList[3] );
+	hitableList[6]->setMaterial( matList[2] );
+	hitableList[7]->setMaterial( matList[2] );
 }
 
 void Scene::randomScene()

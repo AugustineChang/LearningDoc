@@ -180,6 +180,12 @@
     <ClInclude Include="Diffuse.h">
       <Filter>头文件\Material</Filter>
     </ClInclude>
+    <ClInclude Include="Box.h">
+      <Filter>头文件\Hitable</Filter>
+    </ClInclude>
+    <ClInclude Include="RotateMatrix.h">
+      <Filter>头文件\Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp">
@@ -244,6 +250,12 @@
     </ClCompile>
     <ClCompile Include="Diffuse.cpp">
       <Filter>源文件\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Box.cpp">
+      <Filter>源文件\Hitable</Filter>
+    </ClCompile>
+    <ClCompile Include="RotateMatrix.cpp">
+      <Filter>源文件\Util</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
