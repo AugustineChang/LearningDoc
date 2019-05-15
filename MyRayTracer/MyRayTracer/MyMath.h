@@ -42,6 +42,7 @@ public:
 
 	static float squareRoot( float value );
 	static float power( float base , float index );
+	static float log( float value );
 
 	static int floorToInt( float value );
 	static int ceilToInt( float value );

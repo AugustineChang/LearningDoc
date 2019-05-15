@@ -5,9 +5,9 @@
 class Box : public Hitable
 {
 public:
-	Box( const Vector3 &pos );
-	Box( const Vector3 &pos , const Vector3 &rot );
-	Box( const Vector3 &pos , const Vector3 &rot , const Vector3 &size );
+	Box( const Vector3 &pos , bool twoSide = false );
+	Box( const Vector3 &pos , const Vector3 &rot , bool twoSide = false );
+	Box( const Vector3 &pos , const Vector3 &rot , const Vector3 &size , bool twoSide = false );
 	Box( const Box &otherBox );
 	~Box();
 	
@@ -21,6 +21,7 @@ private:
 
 	void createSurfaces();
 
+	bool isTwoSide;
 	Vector3 center;
 	Vector3 extent;
 	RotateMatrix matrix;

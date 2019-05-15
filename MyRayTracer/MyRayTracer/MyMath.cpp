@@ -79,6 +79,11 @@ float MyMath::power( float base , float index )
 	return powf( base , index );
 }
 
+float MyMath::log( float value )
+{
+	return logf( value );
+}
+
 int MyMath::floorToInt( float value )
 {
 	return static_cast<int>( floor( value ) );

@@ -186,6 +186,12 @@
     <ClInclude Include="RotateMatrix.h">
       <Filter>头文件\Util</Filter>
     </ClInclude>
+    <ClInclude Include="VolumeFog.h">
+      <Filter>头文件\Hitable</Filter>
+    </ClInclude>
+    <ClInclude Include="ConstFog.h">
+      <Filter>头文件\Material</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BoundingBox.cpp">
@@ -256,6 +262,12 @@
     </ClCompile>
     <ClCompile Include="RotateMatrix.cpp">
       <Filter>源文件\Util</Filter>
+    </ClCompile>
+    <ClCompile Include="VolumeFog.cpp">
+      <Filter>源文件\Hitable</Filter>
+    </ClCompile>
+    <ClCompile Include="ConstFog.cpp">
+      <Filter>源文件\Material</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

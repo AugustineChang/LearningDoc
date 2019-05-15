@@ -5,6 +5,7 @@
 #include "Sphere.h"
 #include "Box.h"
 #include "AxisAlignedRect.h"
+#include "VolumeFog.h"
 //texture
 #include "ConstTexture.h"
 #include "GridTexture.h"
@@ -15,6 +16,7 @@
 #include "Metal.h"
 #include "Glass.h"
 #include "Emission.h"
+#include "ConstFog.h"
 
 Scene::Scene() : 
 	bvTree( nullptr ) ,
@@ -168,9 +170,9 @@ void Scene::createCornellBox()
 {
 	useSkyLight = false;
 
-	hitableNum = 8;
-	matNum = 4;
-	texNum = 4;
+	hitableNum = 9;
+	matNum = 5;
+	texNum = 5;
 
 	hitableList = new Hitable*[hitableNum];
 	hitableList[0] = new AxisAlignedRect( EAxis::YZ , ESide::Backside ,
@@ -189,18 +191,22 @@ void Scene::createCornellBox()
 		Vector3::oneVector * 0.3f );//box1
 	hitableList[7] = new Box( Vector3( -0.4f , -0.1f , -0.4f ) , Vector3( 0.0f , -15.0f , 0.0f ) ,
 		Vector3::oneVector * 0.3f );//box2
+	hitableList[8] = new VolumeFog( Vector3( 0.4f , -0.7f , 0.4f ) , Vector3( 0.0f , 30.0f , 0.0f ) ,
+		Vector3::oneVector * 0.3f , 5.0f );//fogBox
 
 	texList = new Texture *[texNum];
 	texList[0] = new ConstTexture( Vector3( 1.0f , 0.0f , 0.0f ) );
 	texList[1] = new ConstTexture( Vector3( 0.0f , 1.0f , 0.0f ) );
 	texList[2] = new ConstTexture( Vector3( 0.5f , 0.5f , 0.5f ) );
 	texList[3] = new ConstTexture( Vector3( 5.0f , 5.0f , 5.0f ) );
+	texList[4] = new ConstTexture( Vector3( 1.0f , 1.0f , 1.0f ) );
 
 	matList = new Material *[matNum];
 	matList[0] = new Diffuse( texList[0] );
 	matList[1] = new Diffuse( texList[1] );
 	matList[2] = new Diffuse( texList[2] );
 	matList[3] = new Emission( texList[3] );
+	matList[4] = new ConstFog( texList[4] );
 
 	hitableList[0]->setMaterial( matList[0] );
 	hitableList[1]->setMaterial( matList[1] );
@@ -210,6 +216,7 @@ void Scene::createCornellBox()
 	hitableList[5]->setMaterial( matList[3] );
 	hitableList[6]->setMaterial( matList[2] );
 	hitableList[7]->setMaterial( matList[2] );
+	hitableList[8]->setMaterial( matList[4] );
 }
 
 void Scene::randomScene()

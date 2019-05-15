@@ -121,6 +121,7 @@
     <ClInclude Include="BoundingVolumeTree.h" />
     <ClInclude Include="Box.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="ConstFog.h" />
     <ClInclude Include="ConstTexture.h" />
     <ClInclude Include="Emission.h" />
     <ClInclude Include="DrawTask.h" />
@@ -162,6 +163,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="RotateMatrix.h" />
     <ClInclude Include="Vector3.h" />
+    <ClInclude Include="VolumeFog.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AxisAlignedRect.cpp" />
@@ -170,6 +172,7 @@
     <ClCompile Include="Box.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CodeEntry.cpp" />
+    <ClCompile Include="ConstFog.cpp" />
     <ClCompile Include="ConstTexture.cpp" />
     <ClCompile Include="Emission.cpp" />
     <ClCompile Include="DrawTask.cpp" />
@@ -187,6 +190,7 @@
     <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="RotateMatrix.cpp" />
     <ClCompile Include="Vector3.cpp" />
+    <ClCompile Include="VolumeFog.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

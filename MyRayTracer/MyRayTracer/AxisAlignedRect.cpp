@@ -39,6 +39,8 @@ bool AxisAlignedRect::hitTest( const Ray &ray , float t_min , float t_max , HitR
 	case XZ:
 		return hitTest_XZ( ray , t_min , t_max , hitResult );
 	}
+
+	return false;
 }
 
 bool AxisAlignedRect::getBoundingBox( float exposureTime , BoundingBox &aabb )
