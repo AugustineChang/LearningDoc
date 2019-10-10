@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="头文件\OldFiles">
+      <UniqueIdentifier>{88faab2e-6fdd-4d01-9c67-568b1e2f08e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\OldFiles">
+      <UniqueIdentifier>{db25ce17-d6cc-4b77-ae01-6151c8843aaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="源文件\LeetCode">
+      <UniqueIdentifier>{39a72ad8-18f0-46cb-91d0-a9087d98e8a5}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="OldFiles\BinarySearchTree.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\BitArray.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\Folder.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\Message.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\MyTest.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\RedBlackTree.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\TestIntegrator.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\TextQuery.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\TextQueryResult.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+    <ClInclude Include="OldFiles\XXTEA.h">
+      <Filter>头文件\OldFiles</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="OldFiles\AddTwoNumbers.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\BinarySearchTree.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\BitArray.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\Folder.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\Message.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\MyTest.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\RedBlackTree.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\TestCpp.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\TestIntegrator.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\TextQuery.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\TextQueryResult.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\XXTEA.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\TwoSum.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\TwoSumOld.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

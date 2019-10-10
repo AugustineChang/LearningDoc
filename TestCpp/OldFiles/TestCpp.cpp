@@ -15,7 +15,7 @@ void print( int i );
 
 void testFolderMessage();
 
-int main( int argc , const char *argv )
+int myMain( int argc , const char *argv )
 {
 	/*TestIntegrator* ti = new TestIntegrator();
 	ti->Test6( 5 );*/
