@@ -128,7 +128,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LeetCode\TwoSum.cpp" />
-    <ClCompile Include="OldFiles\AddTwoNumbers.cpp" />
+    <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
+    <ClCompile Include="LenOfLongestSubstr.cpp" />
+    <ClCompile Include="OldFiles\AddTwoNumbersOld.cpp" />
     <ClCompile Include="OldFiles\BinarySearchTree.cpp" />
     <ClCompile Include="OldFiles\BitArray.cpp" />
     <ClCompile Include="OldFiles\Folder.cpp" />

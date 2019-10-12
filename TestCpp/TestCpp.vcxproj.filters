@@ -56,9 +56,6 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="OldFiles\AddTwoNumbers.cpp">
-      <Filter>源文件\OldFiles</Filter>
-    </ClCompile>
     <ClCompile Include="OldFiles\BinarySearchTree.cpp">
       <Filter>源文件\OldFiles</Filter>
     </ClCompile>
@@ -97,6 +94,15 @@
     </ClCompile>
     <ClCompile Include="OldFiles\TwoSumOld.cpp">
       <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\AddTwoNumbers.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="OldFiles\AddTwoNumbersOld.cpp">
+      <Filter>源文件\OldFiles</Filter>
+    </ClCompile>
+    <ClCompile Include="LenOfLongestSubstr.cpp">
+      <Filter>源文件\LeetCode</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

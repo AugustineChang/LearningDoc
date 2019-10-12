@@ -153,17 +153,16 @@ private:
 	}
 };
 
-int main()
-{
-	//vector<int> input = { 2 , 15 , -5 , 7 , 4 , 90 , 32 , 6 , -3 , -58 , 5 };
-	vector<int> input = { 3 , 2 , 4 };
-	//const vector<int>& output = test.twoSum( input , 4 );
-	
-	TwoSum test;
-	vector<int> output = test.twoSum( input , 6 );
-
-	cout << output[0] << ' ' << output[1] << endl;
-
-	system( "Pause" );
-	return 0;
-}
+//int main()
+//{
+//	//vector<int> input = { 2 , 15 , -5 , 7 , 4 , 90 , 32 , 6 , -3 , -58 , 5 };
+//	vector<int> input = { 3 , 2 , 4 };
+//	
+//	TwoSum test;
+//	vector<int> output = test.twoSum( input , 6 );
+//
+//	cout << output[0] << ' ' << output[1] << endl;
+//
+//	system( "Pause" );
+//	return 0;
+//}
