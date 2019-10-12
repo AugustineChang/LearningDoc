@@ -69,12 +69,12 @@ public:
 	}
 };
 
-int main()
-{
-	string str( "abcdcefged" );
-	LenOfLongestSubstr test;
-	cout << test.lengthOfLongestSubstring( str ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	string str( "abcdcefged" );
+//	LenOfLongestSubstr test;
+//	cout << test.lengthOfLongestSubstring( str ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

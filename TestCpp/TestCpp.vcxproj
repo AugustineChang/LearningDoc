@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -127,6 +127,8 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FindMedian.cpp" />
+    <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\TwoSum.cpp" />
     <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
     <ClCompile Include="LenOfLongestSubstr.cpp" />

@@ -104,5 +104,11 @@
     <ClCompile Include="LenOfLongestSubstr.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="FindMedian.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\Palindrome.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
