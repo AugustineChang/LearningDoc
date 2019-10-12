@@ -124,12 +124,12 @@ public:
 	}
 };
 
-int main()
-{
-	string str( "bb" );
-	Palindrome test;
-	cout << test.longestPalindrome( str ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	string str( "bb" );
+//	Palindrome test;
+//	cout << test.longestPalindrome( str ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

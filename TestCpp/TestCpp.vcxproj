@@ -127,11 +127,12 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FindMedian.cpp" />
+    <ClCompile Include="LeetCode\FindMedian.cpp" />
+    <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\TwoSum.cpp" />
     <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
-    <ClCompile Include="LenOfLongestSubstr.cpp" />
+    <ClCompile Include="LeetCode\ZConvert.cpp" />
     <ClCompile Include="OldFiles\AddTwoNumbersOld.cpp" />
     <ClCompile Include="OldFiles\BinarySearchTree.cpp" />
     <ClCompile Include="OldFiles\BitArray.cpp" />

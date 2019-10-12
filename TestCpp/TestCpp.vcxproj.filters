@@ -101,7 +101,16 @@
     <ClCompile Include="OldFiles\AddTwoNumbersOld.cpp">
       <Filter>源文件\OldFiles</Filter>
     </ClCompile>
-    <ClCompile Include="LenOfLongestSubstr.cpp">
+    <ClCompile Include="LeetCode\Palindrome.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\ZConvert.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\FindMedian.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
     <ClCompile Include="FindMedian.cpp">
