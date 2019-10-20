@@ -122,5 +122,11 @@
     <ClCompile Include="LeetCode\MyAtoi.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="LeetCode\PalindromeInt.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\SimpleRegex.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

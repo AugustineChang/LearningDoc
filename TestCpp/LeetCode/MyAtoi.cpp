@@ -122,13 +122,13 @@ private:
 	}
 };
 
-int main()
-{
-	MyAtoi test;
-	string str( "+211+2" );
-
-	cout << test.myAtoi( str ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	MyAtoi test;
+//	string str( "+211+2" );
+//
+//	cout << test.myAtoi( str ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}
