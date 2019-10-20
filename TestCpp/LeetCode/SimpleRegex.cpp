@@ -202,15 +202,15 @@ private:
 	
 };
 
-int main()
-{
-	SimpleRegex test;
-
-	string s1( "ab" );
-	string s2( ".*.." );
-
-	cout << ( test.isMatch( s1 , s2 ) ? "true" : "false" ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	SimpleRegex test;
+//
+//	string s1( "ab" );
+//	string s2( ".*.." );
+//
+//	cout << ( test.isMatch( s1 , s2 ) ? "true" : "false" ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

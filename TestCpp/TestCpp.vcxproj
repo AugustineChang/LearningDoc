@@ -128,11 +128,14 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LeetCode\FindMedian.cpp" />
+    <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
+    <ClCompile Include="LeetCode\MaxArea.cpp" />
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\PalindromeInt.cpp" />
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
+    <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
     <ClCompile Include="LeetCode\TwoSum.cpp" />
     <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
