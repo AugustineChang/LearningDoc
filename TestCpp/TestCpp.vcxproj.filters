@@ -113,10 +113,13 @@
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
-    <ClCompile Include="FindMedian.cpp">
+    <ClCompile Include="LeetCode\Palindrome.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
-    <ClCompile Include="LeetCode\Palindrome.cpp">
+    <ClCompile Include="LeetCode\ReverseInt.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\MyAtoi.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
   </ItemGroup>

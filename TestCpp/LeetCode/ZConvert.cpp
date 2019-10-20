@@ -114,12 +114,12 @@ private:
 	}
 };
 
-int main()
-{
-	string str( "ABCDE" );
-	ZConvert test;
-	cout << test.convert( str , 4 ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	string str( "ABCDE" );
+//	ZConvert test;
+//	cout << test.convert( str , 4 ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}
