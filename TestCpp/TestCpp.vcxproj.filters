@@ -137,5 +137,14 @@
     <ClCompile Include="LeetCode\RomanToInt.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="LeetCode\CommonPrefix.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\ThreeSum.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\ThreeSumClosest.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

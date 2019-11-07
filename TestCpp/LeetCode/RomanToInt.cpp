@@ -102,11 +102,11 @@ private:
 	}
 };
 
-int main()
-{
-	RomanToInt test;
-	cout << test.romanToInt( "MCMXCIV" ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	RomanToInt test;
+//	cout << test.romanToInt( "MCMXCIV" ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

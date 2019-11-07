@@ -127,6 +127,7 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LeetCode\CommonPrefix.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
@@ -137,6 +138,8 @@
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
+    <ClCompile Include="LeetCode\ThreeSum.cpp" />
+    <ClCompile Include="LeetCode\ThreeSumClosest.cpp" />
     <ClCompile Include="LeetCode\TwoSum.cpp" />
     <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
     <ClCompile Include="LeetCode\ZConvert.cpp" />
