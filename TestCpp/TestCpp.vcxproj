@@ -127,11 +127,13 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DeleteLinkNode.cpp" />
     <ClCompile Include="LeetCode\CommonPrefix.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
     <ClCompile Include="LeetCode\MaxArea.cpp" />
+    <ClCompile Include="LeetCode\MobileInput.cpp" />
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\PalindromeInt.cpp" />
@@ -156,6 +158,7 @@
     <ClCompile Include="OldFiles\TextQueryResult.cpp" />
     <ClCompile Include="OldFiles\TwoSumOld.cpp" />
     <ClCompile Include="OldFiles\XXTEA.cpp" />
+    <ClCompile Include="ValidBrackets.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

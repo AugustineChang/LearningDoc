@@ -134,16 +134,16 @@ private:
 
 };
 
-int main()
-{
-	//{ 5,1,7,-15,56,2,-7 };
-	//{ -1, 0, 1, 2, -1, -4 };
-	//{ -1,0,0,0,0,1 };
-	//{ 5,1,7,-15,56,2,-7 };
-	vector<int> input = { -1,2,1,4 };
-	ThreeSumClosest test;
-	test.threeSumClosest( input , 0 );
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	//{ 5,1,7,-15,56,2,-7 };
+//	//{ -1, 0, 1, 2, -1, -4 };
+//	//{ -1,0,0,0,0,1 };
+//	//{ 5,1,7,-15,56,2,-7 };
+//	vector<int> input = { -1,2,1,4 };
+//	ThreeSumClosest test;
+//	test.threeSumClosest( input , 0 );
+//
+//	system( "pause" );
+//	return 0;
+//}
