@@ -16,22 +16,11 @@
 
 #include <iostream>
 #include <vector>
+#include "Common.h"
 using namespace std;
 
 class AddTwoNumbers 
 {
-public:
-
-	struct ListNode 
-	{
-		ListNode( int x ) 
-			: val( x ) , next( nullptr ) 
-		{}
-
-		int val;
-		ListNode *next;
-	};
-
 public:
 
 	ListNode* addTwoNumbers( ListNode* l1 , ListNode* l2 ) 
@@ -77,22 +66,22 @@ public:
 //	vector<int> inputA = { 1 , 2,  3 , 4 , 5 , 6 };
 //	vector<int> inputB = { 9 , 1 , 9 };
 //	
-//	AddTwoNumbers::ListNode* l1 = nullptr;
-//	AddTwoNumbers::ListNode* l1ptr = nullptr;
-//	AddTwoNumbers::ListNode* l2 = nullptr;
-//	AddTwoNumbers::ListNode* l2ptr = nullptr;
+//	ListNode* l1 = nullptr;
+//	ListNode* l1ptr = nullptr;
+//	ListNode* l2 = nullptr;
+//	ListNode* l2ptr = nullptr;
 //	int numA = inputA.size();
 //	int numB = inputB.size();
 //	for ( int i = numA - 1; i >= 0; --i )
 //	{
 //		if ( l1 == nullptr )
 //		{
-//			l1 = new AddTwoNumbers::ListNode( inputA[i] );
+//			l1 = new ListNode( inputA[i] );
 //			l1ptr = l1;
 //		}
 //		else
 //		{
-//			l1ptr->next = new AddTwoNumbers::ListNode( inputA[i] );
+//			l1ptr->next = new ListNode( inputA[i] );
 //			l1ptr = l1ptr->next;
 //		}
 //	}
@@ -100,18 +89,18 @@ public:
 //	{
 //		if ( l2 == nullptr )
 //		{
-//			l2 = new AddTwoNumbers::ListNode( inputB[i] );
+//			l2 = new ListNode( inputB[i] );
 //			l2ptr = l2;
 //		}
 //		else
 //		{
-//			l2ptr->next = new AddTwoNumbers::ListNode( inputB[i] );
+//			l2ptr->next = new ListNode( inputB[i] );
 //			l2ptr = l2ptr->next;
 //		}
 //	}
 //
 //	AddTwoNumbers test;
-//	AddTwoNumbers::ListNode* output = test.addTwoNumbers( l1 , l2 );
+//	ListNode* output = test.addTwoNumbers( l1 , l2 );
 //
 //	while ( output != nullptr )
 //	{

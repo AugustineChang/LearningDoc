@@ -115,6 +115,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="LeetCode\Common.h" />
     <ClInclude Include="OldFiles\BinarySearchTree.h" />
     <ClInclude Include="OldFiles\BitArray.h" />
     <ClInclude Include="OldFiles\Folder.h" />
@@ -127,12 +128,15 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DeleteLinkNode.cpp" />
+    <ClCompile Include="LeetCode\Common.cpp" />
     <ClCompile Include="LeetCode\CommonPrefix.cpp" />
+    <ClCompile Include="LeetCode\DeleteLinkNode.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
+    <ClCompile Include="LeetCode\GenerateBrackets.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
     <ClCompile Include="LeetCode\MaxArea.cpp" />
+    <ClCompile Include="LeetCode\MergeLists.cpp" />
     <ClCompile Include="LeetCode\MobileInput.cpp" />
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
@@ -140,10 +144,12 @@
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
+    <ClCompile Include="LeetCode\SwapLinkPairs.cpp" />
     <ClCompile Include="LeetCode\ThreeSum.cpp" />
     <ClCompile Include="LeetCode\ThreeSumClosest.cpp" />
     <ClCompile Include="LeetCode\TwoSum.cpp" />
     <ClCompile Include="LeetCode\AddTwoNumbers.cpp" />
+    <ClCompile Include="LeetCode\ValidBrackets.cpp" />
     <ClCompile Include="LeetCode\ZConvert.cpp" />
     <ClCompile Include="OldFiles\AddTwoNumbersOld.cpp" />
     <ClCompile Include="OldFiles\BinarySearchTree.cpp" />
@@ -158,7 +164,6 @@
     <ClCompile Include="OldFiles\TextQueryResult.cpp" />
     <ClCompile Include="OldFiles\TwoSumOld.cpp" />
     <ClCompile Include="OldFiles\XXTEA.cpp" />
-    <ClCompile Include="ValidBrackets.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

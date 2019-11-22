@@ -54,6 +54,9 @@
     <ClInclude Include="OldFiles\XXTEA.h">
       <Filter>头文件\OldFiles</Filter>
     </ClInclude>
+    <ClInclude Include="LeetCode\Common.h">
+      <Filter>源文件\LeetCode</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="OldFiles\BinarySearchTree.cpp">
@@ -149,10 +152,22 @@
     <ClCompile Include="LeetCode\MobileInput.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
-    <ClCompile Include="DeleteLinkNode.cpp">
+    <ClCompile Include="LeetCode\MergeLists.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
-    <ClCompile Include="ValidBrackets.cpp">
+    <ClCompile Include="LeetCode\GenerateBrackets.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\SwapLinkPairs.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\DeleteLinkNode.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\ValidBrackets.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\Common.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
   </ItemGroup>

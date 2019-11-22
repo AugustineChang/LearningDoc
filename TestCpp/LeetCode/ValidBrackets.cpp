@@ -87,12 +87,12 @@ public:
 	}
 };
 
-int main()
-{
-	ValidBrackets test;
-
-	cout << ( test.isValid( "([])" ) ? "true" : "false" ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	ValidBrackets test;
+//
+//	cout << ( test.isValid( "([])" ) ? "true" : "false" ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}
