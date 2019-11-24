@@ -47,24 +47,24 @@ public:
 	}
 };
 
-int main()
-{
-	int a[5] = { 2,5,12,67,100 };
-	int b[3] = { 8,23,24 };
-	int c[7] = { 1,6,10,11,15,17,50 };
-
-	ListNode *input = createList( c, 7 );
-
-	SwapLinkPairs test;
-	ListNode* output = test.swapPairs( input );
-
-	while( output != nullptr )
-	{
-		cout << output->val << "->";
-		output = output->next;
-	}
-	cout << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	int a[5] = { 2,5,12,67,100 };
+//	int b[3] = { 8,23,24 };
+//	int c[7] = { 1,6,10,11,15,17,50 };
+//
+//	ListNode *input = createList( c, 7 );
+//
+//	SwapLinkPairs test;
+//	ListNode* output = test.swapPairs( input );
+//
+//	while( output != nullptr )
+//	{
+//		cout << output->val << "->";
+//		output = output->next;
+//	}
+//	cout << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

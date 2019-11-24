@@ -141,7 +141,9 @@
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\PalindromeInt.cpp" />
+    <ClCompile Include="LeetCode\RemoveDuplicates.cpp" />
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
+    <ClCompile Include="LeetCode\ReverseKGroup.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
     <ClCompile Include="LeetCode\SwapLinkPairs.cpp" />
