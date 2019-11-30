@@ -131,6 +131,7 @@
     <ClCompile Include="LeetCode\Common.cpp" />
     <ClCompile Include="LeetCode\CommonPrefix.cpp" />
     <ClCompile Include="LeetCode\DeleteLinkNode.cpp" />
+    <ClCompile Include="LeetCode\DivideTwoNumbers.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
     <ClCompile Include="LeetCode\GenerateBrackets.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
@@ -142,10 +143,12 @@
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\PalindromeInt.cpp" />
     <ClCompile Include="LeetCode\RemoveDuplicates.cpp" />
+    <ClCompile Include="LeetCode\RemoveElement.cpp" />
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
     <ClCompile Include="LeetCode\ReverseKGroup.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
+    <ClCompile Include="LeetCode\SimpleStr.cpp" />
     <ClCompile Include="LeetCode\SwapLinkPairs.cpp" />
     <ClCompile Include="LeetCode\ThreeSum.cpp" />
     <ClCompile Include="LeetCode\ThreeSumClosest.cpp" />

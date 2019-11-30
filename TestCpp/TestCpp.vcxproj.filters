@@ -176,5 +176,14 @@
     <ClCompile Include="LeetCode\RemoveDuplicates.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="LeetCode\RemoveElement.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\SimpleStr.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\DivideTwoNumbers.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

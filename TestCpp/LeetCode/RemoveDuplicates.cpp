@@ -62,19 +62,19 @@ public:
 	}
 };
 
-int main()
-{
-	RemoveDupilcates test;
-	vector<int> input = { 1,1,2,2,3,4,5,6,6,6 };
-
-	int num = test.removeDuplicates( input );
-	for( int i = 0; i < num; ++i )
-	{
-		cout << input[i] << ' ';
-	}
-	cout << endl;
-	cout << "num=" << num << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	RemoveDupilcates test;
+//	vector<int> input = { 1,1,2,2,3,4,5,6,6,6 };
+//
+//	int num = test.removeDuplicates( input );
+//	for( int i = 0; i < num; ++i )
+//	{
+//		cout << input[i] << ' ';
+//	}
+//	cout << endl;
+//	cout << "num=" << num << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}
