@@ -185,5 +185,8 @@
     <ClCompile Include="LeetCode\DivideTwoNumbers.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="LeetCode\NextPermutation.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

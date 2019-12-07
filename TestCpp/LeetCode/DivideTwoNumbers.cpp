@@ -87,12 +87,12 @@ public:
 	}
 };
 
-int main()
-{
-	DivideTwoNumbers test;
-
-	cout << test.divide( 1100540749, -1090366779 ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	DivideTwoNumbers test;
+//
+//	cout << test.divide( 1100540749, -1090366779 ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

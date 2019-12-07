@@ -16,6 +16,8 @@
 */
 
 #include <string>
+#include <vector>
+#include <unordered_map>
 #include <iostream>
 using namespace std;
 
@@ -45,6 +47,83 @@ public:
 		}
 
 		return -1;
+	}
+	
+	vector<int> findSubstring( string s, vector<string>& words ) 
+	{
+		vector<int> output;
+		int numOfWords = words.size();
+		int wordSize = numOfWords > 0 ? words[0].size() : 0;
+		int stringSize = s.size();
+		int subStrSize = numOfWords * wordSize;
+
+		if ( wordSize <= 0 )
+			return output;
+		if( stringSize < subStrSize )
+			return output;
+
+		unordered_map<string, int> standardMap;
+		unordered_map<string, int> curMap;
+
+		//init standard map
+		standardMap.reserve( numOfWords );
+		for( int i = 0; i < numOfWords; ++i )
+		{
+			if( standardMap.find( words[i] ) == standardMap.end() )
+			{
+				standardMap.emplace( words[i], 1 );
+			}
+			else
+			{
+				++standardMap[words[i]];
+			}
+		}
+
+		int startIndex = 0;
+		while( startIndex + subStrSize <= stringSize )
+		{
+			curMap.clear();
+
+			bool isFound = true;
+			for( int i = 0; i < numOfWords; ++i )
+			{
+				string curSubStr = s.substr( startIndex + i * wordSize, wordSize );
+				auto standardIter = standardMap.find( curSubStr );
+				if( standardIter == standardMap.end() )// unknown word
+				{
+					++startIndex;
+					isFound = false;
+					break;
+				}
+				else
+				{
+					unordered_map<string, int>::iterator curIter = curMap.find( curSubStr );
+					if( curIter == curMap.end() )// first
+					{
+						curMap.emplace( curSubStr, 1 );
+					}
+					else
+					{
+						++( curIter->second );
+
+						if( curIter->second > standardIter->second )// too many words
+						{
+							++startIndex;
+							isFound = false;
+							break;
+						}
+					}
+				}
+			}
+
+			if( isFound )
+			{
+				output.push_back( startIndex );
+				++startIndex;
+			}
+		}
+
+		return output;
 	}
 
 private:
@@ -83,7 +162,19 @@ private:
 //{
 //	SimpleStr test;
 //
-//	cout << test.strStr( "a" , "" ) << endl;
+//	//cout << test.strStr( "a", "" ) << endl;
+//	vector<string> input = 
+//	{
+//		"ab","ba","ba"
+//	};
+//
+//	string str( "ababaab" );
+//	vector<int> output = test.findSubstring( str, input );
+//	for( int val : output )
+//	{
+//		cout << val << " ";
+//	}
+//	cout << endl;
 //
 //	system( "pause" );
 //	return 0;

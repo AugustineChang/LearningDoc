@@ -140,6 +140,7 @@
     <ClCompile Include="LeetCode\MergeLists.cpp" />
     <ClCompile Include="LeetCode\MobileInput.cpp" />
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
+    <ClCompile Include="LeetCode\NextPermutation.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />
     <ClCompile Include="LeetCode\PalindromeInt.cpp" />
     <ClCompile Include="LeetCode\RemoveDuplicates.cpp" />
