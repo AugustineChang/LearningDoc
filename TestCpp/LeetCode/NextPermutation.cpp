@@ -83,19 +83,19 @@ private:
 	}
 };
 
-int main()
-{
-	vector<int> input = { 1,4,3,2 };
-
-	NextPermutation test;
-	test.nextPermutation( input );
-
-	for( int val : input )
-	{
-		cout << val << ' ';
-	}
-	cout << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	vector<int> input = { 1,4,3,2 };
+//
+//	NextPermutation test;
+//	test.nextPermutation( input );
+//
+//	for( int val : input )
+//	{
+//		cout << val << ' ';
+//	}
+//	cout << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

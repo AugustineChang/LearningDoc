@@ -136,6 +136,7 @@
     <ClCompile Include="LeetCode\GenerateBrackets.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
+    <ClCompile Include="LeetCode\LongestValidBracket.cpp" />
     <ClCompile Include="LeetCode\MaxArea.cpp" />
     <ClCompile Include="LeetCode\MergeLists.cpp" />
     <ClCompile Include="LeetCode\MobileInput.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="LeetCode\ReverseInt.cpp" />
     <ClCompile Include="LeetCode\ReverseKGroup.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
+    <ClCompile Include="LeetCode\SearchBrokenList.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
     <ClCompile Include="LeetCode\SimpleStr.cpp" />
     <ClCompile Include="LeetCode\SwapLinkPairs.cpp" />
