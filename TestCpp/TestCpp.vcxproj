@@ -150,7 +150,10 @@
     <ClCompile Include="LeetCode\ReverseKGroup.cpp" />
     <ClCompile Include="LeetCode\RomanToInt.cpp" />
     <ClCompile Include="LeetCode\SearchBrokenList.cpp" />
+    <ClCompile Include="LeetCode\SearchRepeatList.cpp" />
     <ClCompile Include="LeetCode\SimpleRegex.cpp" />
+    <ClCompile Include="LeetCode\SimpleSearch.cpp" />
+    <ClCompile Include="LeetCode\SimpleSodoku.cpp" />
     <ClCompile Include="LeetCode\SimpleStr.cpp" />
     <ClCompile Include="LeetCode\SwapLinkPairs.cpp" />
     <ClCompile Include="LeetCode\ThreeSum.cpp" />

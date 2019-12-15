@@ -87,13 +87,13 @@ public:
 	}
 };
 
-int main()
-{
-	SearchBrokenList test;
-	vector<int> input = { 3,1 };//{ 49, 66, 105, 151, 1, 3, 6, 12, 15, 16, 25, 37 };
-
-	cout << test.search( input, 1 ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	SearchBrokenList test;
+//	vector<int> input = { 3,1 };//{ 49, 66, 105, 151, 1, 3, 6, 12, 15, 16, 25, 37 };
+//
+//	cout << test.search( input, 1 ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}
