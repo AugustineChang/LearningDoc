@@ -133,6 +133,7 @@
     <ClCompile Include="LeetCode\DeleteLinkNode.cpp" />
     <ClCompile Include="LeetCode\DivideTwoNumbers.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
+    <ClCompile Include="LeetCode\FourSum.cpp" />
     <ClCompile Include="LeetCode\GenerateBrackets.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
     <ClCompile Include="LeetCode\LenOfLongestSubstr.cpp" />
