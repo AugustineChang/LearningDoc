@@ -127,21 +127,21 @@ public:
 	{
 		baseBoard = board;
 
-		loadSudoku( board, needToFill );
-		numOfFilled = 0;
-		if( !fillSudoku() )
-			return;
-
 		curGuessLevel = 0;
 		GuessData newData;
 		GuessStack.reserve( 5 );
 		GuessStack.push_back( newData );
 
+		loadSudoku( board, needToFill );
+		numOfFilled = 0;
+		if( !fillSudoku() )
+			return;
+
 		if( !doGuessRecursively() )
 			return;
 		
-		//vector<IntPoint> dummy;
-		//printSodoku( board, dummy );
+		vector<IntPoint> dummy;
+		printSodoku( board, dummy );
 
 		for( auto iter = selectionRange.begin(); iter != selectionRange.end(); ++iter )
 		{
@@ -579,15 +579,15 @@ int main()
 {
 	vector<vector<char>> input =
 	{		
-		{'.','1','.','4','.','.','.','5','.'},
-		{'7','.','.','.','.','6','.','.','.'},
-		{'.','.','.','.','.','.','.','.','.'},
-		{'.','4','.','1','5','.','.','3','.'},
-		{'.','.','.','.','.','.','.','.','2'},
-		{'.','.','.','9','.','.','.','.','6'},
-		{'.','.','.','.','.','.','9','1','.'},
-		{'.','.','.','.','.','.','.','.','.'},
-		{'6','.','2','.','.','7','.','.','.'}
+		{'5','3','.','.','7','.','.','.','.'},
+		{'6','.','.','1','9','5','.','.','.'},
+		{'.','9','8','.','.','.','.','6','.'},
+		{'8','.','.','.','6','.','.','.','3'},
+		{'4','.','.','8','.','3','.','.','1'},
+		{'7','.','.','.','2','.','.','.','6'},
+		{'.','6','.','.','.','.','2','8','.'},
+		{'.','.','.','4','1','9','.','.','5'},
+		{'.','.','.','.','8','.','.','7','9'}
 	};
 
 	SimpleSodoku test;
