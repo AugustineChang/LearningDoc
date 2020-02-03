@@ -128,11 +128,14 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LeetCode\CombinationSum.cpp" />
     <ClCompile Include="LeetCode\Common.cpp" />
     <ClCompile Include="LeetCode\CommonPrefix.cpp" />
+    <ClCompile Include="LeetCode\CountAndSay.cpp" />
     <ClCompile Include="LeetCode\DeleteLinkNode.cpp" />
     <ClCompile Include="LeetCode\DivideTwoNumbers.cpp" />
     <ClCompile Include="LeetCode\FindMedian.cpp" />
+    <ClCompile Include="LeetCode\FirstMissingPositive.cpp" />
     <ClCompile Include="LeetCode\FourSum.cpp" />
     <ClCompile Include="LeetCode\GenerateBrackets.cpp" />
     <ClCompile Include="LeetCode\IntToRoman.cpp" />
