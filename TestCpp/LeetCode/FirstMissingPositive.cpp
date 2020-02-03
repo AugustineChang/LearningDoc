@@ -66,12 +66,12 @@ private:
 	}
 };
 
-int main()
-{
-	vector<int> input = { 2,2,2 };
-	FirstMissingPositive test;
-	cout << test.firstMissingPositive( input ) << endl;
-
-	system( "pause" );
-	return 0;
-}
+//int main()
+//{
+//	vector<int> input = { 2,2,2 };
+//	FirstMissingPositive test;
+//	cout << test.firstMissingPositive( input ) << endl;
+//
+//	system( "pause" );
+//	return 0;
+//}

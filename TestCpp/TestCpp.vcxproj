@@ -128,6 +128,7 @@
     <ClInclude Include="OldFiles\XXTEA.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LeetCode\CollectRainWater.cpp" />
     <ClCompile Include="LeetCode\CombinationSum.cpp" />
     <ClCompile Include="LeetCode\Common.cpp" />
     <ClCompile Include="LeetCode\CommonPrefix.cpp" />
@@ -144,6 +145,7 @@
     <ClCompile Include="LeetCode\MaxArea.cpp" />
     <ClCompile Include="LeetCode\MergeLists.cpp" />
     <ClCompile Include="LeetCode\MobileInput.cpp" />
+    <ClCompile Include="LeetCode\MultiplyTwoNumbers.cpp" />
     <ClCompile Include="LeetCode\MyAtoi.cpp" />
     <ClCompile Include="LeetCode\NextPermutation.cpp" />
     <ClCompile Include="LeetCode\Palindrome.cpp" />

@@ -215,5 +215,11 @@
     <ClCompile Include="LeetCode\FirstMissingPositive.cpp">
       <Filter>源文件\LeetCode</Filter>
     </ClCompile>
+    <ClCompile Include="LeetCode\CollectRainWater.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
+    <ClCompile Include="LeetCode\MultiplyTwoNumbers.cpp">
+      <Filter>源文件\LeetCode</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
