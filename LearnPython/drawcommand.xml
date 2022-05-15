@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+ <GraphicsCommands>
+  <Command color="#804000">BeginFill </Command>
+  <Command x="299.0" y="-45.0" width="1.0" color="#804000">GoTo </Command>
+  <Command x="302.0" y="-297.0" width="1.0" color="#804000">GoTo </Command>
+  <Command x="-301.0" y="-298.0" width="1.0" color="#804000">GoTo </Command>
+  <Command x="-300.0" y="-53.0" width="1.0" color="#804000">GoTo </Command>
+  <Command >EndFill </Command>
+  <Command color="#004080">BeginFill </Command>
+  <Command x="-300.0" y="300.0" width="1.0" color="#004080">GoTo </Command>
+  <Command x="299.0" y="299.0" width="1.0" color="#004080">GoTo </Command>
+  <Command x="300.0" y="-45.0" width="1.0" color="#004080">GoTo </Command>
+  <Command >EndFill </Command>
+  <Command >PenUp </Command>
+  <Command x="0.0" y="0.0" width="1.0" color="#000000">GoTo </Command>
+  <Command >PenDown </Command>
+  <Command radius="10.0" width="10" color="#ffffff">Circle </Command>
+  <Command radius="20.0" width="10" color="#ff0080">Circle </Command>
+  <Command x="2.0" y="-4.0" width="10.0" color="#ff0080">GoTo </Command>
+  <Command x="2.0" y="-5.0" width="10.0" color="#ff0080">GoTo </Command>
+  <Command x="2.0" y="-6.0" width="10.0" color="#ff0080">GoTo </Command>
+ </GraphicsCommands>

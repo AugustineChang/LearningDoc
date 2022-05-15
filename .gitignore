@@ -27,3 +27,4 @@
 *.ppm
 MyD3D11Project/MyD3D11Project/x64/
 TestCpp/x64/
+*.pyc
