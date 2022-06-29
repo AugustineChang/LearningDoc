@@ -1,10 +1,5 @@
-class ValueNoise
+class ValueNoise extends NoiseBase
 {
-    int PicWidth;
-    int PicHeight;
-    float Frequency;
-    
-    private PImage ValueNoiseImage;
     private PImage ValueNoiseImage_Smoothed;
     
     private FloatList RandInGrids;
@@ -13,25 +8,16 @@ class ValueNoise
     private int NumGridsX;
     private int NumGridsY;
     
-    private int DisplayOffX;
-    private int DisplayOffY;
-    
-    private int DisplayState;
     private int AnimTime;
     
     ValueNoise(int inWidth, int inHeight, float inFraq)
     {
-        PicWidth = inWidth;
-        PicHeight = inHeight;
-        Frequency = inFraq;
-        ValueNoiseImage = createImage(PicWidth, PicHeight, RGB);
+        super(inWidth, inHeight, inFraq);
         ValueNoiseImage_Smoothed = createImage(PicWidth, PicHeight, RGB);
         RandInGrids = new FloatList();
         
-        DisplayOffX = 0;
-        DisplayOffY = 0;
-        DisplayState = 0;
         AnimTime = 0;
+        MAX_STATE = 10;
         
         GridSizeX = floor(PicWidth / Frequency);
         GridSizeY = floor(PicHeight / Frequency);
@@ -49,7 +35,7 @@ class ValueNoise
         if (bUseSmooth)
             TargetImage = ValueNoiseImage_Smoothed;
         else
-            TargetImage = ValueNoiseImage;
+            TargetImage = NoiseImage;
         
         TargetImage.loadPixels();
         
@@ -63,7 +49,7 @@ class ValueNoise
         for (int y = 0; y < PicHeight; ++y)
         {
             GridIdY = y / GridSizeY;
-            VInGrid = float(y % GridSizeY) / float(GridSizeY - 1);
+            VInGrid = float(y % GridSizeY) / float(GridSizeY);
             NextGridIdY = (GridIdY + 1) % NumGridsY;
             if (bUseSmooth)
                 VInGrid = SmoothValue(VInGrid);
@@ -71,7 +57,7 @@ class ValueNoise
             for (int x = 0; x < PicWidth; ++x)
             {
                 GridIdX = x / GridSizeX;
-                UInGrid = float(x % GridSizeX) / float(GridSizeX - 1);
+                UInGrid = float(x % GridSizeX) / float(GridSizeX);
                 NextGridIdX = (GridIdX + 1) % NumGridsX;
                 if (bUseSmooth)
                     UInGrid = SmoothValue(UInGrid);
@@ -90,12 +76,6 @@ class ValueNoise
             }
         }
         TargetImage.updatePixels();
-    }
-    
-    void SetDisplayOffset(int offX, int offY)
-    {
-        DisplayOffX = offX;
-        DisplayOffY = offY;
     }
      //<>//
     void Display()
@@ -136,13 +116,13 @@ class ValueNoise
             break;
             
             case 7:
-            image(ValueNoiseImage, DisplayOffX, DisplayOffY);
+            image(NoiseImage, DisplayOffX, DisplayOffY);
             DrawGrids(false);
             DrawGridRandoms(false);
             break;
             
             case 8:
-            image(ValueNoiseImage, DisplayOffX, DisplayOffY);
+            image(NoiseImage, DisplayOffX, DisplayOffY);
             break;
             
             case 9:
@@ -155,13 +135,7 @@ class ValueNoise
     
     void OnMouseClick()
     {
-        int MAX_STATE = 10;
-      
-        if (mouseButton == LEFT)
-            DisplayState = (DisplayState+1) % MAX_STATE;
-        else if (mouseButton == RIGHT)
-            DisplayState = (DisplayState+(MAX_STATE-1)) % MAX_STATE;
-        
+        super.OnMouseClick();
         AnimTime = 0;
     }
     
