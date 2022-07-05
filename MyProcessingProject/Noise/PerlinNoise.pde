@@ -16,6 +16,7 @@ static int[] permutation = { 151,160,137,91,90,15,
 class PerlinNoise extends NoiseBase
 {
     private int[] permTable;
+    //private ArrayList<PVector> RandDirs;
     
     private int GridSizeX;
     private int GridSizeY;
@@ -31,6 +32,8 @@ class PerlinNoise extends NoiseBase
         NumGridsX = ceil(float(PicWidth) / float(GridSizeX));
         NumGridsY = ceil(float(PicHeight) / float(GridSizeY));
         
+        MAX_STATE = 12;
+        
         // init perm table
         permTable = new int[512];
         for (int i = 0; i < 256; ++i)
@@ -38,6 +41,16 @@ class PerlinNoise extends NoiseBase
             permTable[i] = permutation[i];
             permTable[256+i] = permutation[i];
         }
+        
+        //random grids
+        /*RandDirs = new ArrayList<PVector>();
+        for (int y = 0; y < NumGridsY; ++y)
+        {
+            for (int x = 0; x < NumGridsX; ++x)
+            {
+                RandDirs.add(PVector.random2D());
+            }
+        }*/
         
         GenerateNoise();
     }
@@ -89,11 +102,6 @@ class PerlinNoise extends NoiseBase
         NoiseImage.updatePixels();
     }
     
-    void OnMouseClick()
-    {
-        super.OnMouseClick();
-    }
-    
     private float GetPerlinGridValue(int GridIdX, int GridIdY, int GridIdZ, PVector ToGridVert)
     {
         int v1 = permTable[GridIdX];
@@ -139,8 +147,295 @@ class PerlinNoise extends NoiseBase
         }
     }
     
+    /*private float GetPerlinGridValue2(int GridIdX, int GridIdY, int GridIdZ, PVector ToGridVert)
+    {
+        PVector randDir = RandDirs.get(GridIdX + GridIdY*NumGridsX);
+        
+        return PVector.dot(randDir, ToGridVert);
+    }*/
+    
+    private PVector GetPerlinGridDir(int GridIdX, int GridIdY, int GridIdZ)
+    {
+        int v1 = permTable[GridIdX];
+        int v2 = permTable[v1 + GridIdY];
+        int v3 = permTable[v2 + GridIdZ];
+        
+        PVector OutVec;
+        switch (v3 & 0xF) // v3 % 16
+        {
+        case 0:
+          OutVec = new PVector(1,1,0); // dot(ToGridVert, float3(1,1,0))
+          break;
+        case 1:     
+          OutVec = new PVector(-1,1,0); // dot(ToGridVert, float3(-1,1,0))
+          break;
+        case 2:     
+          OutVec = new PVector(1,-1,0); // dot(ToGridVert, float3(1,-1,0))
+          break;
+        case 3:
+          OutVec = new PVector(-1,-1,0); // dot(ToGridVert, float3(-1,-1,0))
+          break;
+        case 4:     
+          OutVec = new PVector(1,0,1); // dot(ToGridVert, float3(1,0,1))
+          break;
+        case 5:     
+          OutVec = new PVector(-1,0,1); // dot(ToGridVert, float3(-1,0,1))
+          break;
+        case 6:     
+          OutVec = new PVector(1,0,-1); // dot(ToGridVert, float3(1,0,-1))
+          break;
+        case 7:     
+          OutVec = new PVector(-1,0,-1); // dot(ToGridVert, float3(-1,0,-1))
+          break;
+        case 8:     
+          OutVec = new PVector(0,1,1); // dot(ToGridVert, float3(0,1,1))
+          break;
+        case 9:     
+          OutVec = new PVector(0,-1,1); // dot(ToGridVert, float3(0,-1,1))
+          break;
+        case 10:  
+          OutVec = new PVector(0,1,-1); // dot(ToGridVert, float3(0,1,-1))
+          break;
+        case 11:   
+          OutVec = new PVector(0,-1,-1); // dot(ToGridVert, float3(0,-1,-1))
+          break;
+        case 12:   
+          OutVec = new PVector(1,1,0); // dot(ToGridVert, float3(1,1,0))
+          break;
+        case 13:   
+          OutVec = new PVector(1,-1,1); // dot(ToGridVert, float3(0,-1,1))
+          break;
+        case 14:   
+          OutVec = new PVector(-1,1,0); // dot(ToGridVert, float3(-1,1,0))
+          break;
+        
+        default: 
+        case 15:   
+          OutVec = new PVector(0,-1,-1); // dot(ToGridVert, float3(0,-1,-1))
+          break;
+        }
+        
+        float size2D = sqrt(OutVec.x*OutVec.x + OutVec.y*OutVec.y);
+        OutVec.div(size2D);//normalize2D
+                
+        return OutVec;
+    }
+    
     private float PerlinSmoothValue(float InVal)
     {
         return InVal*InVal*InVal*(InVal* (6.0*InVal - 15.0) + 10.0);// y= 6x^5 - 15x^4 + 10x^3
+    }
+    
+    void Display()
+    {
+        rectMode(CORNER);
+        switch(DisplayState)
+        {
+            case 0:
+            noStroke();
+            fill(0);
+            rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            break;
+            
+            case 1:
+            noStroke();
+            fill(0);
+            rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            DrawGrids();
+            break;
+            
+            case 2:
+            noStroke();
+            fill(0);
+            rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            DrawGrids();
+            DrawGridDirections();
+            break;
+            
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+            case 8:
+            case 9:
+            noStroke();
+            fill(0);
+            rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            DrawGrids();
+            DrawInterpolation();
+            break;
+            
+            case 10:
+            image(NoiseImage, DisplayOffX, DisplayOffY);
+            DrawGrids();
+            DrawInterpolation();
+            break;
+            
+            case 11:
+            image(NoiseImage, DisplayOffX, DisplayOffY);
+            break;
+        }
+    }
+    
+    private void DrawGrids()
+    {
+        stroke(255, 70, 0);
+        
+        //draw row
+        int lineRowS = DisplayOffX;
+        int lineRowE = DisplayOffX + PicWidth;
+        for (int y = 0; y < NumGridsY; ++y)
+        {
+            int lineY = y*GridSizeY + DisplayOffY;
+            line(lineRowS, lineY, lineRowE, lineY);
+        }
+        
+        //draw column
+        int lineColS = DisplayOffY;
+        int lineColE = DisplayOffY + PicHeight;
+        for (int x = 0; x < NumGridsX; ++x)
+        {
+            int lineX = x*GridSizeX + DisplayOffX;
+            line(lineX, lineColS, lineX, lineColE);
+        }
+    }
+    
+    private void DrawGridDirections()
+    {
+        stroke(0, 185, 255);
+        fill(0, 185, 255);
+        ellipseMode(CENTER);
+        
+        float arrowLen = (GridSizeX+GridSizeY)*0.2;
+        for (int y = 0; y < NumGridsY; ++y)
+        {
+            int centerY = y*GridSizeY + DisplayOffY;
+            for (int x = 0; x < NumGridsX; ++x)
+            {
+                int centerX = x*GridSizeX + DisplayOffX;
+                PVector gridDir = GetPerlinGridDir(x, y, 0);
+                
+                DrawArrow(new PVector(centerX, centerY, 0), gridDir, arrowLen);
+            }
+        }
+    }
+    
+    private void DrawArrow(PVector start, PVector dir, float len)
+    {
+        float endX = start.x + len*dir.x;
+        float endY = start.y + len*dir.y;
+        
+        ellipse(start.x, start.y, 5.0, 5.0);
+        line(start.x, start.y, endX, endY);
+        
+        dir.rotate(PI/12.0);
+        float wing1EndX = endX - 12.0*dir.x;
+        float wing1EndY = endY - 12.0*dir.y;
+        dir.rotate(-PI/6.0);
+        float wing2EndX = endX - 12.0*dir.x;
+        float wing2EndY = endY - 12.0*dir.y;
+        
+        triangle(endX, endY, wing1EndX, wing1EndY, wing2EndX, wing2EndY);
+    }
+    
+    private void DrawInterpolation()
+    {
+        stroke(0, 185, 255);
+        ellipseMode(CENTER);
+        rectMode(CENTER);
+        
+        PVector pointPos = new PVector(
+          floor(GridSizeX*0.5) + DisplayOffX, 
+          floor(GridSizeY*0.5) + DisplayOffY);
+      
+        if (DisplayState >= 3 && DisplayState < 9)
+        {  
+            fill(0, 185, 255);
+            ellipse(pointPos.x, pointPos.y, 5.0, 5.0);
+            fill(255);
+            textSize(20);
+            text("?", pointPos.x+4, pointPos.y+6);
+        }
+        
+        if (DisplayState == 4)
+        {
+            fill(0, 185, 255);
+            
+            PVector gridPos = new PVector(DisplayOffX, DisplayOffY, 0);
+            PVector gridDir = GetPerlinGridDir(0, 0, 0);
+            float arrowLen = (GridSizeX+GridSizeY)*0.2;
+            DrawArrow(gridPos, gridDir, arrowLen);
+            
+            PVector toPoint = PVector.sub(pointPos, gridPos);
+            arrowLen = toPoint.mag();
+            toPoint.div(arrowLen);
+            DrawArrow(gridPos, toPoint, arrowLen);
+            
+            text("calc dot product", pointPos.x, pointPos.y-GridSizeY*0.25);
+        }
+        
+        float val00 = 0.0;
+        PVector toPos = new PVector();
+        if (DisplayState >= 5)
+        {
+            PVector gridPos = new PVector(DisplayOffX, DisplayOffY, 0);
+            toPos = PVector.sub(pointPos, gridPos);
+            toPos.x = toPos.x / GridSizeX;
+            toPos.y = toPos.y / GridSizeY;
+            
+            val00 = GetPerlinGridValue(0, 0, 0, toPos);
+            if (DisplayState < 9)
+            {
+                fill((0.5 + 0.5*val00) * 255.0);
+                ellipse(DisplayOffX, DisplayOffY, 11.0, 11.0);
+            }
+        }
+        
+        float val10 = 0.0;
+        if (DisplayState >= 6 && DisplayState < 9)
+        {
+            val10 = GetPerlinGridValue(1, 0, 0, PVector.sub(toPos, new PVector(1, 0, 0)));
+            if (DisplayState < 9)
+            {
+                fill((0.5 + 0.5*val10) * 255.0);
+                ellipse(DisplayOffX+GridSizeX, DisplayOffY, 11.0, 11.0);
+            }
+        }
+        
+        float val01 = 0.0;
+        if (DisplayState >= 7 && DisplayState < 9)
+        {
+            val01 = GetPerlinGridValue(0, 1, 0, PVector.sub(toPos, new PVector(0, 1, 0)));
+            if (DisplayState < 9)
+            {
+                fill((0.5 + 0.5*val01) * 255.0);
+                ellipse(DisplayOffX, DisplayOffY+GridSizeY, 11.0, 11.0);
+            }
+        }
+        
+        float val11 = 0.0;
+        if (DisplayState >= 8 && DisplayState < 9)
+        {
+            val11 = GetPerlinGridValue(1, 1, 0, PVector.sub(toPos, new PVector(1, 1, 0)));
+            if (DisplayState < 9)
+            {
+                fill((0.5 + 0.5*val11) * 255.0);
+                ellipse(DisplayOffX+GridSizeX, DisplayOffY+GridSizeY, 11.0, 11.0);
+            }
+        }
+        
+        if (DisplayState >= 9)
+        {
+            float SmoothedUVInGridX = PerlinSmoothValue(toPos.x);
+            float SmoothedUVInGridY = PerlinSmoothValue(toPos.y);
+          
+            float lerp0 = lerp(val00, val10, SmoothedUVInGridX);
+            float lerp1 = lerp(val01, val11, SmoothedUVInGridX);
+            float finalLerp = lerp(lerp0, lerp1, SmoothedUVInGridY);
+            
+            fill((0.5 + 0.5*finalLerp) * 255.0);
+            ellipse(pointPos.x, pointPos.x, 11.0, 11.0);
+        }
     }
 };

@@ -77,7 +77,7 @@ class ValueNoise extends NoiseBase
         }
         TargetImage.updatePixels();
     }
-     //<>//
+    
     void Display()
     {
         rectMode(CORNER);
@@ -260,8 +260,6 @@ class ValueNoise extends NoiseBase
     
     private float SmoothValue(float InVal)
     {
-        InVal = max(0.0, min(1.0, InVal));
-        
         return InVal * InVal * (3.0 - 2.0 * InVal);// y = -2x^3 + 3x^2
     }
 };
