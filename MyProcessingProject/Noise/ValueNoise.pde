@@ -2,6 +2,7 @@ class ValueNoise extends NoiseBase
 {
     private PImage ValueNoiseImage_Smoothed;
     
+    private boolean bGenerated;
     private FloatList RandInGrids;
     private int GridSizeX;
     private int GridSizeY;
@@ -24,9 +25,7 @@ class ValueNoise extends NoiseBase
         NumGridsX = ceil(float(PicWidth) / float(GridSizeX));
         NumGridsY = ceil(float(PicHeight) / float(GridSizeY));
         
-        ResetRandoms();
-        GenerateNoise(false);
-        GenerateNoise(true);
+        bGenerated = false;
     }
     
     void GenerateNoise(boolean bUseSmooth)
@@ -87,6 +86,13 @@ class ValueNoise extends NoiseBase
             noStroke();
             fill(0);
             rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            if (!bGenerated)
+            {
+                ResetRandoms();
+                GenerateNoise(false);
+                GenerateNoise(true);
+                bGenerated = true;
+            }
             break;
             
             case 1:
@@ -127,8 +133,13 @@ class ValueNoise extends NoiseBase
             
             case 9:
             image(ValueNoiseImage_Smoothed, DisplayOffX, DisplayOffY);
+            bGenerated = false;
             break;
         }
+        
+        fill(255);
+        textSize(30);
+        text("Value Noise", 20, 35);
         
         ++AnimTime;
     }

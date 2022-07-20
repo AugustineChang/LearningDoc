@@ -24,6 +24,15 @@ class SimpleNoise extends NoiseBase
         NoiseImage.updatePixels();
     }
     
+    void Display()
+    {
+        super.Display();
+        
+        fill(255);
+        textSize(30);
+        text("Simple Noise", 20, 35);
+    }
+    
     void OnMouseClick()
     {
         super.OnMouseClick();

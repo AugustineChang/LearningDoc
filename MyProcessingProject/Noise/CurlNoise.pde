@@ -3,6 +3,7 @@ class CurlNoise extends NoiseBase
     private int[] permTable;
     private ArrayList<PVector> CurlList;
     private PImage NoiseNormalImage;
+    private PImage NoiseFlowImage;
     private ParticleSystem particlSys;
     
     private int GridSizeX;
@@ -20,9 +21,10 @@ class CurlNoise extends NoiseBase
         
         CurlList = new ArrayList<PVector>();
         NoiseNormalImage = createImage(PicWidth, PicHeight, RGB);
+        NoiseFlowImage = createImage(PicWidth, PicHeight, RGB);
         particlSys = new ParticleSystem(inWidth, inHeight);
         
-        MAX_STATE = 4;
+        MAX_STATE = 5;
         
         GridSizeX = floor(PicWidth / Frequency);
         GridSizeY = floor(PicHeight / Frequency);
@@ -43,6 +45,7 @@ class CurlNoise extends NoiseBase
         
         GenerateNoise();
         GenerateNoise2();
+        GenerateNoise3();
     }
     
     void SetDisplayOffset(int offX, int offY)
@@ -80,9 +83,29 @@ class CurlNoise extends NoiseBase
         NoiseNormalImage.updatePixels();
     }
     
-    void GenerateNoise()
+    void GenerateNoise3()
     {
         NoiseImage.loadPixels();
+        
+        for (int y = 0; y < PicHeight; ++y)
+        {
+            for (int x = 0; x < PicWidth; ++x)
+            {
+                float curVal = GetPerlinValue(x, y);
+
+                curVal = (0.5 + 0.5*curVal) * 255.0;
+                
+                int index = x + y * PicWidth;
+                NoiseImage.pixels[index] = color(curVal, curVal, curVal);
+            }
+        }
+        
+        NoiseImage.updatePixels();
+    }
+    
+    void GenerateNoise()
+    {
+        NoiseFlowImage.loadPixels();
         
         float delta = 2.0 / (GridSizeX + GridSizeY);
         for (int y = 0; y < PicHeight; ++y)
@@ -102,38 +125,54 @@ class CurlNoise extends NoiseBase
                 float curlDirY = (0.5 + 0.5*curlDir.y) * 255.0;
                 
                 int index = x + y * PicWidth;
-                NoiseImage.pixels[index] = color(curlDirX, curlDirY, 0);
+                NoiseFlowImage.pixels[index] = color(curlDirX, curlDirY, 0);
             }
         }
         
-        NoiseImage.updatePixels();
+        NoiseFlowImage.updatePixels();
     }
     
     void Display()
     {
+        fill(255);
+        textSize(30);
         switch(DisplayState)
         {
             case 0:
-            image(NoiseNormalImage, DisplayOffX, DisplayOffY);
+            image(NoiseImage, DisplayOffX, DisplayOffY);
+            text("Perlin Noise", 420, 35);
             break;
             
             case 1:
-            image(NoiseImage, DisplayOffX, DisplayOffY);
+            image(NoiseNormalImage, DisplayOffX, DisplayOffY);
+            text("Perlin Noise -> Normal", 300, 35);
             break;
             
             case 2:
-            image(NoiseImage, DisplayOffX, DisplayOffY);
-            DrawCurlArrow();
+            image(NoiseFlowImage, DisplayOffX, DisplayOffY);
             break;
             
             case 3:
-            image(NoiseImage, DisplayOffX, DisplayOffY);
+            image(NoiseFlowImage, DisplayOffX, DisplayOffY);
+            DrawCurlArrow();
+            break;
+            
+            case 4:
+            image(NoiseFlowImage, DisplayOffX, DisplayOffY);
             DrawCurlArrow();
             particlSys.setVelosity(CurlList, PicWidth, PicHeight);
             particlSys.update();
             particlSys.display();
+            fill(255);
             break;
         }
+        
+        if (DisplayState >= 2 && DisplayState <= 4)
+        {
+            text("Perlin Noise -> Curl Noise", 270, 35);
+        }
+        
+        text("Curl Noise", 20, 35);
     }
     
     private float GetPerlinGridValue(int GridIdX, int GridIdY, int GridIdZ, PVector ToGridVert)
@@ -226,6 +265,8 @@ class CurlNoise extends NoiseBase
     
     private void DrawCurlArrow()
     {
+        stroke(0);
+        fill(255);
         int step = 10;
         for (int y = 0; y < PicHeight; y+=step)
         {

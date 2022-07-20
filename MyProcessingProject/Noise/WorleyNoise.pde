@@ -1,6 +1,7 @@
 class WorleyNoise extends NoiseBase
 {
     ArrayList<PVector> FeaturePoints;
+    private boolean bGenerated;
     private int GridSizeX;
     private int GridSizeY;
     private int NumGridsX;
@@ -17,7 +18,13 @@ class WorleyNoise extends NoiseBase
         NumGridsX = ceil(float(PicWidth) / float(GridSizeX));
         NumGridsY = ceil(float(PicHeight) / float(GridSizeY));
         
+        bGenerated = false;
         FeaturePoints = new ArrayList<PVector>();
+    }
+    
+    private void ResetRandom()
+    {
+        FeaturePoints.clear();
         for (int y = 0; y < NumGridsY; ++y)
         {
             for (int x = 0; x < NumGridsX; ++x)
@@ -27,8 +34,6 @@ class WorleyNoise extends NoiseBase
                 FeaturePoints.add(new PVector(randX, randY, 0));
             }
         }
-        
-        GenerateNoise();
     }
     
     void GenerateNoise()
@@ -81,6 +86,12 @@ class WorleyNoise extends NoiseBase
             noStroke();
             fill(0);
             rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
+            if (!bGenerated)
+            {
+                ResetRandom();
+                GenerateNoise();
+                bGenerated = true;
+            }
             break;
             
             case 1:
@@ -106,8 +117,13 @@ class WorleyNoise extends NoiseBase
             
             case 4:
             image(NoiseImage, DisplayOffX, DisplayOffY);
+            bGenerated = false;
             break;
         }
+        
+        fill(255);
+        textSize(30);
+        text("Worley Noise (2)", 20, 35);
     }
     
     private void DrawGrids()

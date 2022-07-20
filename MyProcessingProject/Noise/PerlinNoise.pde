@@ -276,6 +276,10 @@ class PerlinNoise extends NoiseBase
             image(NoiseImage, DisplayOffX, DisplayOffY);
             break;
         }
+        
+        fill(255);
+        textSize(30);
+        text("Perlin Noise", 20, 35);
     }
     
     private void DrawGrids()

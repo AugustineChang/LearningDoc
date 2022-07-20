@@ -1,7 +1,8 @@
 class OctavesPerlinNoise extends NoiseBase
 {
     private int[] permTable;
-  
+    private int GeneratedState;
+    
     OctavesPerlinNoise(int inWidth, int inHeight)
     {
         super(inWidth, inHeight, 0.0);
@@ -14,10 +15,13 @@ class OctavesPerlinNoise extends NoiseBase
             permTable[256+i] = permutation[i];
         }
         
-        GenerateNoise();
+        GeneratedState = DisplayState;
+        MAX_STATE = 7;
+        
+        GenerateNoise(DisplayState+1);
     }
     
-    void GenerateNoise()
+    void GenerateNoise(int NumOfLayers)
     {
         NoiseImage.loadPixels();
         
@@ -28,7 +32,7 @@ class OctavesPerlinNoise extends NoiseBase
         
         float Amplitude = 1.0;
         Frequency = 2.0;
-        for (int i = 0; i < 7; ++i)
+        for (int i = 0; i < NumOfLayers; ++i)
         {
             GenerateOneNoise(Amplitude, TempList);
             
@@ -141,5 +145,26 @@ class OctavesPerlinNoise extends NoiseBase
     private float PerlinSmoothValue(float InVal)
     {
         return InVal*InVal*InVal*(InVal* (6.0*InVal - 15.0) + 10.0);// y= 6x^5 - 15x^4 + 10x^3
+    }
+    
+    void Display()
+    {
+        super.Display();
+        
+        fill(255);
+        textSize(30);
+        text("Octaves Perlin Noise", 20, 35);
+        text("Additive Layers: " + (DisplayState+1), 360, 35);
+    }
+    
+    void OnMouseClick()
+    {
+        super.OnMouseClick();
+        
+        if (DisplayState != GeneratedState)
+        {
+            GenerateNoise(DisplayState+1);
+            GeneratedState = DisplayState;
+        }
     }
 };

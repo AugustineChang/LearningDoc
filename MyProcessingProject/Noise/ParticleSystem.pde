@@ -67,7 +67,7 @@ class ParticleSystem
             }
         }
         
-        println("Num Of Particles:%d", particles.size());
+        //println("Num Of Particles:%d", particles.size());
     }
     
     void display()
