@@ -1,7 +1,8 @@
 import shiffman.box2d.Box2DProcessing;
 
-ArrayList<Box> boxes;
+ArrayList<Shape> shapes;
 Boundary bound;
+WaveSurface surf;
 
 Box2DProcessing box2d;
 
@@ -12,10 +13,11 @@ void setup()
     box2d.createWorld();
     box2d.setGravity(0.0, -9.8f);
      
-    boxes = new ArrayList<Box>();
+    shapes = new ArrayList<Shape>();
     bound = new Boundary(box2d, width/2, height - 50, floor(width*0.8f), 16);
+    
+    surf = new WaveSurface(box2d, width/2, height/2);
 }
-
 
 void draw()
 {
@@ -25,27 +27,49 @@ void draw()
     
     if (mousePressed) 
     {
-        Box p = new Box(box2d, mouseX, mouseY, 16, 16);
-        boxes.add(p);
+        int type = floor(random(0,4));
+        Shape p = null;
+        switch(type)
+        {
+            case 0:
+            p = new Box(box2d, mouseX, mouseY, 16, 16);
+            break;
+            
+            case 1:
+            p = new Sphere(box2d, mouseX, mouseY, 8);
+            break;
+            
+            case 2:
+            p = new Piece(box2d, mouseX, mouseY);
+            break;
+            
+            case 3:
+            p = new Spoon(box2d, mouseX, mouseY, 6, 24);
+            break;
+            
+            default:
+            println("type error!!");
+        }
+        shapes.add(p);
     }
     
-    
-    for (Box b: boxes) 
+    for (Shape b: shapes) 
     { 
         b.display(box2d);
     }
     bound.display();
+    surf.display();
     
     // remove dead particles
-    int numOfBoxes = boxes.size();
+    int numOfBoxes = shapes.size();
     for (int i = numOfBoxes-1; i >= 0; --i)
     {
-        Box one = boxes.get(i);
+        Shape one = shapes.get(i);
         if (one.bIsDead)
         {
-            boxes.remove(i);
+            shapes.remove(i);
         }
     }
     
-    println("Num Of Boxes:%d", boxes.size());
+    println("Num Of Shapes:%d", shapes.size());
 }
