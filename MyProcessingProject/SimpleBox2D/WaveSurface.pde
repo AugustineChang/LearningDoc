@@ -1,8 +1,8 @@
 class WaveSurface extends Surface
 {
-    WaveSurface(Box2DProcessing box2d, float posX, float posY)
+    WaveSurface(float posX, float posY)
     {
-        super(box2d, posX, posY);
+        super(posX, posY);
     }
     
     void generateVerts(float centerX, float centerY)

@@ -6,7 +6,7 @@ class Boundary
     
     Body boundBody;
     
-    Boundary(Box2DProcessing box2d, float posX, float posY, int w, int h)
+    Boundary(float posX, float posY, int w, int h)
     {
         boundWidth = w;
         boundHeight = h;
@@ -26,7 +26,6 @@ class Boundary
         
         boundBody.createFixture(ps, 1.0f);
     }
-    
     
     void display()
     {

@@ -5,7 +5,7 @@ class Surface
     Body surfaceBody;
     ArrayList<Vec2> surfaceVerts;
     
-    Surface(Box2DProcessing box2d, float posX, float posY)
+    Surface(float posX, float posY)
     {
         surfaceVerts = new ArrayList<Vec2>();
         generateVerts(posX, posY);

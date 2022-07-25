@@ -3,9 +3,9 @@ class Sphere extends Shape
     float radius;
     ArrayList<Vec2> verts;
     
-    Sphere(Box2DProcessing box2d, float posX, float posY, float r)
+    Sphere(float posX, float posY, float r)
     {
-      super(box2d, posX, posY);
+      super(posX, posY);
       
       radius = r;
       verts = new ArrayList<Vec2>();
@@ -15,10 +15,10 @@ class Sphere extends Shape
       int B = floor(random(256));
       filledCol = color(R, G, B);
       
-      createShapeEnd(box2d);
+      createShapeEnd();
     }
     
-    void defineShape(Box2DProcessing box2d, PolygonShape ps)
+    void defineShape(PolygonShape ps)
     {
         int numOfVerts = 8;      
         for (int i = 0; i < numOfVerts; ++i)

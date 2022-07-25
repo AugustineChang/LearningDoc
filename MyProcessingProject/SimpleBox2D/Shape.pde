@@ -12,13 +12,15 @@ class Shape
 {
     color filledCol;
     boolean bIsDead;
+    boolean bIsDragged;
     
     Body shapeBody;
     
-    Shape(Box2DProcessing box2d, float posX, float posY)
+    Shape(float posX, float posY)
     {
         filledCol = color(188);
         bIsDead = false;
+        bIsDragged = false;
       
         BodyDef bd = new BodyDef();
         bd.position = box2d.coordPixelsToWorld(posX, posY);
@@ -28,10 +30,10 @@ class Shape
         //shapeBody.setLinearVelocity(new Vec2(1.0f, 2.0f));
     }
     
-    void createShapeEnd(Box2DProcessing box2d)
+    void createShapeEnd()
     {
         PolygonShape ps = new PolygonShape();
-        defineShape(box2d, ps);
+        defineShape(ps);
         
         FixtureDef fd = new FixtureDef();
         fd.shape = ps;
@@ -42,7 +44,7 @@ class Shape
         shapeBody.createFixture(fd);
     }
     
-    void defineShape(Box2DProcessing box2d, PolygonShape ps)
+    void defineShape(PolygonShape ps)
     {
         // should do something
         println("error: not override defineShape");
@@ -54,8 +56,16 @@ class Shape
         println("error: not override drawShape");
     }
     
-    boolean checkDead(Box2DProcessing box2d, Vec2 location)
+    boolean checkDrag(float dragPosX, float dragPosY)
     {
+        return false;
+    }
+    
+    boolean checkDead(Vec2 location)
+    {
+        if (bIsDragged)
+            return false;
+      
         if (location.x > width || location.x < 0.0 ||
             location.y > height || location.y < 0.0)
         {
@@ -67,7 +77,7 @@ class Shape
         return false;
     }
     
-    void display(Box2DProcessing box2d)
+    void display()
     {
         rectMode(CENTER);
         stroke(0);
@@ -77,7 +87,7 @@ class Shape
         Vec2 location = box2d.coordWorldToPixels(trans.p);
         float angle = trans.q.getAngle();
         
-        if (checkDead(box2d, location))
+        if (checkDead(location))
         {
             return;
         }

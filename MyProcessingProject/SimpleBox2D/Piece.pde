@@ -2,9 +2,9 @@ class Piece extends Shape
 {
     ArrayList<Vec2> verts;
     
-    Piece(Box2DProcessing box2d, float posX, float posY)
+    Piece(float posX, float posY)
     {
-      super(box2d, posX, posY);
+      super(posX, posY);
       
       verts = new ArrayList<Vec2>();
       
@@ -13,10 +13,10 @@ class Piece extends Shape
       int B = floor(random(256));
       filledCol = color(R, G, B);
       
-      createShapeEnd(box2d);
+      createShapeEnd();
     }
     
-    void defineShape(Box2DProcessing box2d, PolygonShape ps)
+    void defineShape(PolygonShape ps)
     {
         int numOfVerts = 5;      
         verts.add(new Vec2(-12.0, 0.0));

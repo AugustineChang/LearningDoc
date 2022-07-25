@@ -7,9 +7,9 @@ class Spoon extends Shape
     float handleWid;
     float headToHandle;
     
-    Spoon(Box2DProcessing box2d, float posX, float posY, float r, float l)
+    Spoon(float posX, float posY, float r, float l)
     {
-      super(box2d, posX, posY);
+      super(posX, posY);
       
       headRadius = r;
       handleLen = l;
@@ -21,10 +21,10 @@ class Spoon extends Shape
       int B = floor(random(256));
       filledCol = color(R, G, B);
       
-      createShapeEnd(box2d);
+      createShapeEnd();
     }
     
-    void createShapeEnd(Box2DProcessing box2d)
+    void createShapeEnd()
     {
         PolygonShape handle = new PolygonShape();
         handle.setAsBox(
