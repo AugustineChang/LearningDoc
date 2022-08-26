@@ -32,7 +32,7 @@ class PerlinNoise extends NoiseBase
         NumGridsX = ceil(float(PicWidth) / float(GridSizeX));
         NumGridsY = ceil(float(PicHeight) / float(GridSizeY));
         
-        MAX_STATE = 12;
+        MAX_STATE = 15;
         
         // init perm table
         permTable = new int[512];
@@ -259,6 +259,9 @@ class PerlinNoise extends NoiseBase
             case 7:
             case 8:
             case 9:
+            case 10:
+            case 11:
+            case 12:
             noStroke();
             fill(0);
             rect(DisplayOffX, DisplayOffY, PicWidth, PicHeight);
@@ -266,13 +269,13 @@ class PerlinNoise extends NoiseBase
             DrawInterpolation();
             break;
             
-            case 10:
+            case 13:
             image(NoiseImage, DisplayOffX, DisplayOffY);
             DrawGrids();
             DrawInterpolation();
             break;
             
-            case 11:
+            case 14:
             image(NoiseImage, DisplayOffX, DisplayOffY);
             break;
         }
@@ -378,6 +381,48 @@ class PerlinNoise extends NoiseBase
             
             text("calc dot product", pointPos.x, pointPos.y-GridSizeY*0.25);
         }
+        else if (DisplayState == 6)
+        {
+            fill(0, 185, 255);
+            
+            PVector gridPos = new PVector(GridSizeX+DisplayOffX, DisplayOffY, 0);
+            PVector gridDir = GetPerlinGridDir(1, 0, 0);
+            float arrowLen = (GridSizeX+GridSizeY)*0.2;
+            DrawArrow(gridPos, gridDir, arrowLen);
+            
+            PVector toPoint = PVector.sub(pointPos, gridPos);
+            arrowLen = toPoint.mag();
+            toPoint.div(arrowLen);
+            DrawArrow(gridPos, toPoint, arrowLen);
+        }
+        else if (DisplayState == 8)
+        {
+            fill(0, 185, 255);
+            
+            PVector gridPos = new PVector(DisplayOffX, GridSizeY+DisplayOffY, 0);
+            PVector gridDir = GetPerlinGridDir(0, 1, 0);
+            float arrowLen = (GridSizeX+GridSizeY)*0.2;
+            DrawArrow(gridPos, gridDir, arrowLen);
+            
+            PVector toPoint = PVector.sub(pointPos, gridPos);
+            arrowLen = toPoint.mag();
+            toPoint.div(arrowLen);
+            DrawArrow(gridPos, toPoint, arrowLen);
+        }
+        else if (DisplayState == 10)
+        {
+            fill(0, 185, 255);
+            
+            PVector gridPos = new PVector(GridSizeX+DisplayOffX, GridSizeY+DisplayOffY, 0);
+            PVector gridDir = GetPerlinGridDir(1, 1, 0);
+            float arrowLen = (GridSizeX+GridSizeY)*0.2;
+            DrawArrow(gridPos, gridDir, arrowLen);
+            
+            PVector toPoint = PVector.sub(pointPos, gridPos);
+            arrowLen = toPoint.mag();
+            toPoint.div(arrowLen);
+            DrawArrow(gridPos, toPoint, arrowLen);
+        }
         
         float val00 = 0.0;
         PVector toPos = new PVector();
@@ -389,7 +434,7 @@ class PerlinNoise extends NoiseBase
             toPos.y = toPos.y / GridSizeY;
             
             val00 = GetPerlinGridValue(0, 0, 0, toPos);
-            if (DisplayState < 9)
+            if (DisplayState < 12)
             {
                 fill((0.5 + 0.5*val00) * 255.0);
                 ellipse(DisplayOffX, DisplayOffY, 11.0, 11.0);
@@ -397,10 +442,10 @@ class PerlinNoise extends NoiseBase
         }
         
         float val10 = 0.0;
-        if (DisplayState >= 6 && DisplayState < 9)
+        if (DisplayState >= 7)
         {
             val10 = GetPerlinGridValue(1, 0, 0, PVector.sub(toPos, new PVector(1, 0, 0)));
-            if (DisplayState < 9)
+            if (DisplayState < 12)
             {
                 fill((0.5 + 0.5*val10) * 255.0);
                 ellipse(DisplayOffX+GridSizeX, DisplayOffY, 11.0, 11.0);
@@ -408,10 +453,10 @@ class PerlinNoise extends NoiseBase
         }
         
         float val01 = 0.0;
-        if (DisplayState >= 7 && DisplayState < 9)
+        if (DisplayState >= 9)
         {
             val01 = GetPerlinGridValue(0, 1, 0, PVector.sub(toPos, new PVector(0, 1, 0)));
-            if (DisplayState < 9)
+            if (DisplayState < 12)
             {
                 fill((0.5 + 0.5*val01) * 255.0);
                 ellipse(DisplayOffX, DisplayOffY+GridSizeY, 11.0, 11.0);
@@ -419,17 +464,17 @@ class PerlinNoise extends NoiseBase
         }
         
         float val11 = 0.0;
-        if (DisplayState >= 8 && DisplayState < 9)
+        if (DisplayState >= 11)
         {
             val11 = GetPerlinGridValue(1, 1, 0, PVector.sub(toPos, new PVector(1, 1, 0)));
-            if (DisplayState < 9)
+            if (DisplayState < 12)
             {
                 fill((0.5 + 0.5*val11) * 255.0);
                 ellipse(DisplayOffX+GridSizeX, DisplayOffY+GridSizeY, 11.0, 11.0);
             }
         }
         
-        if (DisplayState >= 9)
+        if (DisplayState >= 12)
         {
             float SmoothedUVInGridX = PerlinSmoothValue(toPos.x);
             float SmoothedUVInGridY = PerlinSmoothValue(toPos.y);

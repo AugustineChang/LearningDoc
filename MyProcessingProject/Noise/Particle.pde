@@ -50,11 +50,11 @@ class Particle
         addForce(new PVector(forceX, forceY));
     }
     
-    boolean isDead()
+    boolean isDead(float maxX, float maxY)
     {  
         return (-0.5f < lifetime && lifetime <= 0.0) || 
-        (location.x - radius > width || location.x + radius < 0.0 ||
-        location.y - radius > height || location.y + radius < 0.0);
+        (location.x - radius > maxX || location.x + radius < 0.0 ||
+        location.y - radius > maxY || location.y + radius < 0.0);
     }
     
     void update()

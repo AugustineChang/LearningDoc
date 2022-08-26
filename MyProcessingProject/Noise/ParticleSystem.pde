@@ -61,7 +61,7 @@ class ParticleSystem
         for (int i = NumOfList-1; i >= 0; --i)
         {
             Particle one = particles.get(i);
-            if (one.isDead())
+            if (one.isDead(rangeX, rangeY))
             {
                 particles.remove(i);
             }

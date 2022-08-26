@@ -268,9 +268,9 @@ class CurlNoise extends NoiseBase
         stroke(0);
         fill(255);
         int step = 10;
-        for (int y = 0; y < PicHeight; y+=step)
+        for (int y = 5; y < PicHeight; y+=step)
         {
-            for (int x = 0; x < PicWidth; x+=step)
+            for (int x = 5; x < PicWidth; x+=step)
             {
                 int index = x + y * PicWidth;                
                 PVector curlDir = CurlList.get(index);
