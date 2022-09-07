@@ -30,7 +30,7 @@ static PVector MeterToPixel(PVector inMeter)
 //////////////////////////////////////////////////
 
 ArrayList<MoveObject> objects;
-BorderArea border;
+ArrayList<StaticObject> obstacles;
 
 float Time;
 float DeltaTime;
@@ -45,10 +45,12 @@ void setup()
 {
     size(800, 800, P2D);
     
-    border = new BorderArea();
+    obstacles = new ArrayList<StaticObject>();
+    BorderArea border = new BorderArea();
+    obstacles.add(border);
     
-    int numOfObjs = 1;
-    float radius = 10.0;
+    int numOfObjs = 50;
+    float radius = 5.0;
     objects = new ArrayList<MoveObject>();
     
     PVector rangeX = new PVector(
@@ -57,7 +59,7 @@ void setup()
     );
     PVector rangeY = new PVector(
         border.AreaWidY+radius,
-        height-border.AreaWidY-radius
+        height*0.5
     );
     for (int i = 0; i < numOfObjs; ++i)
     {
@@ -65,6 +67,14 @@ void setup()
         float randPosY = random(rangeY.x, rangeY.y);
         objects.add(new MoveObject(randPosX, randPosY, radius));
     }
+    //objects.add(new MoveObject(width*0.5, height*0.5-100, radius));
+    
+    obstacles.add(new SphereObstacle(width*0.5 - 150.0, height*0.5 + 20.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 - 90.0, height*0.5 + 70.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 - 30.0, height*0.5 + 100.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 + 30.0, height*0.5 + 100.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 + 90.0, height*0.5 + 70.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 + 150.0, height*0.5 + 20.0, 50.0));
     
     Time = 0.0f;
     DeltaTime = 0.0f;
@@ -84,32 +94,20 @@ void draw()
     DeltaTime = 1.0 / frameRate;
     Time += DeltaTime;
     
-    int numOfObjs = objects.size();
-    for (int i = 0; i < numOfObjs; ++i)
+    int numOfMovObjs = objects.size();
+    for (int i = 0; i < numOfMovObjs; ++i)
     {
         MoveObject obj = objects.get(i);
         obj.update();
-        
-        //collision detect
-        /*PVector hitNormal = new PVector();
-        for (int j = i+1; j < numOfObjs; ++j)
-        {
-            MoveObject other = objects.get(j);
-            if (obj.collisionDetect(other, hitNormal))
-            {
-                obj.onHitObject(other, hitNormal);
-            }
-        }
-        
-        if (obj.collisionDetect(border, hitNormal))
-        {
-            obj.onHitBorder(hitNormal);
-        }*/
     }
     
     //draw
-    border.display();
-    for (int i = 0; i < numOfObjs; ++i)
+    int numOfStaObjs = obstacles.size();
+    for (int i = 0; i < numOfStaObjs; ++i)
+    {
+        obstacles.get(i).display();
+    }
+    for (int i = 0; i < numOfMovObjs; ++i)
     {
         objects.get(i).display();
     }

@@ -1,4 +1,4 @@
-class BorderArea
+class BorderArea extends StaticObject
 {
     float AreaWidX;
     float AreaWidY;
@@ -8,11 +8,13 @@ class BorderArea
     float BorderMaxX;
     float BorderMaxY;
     
-    PVector[] BorderPoints;
     PVector[] BorderNormals;
     
     BorderArea()
     {
+        super();
+        numOfSubObjects = 4;
+        
         AreaWidX = 25.0;
         AreaWidY = 25.0;
         
@@ -21,13 +23,7 @@ class BorderArea
         BorderMaxX = PixelToMeter(width-AreaWidX);
         BorderMaxY = PixelToMeter(height-AreaWidX);
         
-        BorderPoints = new PVector[4];
-        BorderPoints[0]= new PVector(BorderMinX, (BorderMinY+BorderMaxY)*0.5);
-        BorderPoints[1]= new PVector(BorderMaxX, (BorderMinY+BorderMaxY)*0.5);
-        BorderPoints[2]= new PVector((BorderMinX+BorderMaxX)*0.5, BorderMinY);
-        BorderPoints[3]= new PVector((BorderMinX+BorderMaxX)*0.5, BorderMaxY);
-        
-        BorderNormals = new PVector[4];
+        BorderNormals = new PVector[numOfSubObjects];
         BorderNormals[0]= new PVector(1.0, 0.0);
         BorderNormals[1]= new PVector(-1.0, 0.0);
         BorderNormals[2]= new PVector(0.0, 1.0);
@@ -47,5 +43,28 @@ class BorderArea
         stroke(0);
         noFill();
         rect(AreaWidX, AreaWidY, width-AreaWidX*2, height-AreaWidY*2);
+    }
+    
+    PVector getNormal(int sub, PVector inLoc)
+    {
+        return BorderNormals[sub];
+    }
+    
+    PVector getHitPoint(int sub, PVector inLoc)
+    {
+        switch(sub)
+        {
+            case 0:
+              return new PVector(BorderMinX, inLoc.y);
+            case 1:
+              return new PVector(BorderMaxX, inLoc.y);
+            case 2:
+              return new PVector(inLoc.x, BorderMinY);
+            case 3:
+              return new PVector(inLoc.x, BorderMaxY);
+            default:
+              println("BorderArea Error: can not get hit point, no such subIndex("+sub+")!!!");
+              return super.getHitPoint(sub, inLoc);
+        }
     }
 }

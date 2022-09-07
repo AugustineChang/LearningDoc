@@ -62,12 +62,12 @@ class MoveObject
         {
             PVector windForce = new PVector(1.0f, 0.0f);
             windForce.mult(AirDensity * WindSpeed*WindSpeed *radius *DragCoefficient);
-            forces.add(windForce);
+            //forces.add(windForce);
         }
         
         // basic euler integral
         {
-            println("forces=("+forces.x+","+forces.y+")");
+            //println("forces=("+forces.x+","+forces.y+")");
             PVector accel = PVector.div(forces, mass);
             forces.set(0.0f, 0.0f, 0.0f);
         
@@ -77,10 +77,29 @@ class MoveObject
         
             PVector ds = PVector.mult(velocity, DeltaTime);
             PVector newLoc = PVector.add(location, ds);
-            if (!collisionDetect(border, newLoc))
+            
+            PVector locationOffset = new PVector();
+            PVector hitNormal = new PVector();
+            int hitTimes = 0;
+            
+            for(StaticObject staObj : obstacles)
             {
-                location.set(newLoc);
+                hitTimes += collisionDetect(staObj, newLoc, locationOffset, hitNormal);
             }
+            
+            if (hitTimes > 0)
+            {
+                hitNormal.normalize();
+              
+                float vrn = PVector.dot(velocity, hitNormal);
+                float J = -(1 + Restitution) * vrn * mass;
+                PVector impulse = PVector.mult(hitNormal, J/DeltaTime);
+                forces.add(impulse);
+                location.set(PVector.add(newLoc, locationOffset));
+            }
+            else
+                location.set(newLoc);
+            //println("hitTimes", hitTimes);
         }     
     }
     
@@ -103,13 +122,15 @@ class MoveObject
         popMatrix();
     }
     
-    boolean collisionDetect(BorderArea border, PVector newLoc)
+    int collisionDetect(StaticObject obstacle, PVector newLoc, PVector outLocOffset, PVector outHitNormal)
     {
-        boolean bIsHit = false;
-        for (int i = 0; i < 4; ++i)
+        int hitTimes = 0;
+        
+        int numOfSubs = obstacle.getNumOfSubObjects();
+        for (int i = 0; i < numOfSubs; ++i)
         {
-            PVector borderPoint = border.BorderPoints[i];
-            PVector borderNormal = border.BorderNormals[i];
+            PVector borderPoint = obstacle.getHitPoint(i, location);
+            PVector borderNormal = obstacle.getNormal(i, location);
           
             PVector toParticle1 = PVector.sub(location, borderPoint);
             PVector toParticle2 = PVector.sub(newLoc, borderPoint);
@@ -119,18 +140,16 @@ class MoveObject
             
             if ((dot2 - dot1) < 0.0f && dot2 <= radius)
             {
-                bIsHit = true;
-                float J = -(1 + Restitution) * PVector.dot(velocity, borderNormal) * mass;
-                PVector impulse = PVector.mult(borderNormal, J/DeltaTime);
-                forces.add(impulse);
+                ++hitTimes;
                 
-                float alpha = (radius - dot2) / (dot1 - dot2);
-                location.set(PVector.lerp(newLoc, location, alpha));
-                //println("Hit!!!");
+                float weight = abs(PVector.dot(velocity, borderNormal));
+                
+                outHitNormal.add(PVector.mult(borderNormal, weight));
+                outLocOffset.add(PVector.mult(borderNormal, radius - dot2));
             }
         }
         
-        return bIsHit;
+        return hitTimes;
     }
     
     boolean collisionDetect(MoveObject other, PVector outNormal)
