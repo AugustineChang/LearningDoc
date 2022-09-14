@@ -32,13 +32,14 @@ static PVector MeterToPixel(PVector inMeter)
 ArrayList<MoveObject> objects;
 ArrayList<StaticObject> obstacles;
 
+Hovercraft myBoat;
+
 float Time;
 float DeltaTime;
 float Restitution;
 PVector Gravity;
 float AirDensity;
 float DragCoefficient;
-
 float WindSpeed;
 
 void setup()
@@ -49,11 +50,13 @@ void setup()
     BorderArea border = new BorderArea();
     obstacles.add(border);
     
+    myBoat = new Hovercraft(60.0f, height*0.5, 20.0f);
+    
     int numOfObjs = 50;
     float radius = 5.0;
     objects = new ArrayList<MoveObject>();
     
-    PVector rangeX = new PVector(
+    /*PVector rangeX = new PVector(
         border.AreaWidX+radius,
         width-border.AreaWidX-radius
     );
@@ -74,15 +77,16 @@ void setup()
     obstacles.add(new SphereObstacle(width*0.5 - 30.0, height*0.5 + 100.0, 50.0));
     obstacles.add(new SphereObstacle(width*0.5 + 30.0, height*0.5 + 100.0, 50.0));
     obstacles.add(new SphereObstacle(width*0.5 + 90.0, height*0.5 + 70.0, 50.0));
-    obstacles.add(new SphereObstacle(width*0.5 + 150.0, height*0.5 + 20.0, 50.0));
+    obstacles.add(new SphereObstacle(width*0.5 + 150.0, height*0.5 + 20.0, 50.0));*/
+    
+    
     
     Time = 0.0f;
     DeltaTime = 0.0f;
     Restitution = 0.8f;
     Gravity = new PVector(0.0, 9.8f);
     AirDensity = 1.23f;
-    DragCoefficient = 0.6f;
-    
+    DragCoefficient = 1.25f;
     WindSpeed = 10.0f;
 }
 
@@ -100,6 +104,7 @@ void draw()
         MoveObject obj = objects.get(i);
         obj.update();
     }
+    myBoat.update();
     
     //draw
     int numOfStaObjs = obstacles.size();
@@ -111,6 +116,7 @@ void draw()
     {
         objects.get(i).display();
     }
+    myBoat.display();
     
     textSize(20);
     fill(0);
@@ -118,4 +124,43 @@ void draw()
     text(timeText, 20.0, 30.0);
     String frameText = "FrameRate = "+frameRate;
     text(frameText, 20.0, 55.0);
+}
+
+void keyPressed()
+{
+    //println(key);
+    switch(key)
+    {
+        case 'w':
+          myBoat.setMoveForward(1);
+          break;
+        case 's':
+          myBoat.setMoveForward(-1);
+          break;
+        case 'a':
+          myBoat.setTurnLeft(true);
+          break;
+        case 'd':
+          myBoat.setTurnRight(true);
+          break;
+    }
+    
+}
+
+void keyReleased()
+{
+    //println(key);
+    switch(key)
+    {
+        case 'w':
+        case 's':
+          myBoat.setMoveForward(0);
+          break;
+        case 'a':
+          myBoat.setTurnLeft(false);
+          break;
+        case 'd':
+          myBoat.setTurnRight(false);
+          break;
+    }
 }

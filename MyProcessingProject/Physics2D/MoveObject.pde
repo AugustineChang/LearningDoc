@@ -2,29 +2,38 @@ class MoveObject
 {
     protected PVector forces;   // N(kg*m/s^2)
     protected PVector location; // m
-    protected PVector previousLocation; // m
     protected PVector velocity; // m/s
+    protected PVector localVelocity; // m/s
     protected float speed;
     
-    protected float angleVelo; // rad / s
-    protected float angle;     // rad
+    protected PVector moments;  // N·m(kg*(m/s)^2)
+    protected PVector angularVelo; // rad / s
+    protected PVector angle;     // rad
   
     protected float mass;      // kg
     protected float momentOfInertia;// kg·m^2
     protected float radius;    // m
     protected float density;   // kg/m^2
     
+    protected PVector dragForcePoint;
+    
     protected color fillCol;
+    
+    protected boolean useGravity;
+    protected boolean useDrag;
+    protected boolean useWindForce;
     
     MoveObject(float inX, float inY, float inRadius)
     {
         this.forces = new PVector(0.0f, 0.0f);
         this.location = PixelToMeter(inX, inY);
-        this.velocity = new PVector(0.0, 0.0);
+        this.velocity = new PVector(0.0f, 0.0f);
+        this.localVelocity = new PVector(0.0f, 0.0f); 
         this.speed = velocity.mag();
         
-        this.angleVelo = 0.0f;
-        this.angle = 0.0f;
+        this.moments = new PVector(0.0f, 0.0f, 0.0f);
+        this.angularVelo = new PVector(0.0f, 0.0f, 0.0f);
+        this.angle = new PVector(0.0f, 0.0f, 0.0f);
       
         this.radius = PixelToMeter(inRadius);
         this.density = 500.0f;
@@ -32,7 +41,12 @@ class MoveObject
         this.mass = PI * radius * radius * density;
         this.momentOfInertia = 0.4 * mass * radius * radius;// (2/5)mr^2
         
+        this.dragForcePoint = new PVector(0.0f, 0.0f, 0.0f);
+        
         fillCol = color(50, 100, 200);
+        useGravity = true;
+        useDrag = true;
+        useWindForce = true;
     }
     
     PVector getLocation()
@@ -45,20 +59,36 @@ class MoveObject
         forces.add(inF);
     }
     
+    //void custom
+    
     void update()
     {
         // add gravity
-        forces.add(PVector.mult(Gravity, mass));
+        if (useGravity)
+            forces.add(PVector.mult(Gravity, mass));
         
         // add air drag
+        if (useDrag)
         {
-            PVector airDrag = PVector.mult(velocity, -1.0f);
-            airDrag.normalize();
-            airDrag.mult(AirDensity * speed*speed *radius *DragCoefficient);
-            forces.add(airDrag);
+            PVector totalLocalVelo = angularVelo.cross(dragForcePoint);
+            println(totalLocalVelo);
+            totalLocalVelo.add(localVelocity);
+            float totalSpeed = totalLocalVelo.mag();
+            
+            //if (totalSpeed > 0.1f)
+            {
+                PVector airDrag = PVector.mult(totalLocalVelo, -1.0f);
+                airDrag.normalize();
+                airDrag.mult(AirDensity * totalSpeed*totalSpeed *radius *DragCoefficient);
+                
+                moments.add(dragForcePoint.cross(airDrag));
+                airDrag.rotate(angle.z);
+                forces.add(airDrag);
+            }
         }
         
         // add wind force
+        if (useWindForce)
         {
             PVector windForce = new PVector(1.0f, 0.0f);
             windForce.mult(AirDensity * WindSpeed*WindSpeed *radius *DragCoefficient);
@@ -68,6 +98,8 @@ class MoveObject
         // basic euler integral
         {
             //println("forces=("+forces.x+","+forces.y+")");
+            
+            // linear velocity
             PVector accel = PVector.div(forces, mass);
             forces.set(0.0f, 0.0f, 0.0f);
         
@@ -78,6 +110,20 @@ class MoveObject
             PVector ds = PVector.mult(velocity, DeltaTime);
             PVector newLoc = PVector.add(location, ds);
             
+            // angular velocity
+            PVector angularAccel = PVector.div(moments, momentOfInertia);
+            moments.set(0.0f, 0.0f, 0.0f);
+            
+            PVector dav = PVector.mult(angularAccel, DeltaTime);
+            angularVelo.add(dav);
+            
+            PVector da = PVector.mult(angularVelo, DeltaTime);
+            angle.add(da);
+            
+            localVelocity.set(velocity);
+            localVelocity.rotate(-angle.z);
+            
+            // collision detect
             PVector locationOffset = new PVector();
             PVector hitNormal = new PVector();
             int hitTimes = 0;
@@ -103,22 +149,24 @@ class MoveObject
         }     
     }
     
-    void display()
+    void drawObject()
     {
         ellipseMode(CENTER);
-        stroke(0);
-        fill(fillCol);
-        
-        PVector veloDir = velocity.copy();
-        veloDir.normalize();
-        float rotation = atan2(veloDir.y, veloDir.x);
-        
-        pushMatrix();
-        translate(MeterToPixel(location.x), MeterToPixel(location.y));
-        rotate(rotation);
+      
         float pixelSize = MeterToPixel(radius) * 2.0;
         ellipse(0, 0, pixelSize, pixelSize);
         line(0, 0, pixelSize*0.5, 0);
+    }
+    
+    void display()
+    {
+        stroke(0);
+        fill(fillCol);
+        
+        pushMatrix();
+        translate(MeterToPixel(location.x), MeterToPixel(location.y));
+        rotate(angle.z);
+        drawObject();
         popMatrix();
     }
     

@@ -32,6 +32,7 @@ class BorderArea extends StaticObject
     
     void display()
     {
+        rectMode(CORNER);
         noStroke();
         fill(230, 128, 103);
         
