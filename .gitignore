@@ -28,3 +28,8 @@
 MyD3D11Project/MyD3D11Project/x64/
 TestCpp/x64/
 *.pyc
+HexTerrain/.vs/
+HexTerrain/Binaries/
+HexTerrain/Intermediate/
+HexTerrain/Saved/
+HexTerrain/.vsconfig
