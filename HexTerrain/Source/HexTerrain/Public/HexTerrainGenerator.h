@@ -14,7 +14,7 @@ enum class EHexDirection : uint8
 struct FHexCellData
 {
 	static int32 RowSize;
-	static float ElevationStep;
+	static double ElevationStep;
 	static TArray<FVector> HexVertices;
 
 	int32 GridId;
@@ -69,14 +69,20 @@ protected:
 	float HexCellBorderWidth;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	float HexElevationStep;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	FIntPoint HexGridSize;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void GenerateHexCell(const FHexCellData& InCellData, TArray<FVector>& OutVertices, TArray<int32>& OutIndices, TArray<FColor>& OutColors);
-	FVector CalcHexCellCenter(const FIntPoint& GridIndex);
+	void GenerateHexCell(const FHexCellData& InCellData, TArray<FVector>& OutVertices, TArray<int32>& OutIndices, TArray<FVector>& OutNormals, TArray<FColor>& OutColors);
+	FVector CalcHexCellCenter(const FIntPoint& GridIndex, int32 Elevation);
+	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
+	template<typename T>
+	static void ArrayAddSelfItem(TArray<T>& InArray, int32 CopiedIndex);
 
 protected:
 
