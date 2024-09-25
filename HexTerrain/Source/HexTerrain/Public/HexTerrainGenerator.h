@@ -6,6 +6,33 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "HexTerrainGenerator.generated.h"
 
+enum class EHexDirection : uint8
+{
+	E, SE, SW, W, NW, NE
+};
+
+struct FHexCellData
+{
+	static int32 RowSize;
+	static float ElevationStep;
+	static TArray<FVector> HexVertices;
+
+	int32 GridId;
+	FIntPoint GridIndex;
+	FIntVector GridCoord;
+	FColor CellColor;
+	int32 Elevation;
+
+	int32 HexNeighbors[6]; // E, SE, SW, W, NW, NE
+
+	FHexCellData(const FIntPoint& InIndex);
+	void LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection);
+
+	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
+	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
+	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord);
+};
+
 UCLASS()
 class HEXTERRAIN_API AHexTerrainGenerator : public AActor
 {
@@ -26,7 +53,7 @@ protected:
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UProceduralMeshComponent> ProceduralMeshComponent;
 
-	UPROPERTY(Category = "HexTerrain", VisibleAnywhere, BlueprintReadOnly, Transient)
+	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CoordTextComponent;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
@@ -48,5 +75,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	void GenerateHexCell(const FIntPoint& GridIndex, TArray<FVector>& OutVertices, TArray<int32>& OutIndices);
+	void GenerateHexCell(const FHexCellData& InCellData, TArray<FVector>& OutVertices, TArray<int32>& OutIndices, TArray<FColor>& OutColors);
+	FVector CalcHexCellCenter(const FIntPoint& GridIndex);
+
+protected:
+
+	TArray<FHexCellData> HexGrids;
 };

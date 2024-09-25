@@ -1,66 +1,51 @@
 #include "HexTerrainGenerator.h"
 
 //////////////////////////////////////////////////////////////////////////
-
-enum class EHexDirection : uint8
-{
-	E, SE, SW, W, NW, NE
-};
-
-struct FHexCellData
-{
-	static int32 RowSize;
-
-	int32 GridId;
-	FIntPoint GridIndex;
-	FIntVector GridCoord;
-
-	int32 HexNeighbors[6];
-
-	FHexCellData(const FIntPoint& InIndex)
-		: GridId(InIndex.X + InIndex.Y * RowSize)
-		, GridIndex(InIndex)
-		, GridCoord(CalcGridCoordinate(InIndex))
-	{
-		for (int32 Index = 0; Index < 6; ++Index)
-			HexNeighbors[Index] = -1;
-	}
-
-	void LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection)
-	{
-		uint8 LinkId = static_cast<uint8>(LinkDirection);
-		HexNeighbors[LinkId] = OtherCell.GridId;
-
-		uint8 OtherLinkId = static_cast<uint8>(CalcOppositeDirection(LinkDirection));
-		OtherCell.HexNeighbors[OtherLinkId] = GridId;
-	}
-
-	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex)
-	{
-		int32 CoordX = InGridIndex.X - InGridIndex.Y / 2;
-		int32 CoordZ = InGridIndex.Y;
-		return FIntVector{ CoordX, -CoordX - CoordZ, CoordZ };
-	}
-
-	static EHexDirection CalcOppositeDirection(EHexDirection InDirection)
-	{
-		uint8 DirNum = static_cast<uint8>(InDirection);
-		return static_cast<EHexDirection>((DirNum + 3u) % 6u);
-	}
-
-	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord)
-	{
-		int32 IndexY = InGridCoord.Z;
-		int32 IndexX = InGridCoord.X + IndexY / 2;
-
-		if (IndexX >= 0 && IndexX < RowSize && IndexY >= 0)
-			return IndexX + IndexY * RowSize;
-		else
-			return -1;
-	}
-};
-
 int32 FHexCellData::RowSize = 0;
+float FHexCellData::ElevationStep = 5.0f;
+TArray<FVector> FHexCellData::HexVertices;
+
+FHexCellData::FHexCellData(const FIntPoint& InIndex)
+	: GridId(InIndex.X + InIndex.Y * RowSize)
+	, GridIndex(InIndex)
+	, GridCoord(CalcGridCoordinate(InIndex))
+{
+	for (int32 Index = 0; Index < 6; ++Index)
+		HexNeighbors[Index] = -1;
+}
+
+void FHexCellData::LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection)
+{
+	uint8 LinkId = static_cast<uint8>(LinkDirection);
+	HexNeighbors[LinkId] = OtherCell.GridId;
+
+	uint8 OtherLinkId = static_cast<uint8>(CalcOppositeDirection(LinkDirection));
+	OtherCell.HexNeighbors[OtherLinkId] = GridId;
+}
+
+FIntVector FHexCellData::CalcGridCoordinate(const FIntPoint& InGridIndex)
+{
+	int32 CoordX = InGridIndex.X - InGridIndex.Y / 2;
+	int32 CoordZ = InGridIndex.Y;
+	return FIntVector{ CoordX, -CoordX - CoordZ, CoordZ };
+}
+
+EHexDirection FHexCellData::CalcOppositeDirection(EHexDirection InDirection)
+{
+	uint8 DirNum = static_cast<uint8>(InDirection);
+	return static_cast<EHexDirection>((DirNum + 3u) % 6u);
+}
+
+int32 FHexCellData::CalcGridIndexByCoord(const FIntVector& InGridCoord)
+{
+	int32 IndexY = InGridCoord.Z;
+	int32 IndexX = InGridCoord.X + IndexY / 2;
+
+	if (IndexX >= 0 && IndexX < RowSize && IndexY >= 0)
+		return IndexX + IndexY * RowSize;
+	else
+		return -1;
+}
 
 struct FCachedSectionData
 {
@@ -123,8 +108,9 @@ void AHexTerrainGenerator::GenerateTerrain()
 	FCachedSectionData MeshSection;
 
 	FHexCellData::RowSize = HexGridSize.X;
-	TArray<FHexCellData> HexGrid;
-	HexGrid.Reserve(HexGridSize.X * HexGridSize.Y);
+	FHexCellData::HexVertices.Empty(6);
+
+	HexGrids.Empty(HexGridSize.X * HexGridSize.Y);
 
 	// Create HexCellData
 	for (int32 Y = 0; Y < HexGridSize.Y; ++Y)
@@ -134,18 +120,19 @@ void AHexTerrainGenerator::GenerateTerrain()
 			FIntPoint GridIndex{ X, Y };
 
 			FHexCellData OneCell{ GridIndex };
+			OneCell.CellColor = FColor::MakeRandomColor();
 
 			int32 WIndex  = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X - 1, OneCell.GridCoord.Y + 1, OneCell.GridCoord.Z });
 			int32 NWIndex = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X, OneCell.GridCoord.Y + 1, OneCell.GridCoord.Z - 1 });
 			int32 NEIndex = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X + 1, OneCell.GridCoord.Y, OneCell.GridCoord.Z - 1 });
 			if (WIndex >= 0)
-				HexGrid[WIndex].LinkCell(OneCell, EHexDirection::E);
+				HexGrids[WIndex].LinkCell(OneCell, EHexDirection::E);
 			if (NWIndex >= 0)
-				HexGrid[NWIndex].LinkCell(OneCell, EHexDirection::SE);
+				HexGrids[NWIndex].LinkCell(OneCell, EHexDirection::SE);
 			if (NEIndex >= 0)
-				HexGrid[NEIndex].LinkCell(OneCell, EHexDirection::SW);
+				HexGrids[NEIndex].LinkCell(OneCell, EHexDirection::SW);
 
-			HexGrid.Add(OneCell);
+			HexGrids.Add(OneCell);
 		}
 	}
 
@@ -154,25 +141,22 @@ void AHexTerrainGenerator::GenerateTerrain()
 	{
 		for (int32 X = 0; X < HexGridSize.X; ++X)
 		{
-			FIntPoint GridIndex{ X, Y };
+			int32 GridId = Y * HexGridSize.X + X;
+			const FHexCellData& CellData = HexGrids[GridId];
 
 			TArray<FVector> CellVertices;
 			TArray<int32> CellIndices;
-			GenerateHexCell(GridIndex, CellVertices, CellIndices);
+			TArray<FColor> CellColors;
+			GenerateHexCell(CellData, CellVertices, CellIndices, CellColors);
 
 			int32 BaseIndex = MeshSection.Vertices.Num();
 			MeshSection.Vertices.Append(CellVertices);
+			MeshSection.VertexColors.Append(CellColors);
 			
 			int32 NumOfIndices = CellVertices.Num();
 			MeshSection.Triangles.Reserve(MeshSection.Triangles.Num() + NumOfIndices);
 			for (int32 Index : CellIndices)
 				MeshSection.Triangles.Add(BaseIndex + Index);
-			
-			FColor CellColor = FColor::MakeRandomColor();
-			int32 NumOfVertices = CellVertices.Num();
-			MeshSection.VertexColors.Reserve(MeshSection.VertexColors.Num() + NumOfIndices);
-			for (int32 Index = 0; Index < NumOfVertices; ++Index)
-				MeshSection.VertexColors.Add(CellColor);
 		}
 	}
 
@@ -201,11 +185,10 @@ void AHexTerrainGenerator::GenerateTerrain()
 		{
 			int32 GridId = Y * HexGridSize.X + X;
 			
-		
 			FVector& V0 = MeshSection.Vertices[GridId * 6];
 			FVector& V3 = MeshSection.Vertices[GridId * 6 + 3];
 
-			const FIntVector& GridCoord = HexGrid[GridId].GridCoord;
+			const FIntVector& GridCoord = HexGrids[GridId].GridCoord;
 
 			FTransform Instance{ (V0 + V3) * 0.5 };
 			CoordTextComponent->AddInstance(Instance, false);
@@ -217,31 +200,47 @@ void AHexTerrainGenerator::GenerateTerrain()
 }
 
 
-void AHexTerrainGenerator::GenerateHexCell(const FIntPoint& GridIndex, TArray<FVector>& OutVertices, TArray<int32>& OutIndices)
+void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, TArray<FVector>& OutVertices, TArray<int32>& OutIndices, TArray<FColor> &OutColors)
 {
+// Hex Vertices Index
+//      4
+//   /     \
+// 3         5
+// |         |
+// 2         0
+//   \     /
+//      1
+
 #define	CORNER_NUM 6
-	static double AngleStep = UE_DOUBLE_PI / 3.0;
-	static double AngleStart = UE_DOUBLE_PI / 6.0;
-	double Angle = AngleStart;
+	if (FHexCellData::HexVertices.IsEmpty())
+	{
+		static double AngleStep = UE_DOUBLE_PI / 3.0;
+		static double AngleStart = UE_DOUBLE_PI / 6.0;
 
-	static FVector2D VertOffsetScale{ 1.732050807568877, 1.5 };
+		double Angle = AngleStart;
+		for (int32 Index = 0; Index < CORNER_NUM; ++Index)
+		{
+			FVector Vert;
+			Vert.X = HexCellRadius * FMath::Cos(Angle);
+			Vert.Y = HexCellRadius * FMath::Sin(Angle);
+			Vert.Z = 0.0;
 
-	float CellRadiusAndBorder = HexCellRadius + HexCellBorderWidth;
+			FHexCellData::HexVertices.Add(Vert);
+			Angle += AngleStep;
+		}
+	}
+	
+	FVector CurCenter = CalcHexCellCenter(InCellData.GridIndex);
 
-	FVector2D VertOffset;
-	VertOffset.X = (GridIndex.X + (GridIndex.Y % 2) * 0.5) * CellRadiusAndBorder * VertOffsetScale.X;
-	VertOffset.Y = GridIndex.Y * CellRadiusAndBorder * VertOffsetScale.Y;
+	OutVertices.Empty(CORNER_NUM * 2);
+	OutColors.Empty(CORNER_NUM * 2);
+	OutIndices.Empty((CORNER_NUM - 2 + CORNER_NUM * 2) * 3);
 
+	// Inner HexCell
 	for (int32 Index = 0; Index < CORNER_NUM; ++Index)
 	{
-		FVector Vert;
-		Vert.X = VertOffset.X + HexCellRadius * FMath::Cos(Angle);
-		Vert.Y = VertOffset.Y + HexCellRadius * FMath::Sin(Angle);
-		Vert.Z = 0.0;
-
-		OutVertices.Add(Vert);
-
-		Angle += AngleStep;
+		OutVertices.Add(CurCenter + FHexCellData::HexVertices[Index]);
+		OutColors.Add(InCellData.CellColor);
 	}
 
 	for (int32 Index = 1; Index < CORNER_NUM - 1; ++Index)
@@ -250,6 +249,74 @@ void AHexTerrainGenerator::GenerateHexCell(const FIntPoint& GridIndex, TArray<FV
 		OutIndices.Add(Index + 1);
 		OutIndices.Add(Index);
 	}
+
+	// Border
+	auto AddOneBorder = [this, &OutVertices, &OutColors, &OutIndices](int32 OtherGridId, 
+		int32 OtherVert0, int32 OtherVert1, int32 CurVert0, int32 CurVert1)
+		{
+			const FHexCellData& WCellData = HexGrids[OtherGridId];
+			FVector WCenter = CalcHexCellCenter(WCellData.GridIndex);
+
+			int32 BaseIndex = OutVertices.Num();
+			OutVertices.Add(WCenter + FHexCellData::HexVertices[OtherVert0]);
+			OutVertices.Add(WCenter + FHexCellData::HexVertices[OtherVert1]);
+			OutColors.Add(WCellData.CellColor);
+			OutColors.Add(WCellData.CellColor);
+
+			OutIndices.Add(CurVert0);
+			OutIndices.Add(BaseIndex + 1);
+			OutIndices.Add(BaseIndex);
+
+			OutIndices.Add(CurVert0);
+			OutIndices.Add(CurVert1);
+			OutIndices.Add(BaseIndex + 1);
+		};
+
+	int32 WIndex = InCellData.HexNeighbors[3];
+	int32 NWIndex = InCellData.HexNeighbors[4];
+	int32 NEIndex = InCellData.HexNeighbors[5];
+	if (WIndex >= 0) // W Edge
+	{
+		AddOneBorder(WIndex, 0, 5, 2, 3);
+	}
+
+	if (NWIndex >= 0) // NW Edge
+	{
+		AddOneBorder(NWIndex, 1, 0, 3, 4);
+	}
+
+	if (NEIndex >= 0) // NE Edge
+	{
+		AddOneBorder(NEIndex, 2, 1, 4, 5);
+	}
+	
+	if (WIndex >= 0 && NWIndex >= 0) // NW Corner
+	{
+		OutIndices.Add(3); // InnerHex: NW Corner
+		OutIndices.Add(8); // NW Edge:  Vert0
+		OutIndices.Add(7); // W Edge:   Vert1
+	}
+
+	if (NWIndex >= 0 && NEIndex >= 0) // N Corner
+	{
+		OutIndices.Add(4); // InnerHex: N Corner
+		OutIndices.Add(WIndex >= 0 ? 10 : 8); // NE Edge:  Vert0
+		OutIndices.Add(WIndex >= 0 ?  9 : 7); // NW Edge:  Vert1
+	}
+
+#undef CORNER_NUM
 }
 
+FVector AHexTerrainGenerator::CalcHexCellCenter(const FIntPoint& GridIndex)
+{
+	static FVector2D VertOffsetScale{ 1.732050807568877, 1.5 };
+	float CellOuterRadius = HexCellRadius + HexCellBorderWidth;
+
+	FVector VertOffset;
+	VertOffset.X = (GridIndex.X + (GridIndex.Y % 2) * 0.5) * CellOuterRadius * VertOffsetScale.X;
+	VertOffset.Y = GridIndex.Y * CellOuterRadius * VertOffsetScale.Y;
+	VertOffset.Z = 0.0;
+	
+	return VertOffset;
+}
 
