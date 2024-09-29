@@ -1,4 +1,6 @@
 #include "HexTerrainGenerator.h"
+#include "Serialization/JsonSerializer.h"
+#include "Misc/FileHelper.h"
 
 #define	CORNER_NUM 6
 
@@ -89,9 +91,9 @@ int32 FHexCellData::CalcGridIndexByCoord(const FIntVector& InGridCoord)
 EHexLinkState FHexCellData::CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2)
 {
 	int32 ElevationDiff = FMath::Abs(Cell1.Elevation - Cell2.Elevation);
-	EHexLinkState LinkState = EHexLinkState::Plane;
+	EHexLinkState LinkState = EHexLinkState::Flat;
 	if (ElevationDiff == 0)
-		LinkState = EHexLinkState::Plane;
+		LinkState = EHexLinkState::Flat;
 	else if (ElevationDiff == 1)
 		LinkState = EHexLinkState::Slope;
 	else if (ElevationDiff <= MaxTerranceElevation)
@@ -112,6 +114,49 @@ struct FCachedSectionData
 	TArray<FProcMeshTangent> Tangents;
 	
 	//FBox BoundingBox;
+};
+
+enum class EHexTerrainType : uint8
+{
+	None, Ice, Water, Grass, Sand, MAX
+};
+
+struct FHexCellConfigData
+{
+	TArray<int32> ElevationsList;
+	TMap<EHexTerrainType, FColor> ColorsMap;
+	TMap<int32, EHexTerrainType> TerrainTypesMap;
+
+	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
+	{
+		if (InTypeStr.Equals(TEXT("Ice")))
+			return EHexTerrainType::Ice;
+		else if (InTypeStr.Equals(TEXT("Water")))
+			return EHexTerrainType::Water;
+		else if (InTypeStr.Equals(TEXT("Grass")))
+			return EHexTerrainType::Grass;
+		else if (InTypeStr.Equals(TEXT("Sand")))
+			return EHexTerrainType::Sand;
+		else
+			return EHexTerrainType::None;
+	}
+
+	static FString GetHexTerrainString(EHexTerrainType InType)
+	{
+		switch (InType)
+		{
+		case EHexTerrainType::Ice:
+			return TEXT("Ice");
+		case EHexTerrainType::Water:
+			return TEXT("Water");
+		case EHexTerrainType::Grass:
+			return TEXT("Grass");
+		case EHexTerrainType::Sand:
+			return TEXT("Sand");
+		default:
+			return TEXT("");
+		}
+	}
 };
 
 //////////////////////////////////////////////////////////////////////////
@@ -160,15 +205,19 @@ void AHexTerrainGenerator::Tick(float DeltaTime)
 
 void AHexTerrainGenerator::GenerateTerrain()
 {
+	// Load Config
+	FHexCellConfigData ConfigData;
+	if (!LoadHexTerrainConfig(ConfigData))
+		return;
+
 	FCachedSectionData MeshSection;
 
 	FHexCellData::RowSize = HexGridSize.X;
 	FHexCellData::MaxTerranceElevation = MaxElevationForTerrace;
 	FHexCellData::HexVertices.Empty(6);
 
-	HexGrids.Empty(HexGridSize.X * HexGridSize.Y);
-
 	// Create HexCellData
+	HexGrids.Empty(HexGridSize.X * HexGridSize.Y);
 	for (int32 Y = 0; Y < HexGridSize.Y; ++Y)
 	{
 		for (int32 X = 0; X < HexGridSize.X; ++X)
@@ -176,11 +225,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 			FIntPoint GridIndex{ X, Y };
 
 			FHexCellData OneCell{ GridIndex };
+			EHexTerrainType TerrainType = ConfigData.TerrainTypesMap[OneCell.GridId];
+
 			//OneCell.LinearColor = FLinearColor::MakeRandomColor();
 			//OneCell.SRGBColor = OneCell.LinearColor.ToFColorSRGB();
-			OneCell.SRGBColor = FColor::MakeRandomColor();
-			if (OneCell.GridId < DebugElevation.Num())
-				OneCell.Elevation = DebugElevation[OneCell.GridId];
+			OneCell.SRGBColor = ConfigData.ColorsMap[TerrainType];//FColor::MakeRandomColor();
+			if (OneCell.GridId < ConfigData.ElevationsList.Num())
+				OneCell.Elevation = ConfigData.ElevationsList[OneCell.GridId];
 			else
 				OneCell.Elevation = 0;//(3 - FMath::Abs(X + Y - 3)) * 4;
 			OneCell.CellCenter = CalcHexCellCenter(GridIndex, OneCell.Elevation);
@@ -261,6 +312,69 @@ void AHexTerrainGenerator::GenerateTerrain()
 	CoordTextComponent->MarkRenderStateDirty();
 }
 
+bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigData)
+{
+	FString ConfigFilePath = FPaths::ProjectConfigDir() + TEXT("HexTerrainConfig.json");
+	UE_LOG(LogTemp, Display, TEXT("Load Config From %s"), *ConfigFilePath);
+
+	FString StructuredJson;
+	if (!FFileHelper::LoadFileToString(StructuredJson, *ConfigFilePath))
+		return false;
+
+	TUniquePtr<FArchive> JsonFileReader;
+	JsonFileReader.Reset(new FBufferReader(StructuredJson.GetCharArray().GetData(), sizeof(FString::ElementType) * StructuredJson.Len(), false));
+
+	TSharedPtr<FJsonObject> JsonRoot = MakeShareable(new FJsonObject);
+	TSharedRef<TJsonReader<FString::ElementType> > JsonReader = TJsonReader<FString::ElementType>::Create(JsonFileReader.Get());
+	if (!FJsonSerializer::Deserialize(JsonReader, JsonRoot))
+	{
+		JsonRoot.Reset();
+		return false;
+	}
+
+	TArray<TSharedPtr<FJsonValue>> ElevationsList = JsonRoot->GetArrayField(TEXT("Elevations"));
+	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
+	TSharedPtr<FJsonObject> TypesMap = JsonRoot->GetObjectField(TEXT("HexTypes"));
+
+	OutConfigData.ElevationsList.Empty(ElevationsList.Num());
+	for (const TSharedPtr<FJsonValue>& OneVal : ElevationsList)
+	{
+		int32 TempVal = 0;
+		OneVal->TryGetNumber(TempVal);
+		OutConfigData.ElevationsList.Add(TempVal);
+	}
+	
+	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
+	{
+		FString OutColorStr;
+		EHexTerrainType TerrainType = EHexTerrainType(Index);
+		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
+		if (ColorsMap->TryGetStringField(InTerrainTypeStr, OutColorStr))
+		{
+			FLinearColor TempVal;
+			TempVal.InitFromString(OutColorStr);
+			OutConfigData.ColorsMap.Add(TerrainType, TempVal.ToFColorSRGB());
+		}
+	}
+	
+	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
+	{
+		const TArray<TSharedPtr<FJsonValue>>* OutGridIdsList;
+		EHexTerrainType TerrainType = EHexTerrainType(Index);
+		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
+		if (TypesMap->TryGetArrayField(InTerrainTypeStr, OutGridIdsList))
+		{
+			for (const TSharedPtr<FJsonValue>& OneVal : *OutGridIdsList)
+			{
+				int32 TempVal = 0;
+				OneVal->TryGetNumber(TempVal);
+				OutConfigData.TerrainTypesMap.Add(TempVal, TerrainType);
+			}
+		}
+	}
+
+	return true;
+}
 
 void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh)
 {
@@ -403,34 +517,18 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 	int32 CIndex = static_cast<uint8>(CornerDirection) - 4;
 	const FHexCellCorner& CornerData = InCellData.HexCorners[CIndex];
 
-	int32 NumOfPlanes = 0, NumOfSlopes = 0, NumOfTerraces = 0, NumOfCliffs = 0;
-	auto CountStateNumber = [&NumOfPlanes, &NumOfSlopes, &NumOfTerraces, &NumOfCliffs](EHexLinkState InState) {
-		switch (InState)
-		{
-		case EHexLinkState::Plane:
-			++NumOfPlanes;
-			break;
-		case EHexLinkState::Slope:
-			++NumOfSlopes;
-			break;
-		case EHexLinkState::Terrace:
-			++NumOfTerraces;
-			break;
-		case EHexLinkState::Cliff:
-			++NumOfCliffs;
-			break;
-		}
-	};
-	
-	CountStateNumber(CornerData.LinkState[0]);
-	CountStateNumber(CornerData.LinkState[1]);
-	CountStateNumber(CornerData.LinkState[2]);
+	int32 NumOfTerraces = 0;	
+	if (CornerData.LinkState[0] == EHexLinkState::Terrace)
+		++NumOfTerraces;
+	if (CornerData.LinkState[1] == EHexLinkState::Terrace)
+		++NumOfTerraces;
+	if (CornerData.LinkState[2] == EHexLinkState::Terrace)
+		++NumOfTerraces;
 
 	const FHexCellData& Cell1 = HexGrids[CornerData.LinkedCellsId.X];
 	const FHexCellData& Cell2 = HexGrids[CornerData.LinkedCellsId.Y];
 	const FHexCellData& Cell3 = HexGrids[CornerData.LinkedCellsId.Z];
-
-	//GenerateNoTerraceCorner(Cell1, Cell2, Cell3, CornerData, OutCellMesh);
+	
 	if (NumOfTerraces == 0)
 		GenerateNoTerraceCorner(Cell1, Cell2, Cell3, CornerData, OutCellMesh);
 	else

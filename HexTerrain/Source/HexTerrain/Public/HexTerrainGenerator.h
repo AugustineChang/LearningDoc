@@ -7,6 +7,7 @@
 #include "HexTerrainGenerator.generated.h"
 
 struct FCachedSectionData;
+struct FHexCellConfigData;
 
 enum class EHexDirection : uint8
 {
@@ -15,7 +16,7 @@ enum class EHexDirection : uint8
 
 enum class EHexLinkState : uint8
 {
-	Plane, Slope, Terrace, Cliff
+	Flat, Slope, Terrace, Cliff
 };
 
 struct FHexCellLink
@@ -27,7 +28,7 @@ struct FHexCellLink
 	FIntPoint ToVert;
 
 	FHexCellLink()
-		: LinkedCellId(-1), LinkState(EHexLinkState::Plane)
+		: LinkedCellId(-1), LinkState(EHexLinkState::Flat)
 	{}
 };
 
@@ -110,13 +111,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	int32 MaxElevationForTerrace;
-	
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	TArray<int32> DebugElevation;
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	bool LoadHexTerrainConfig(FHexCellConfigData& OutConfigData);
 
 	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
 	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);

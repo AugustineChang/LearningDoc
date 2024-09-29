@@ -13,6 +13,7 @@ public class HexTerrain : ModuleRules
 			"CoreUObject",
 			"Engine",
 			"InputCore",
+            "Json",
             "ProceduralMeshComponent"
         });
 
