@@ -8,6 +8,7 @@
 
 struct FCachedSectionData;
 struct FHexCellConfigData;
+enum class EImageFormat : int8;
 
 enum class EHexDirection : uint8
 {
@@ -98,6 +99,9 @@ protected:
 	TObjectPtr<UMaterialInterface> TextMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	FString NoiseTexturePath;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	FIntPoint HexGridSize;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
@@ -111,6 +115,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	int32 MaxElevationForTerrace;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	float PerturbingStrength;
 
 protected:
 	// Called when the game starts or when spawned
@@ -132,7 +139,12 @@ protected:
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
 
+	void PerturbingVertex(FVector& Vertex);
+	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
+	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
+
 protected:
 
 	TArray<FHexCellData> HexGrids;
+	TArray<TArray<FColor>> NoiseTexture;
 };

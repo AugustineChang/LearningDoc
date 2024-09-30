@@ -1,8 +1,12 @@
 #include "HexTerrainGenerator.h"
 #include "Serialization/JsonSerializer.h"
 #include "Misc/FileHelper.h"
+#include "IImageWrapper.h"
+#include "IImageWrapperModule.h"
 
 #define	CORNER_NUM 6
+
+#pragma optimize("", off)
 
 //////////////////////////////////////////////////////////////////////////
 int32 FHexCellData::RowSize = 0;
@@ -163,11 +167,13 @@ struct FHexCellConfigData
 
 // Sets default values
 AHexTerrainGenerator::AHexTerrainGenerator()
-	: HexGridSize(5, 5)
+	: NoiseTexturePath(TEXT("Content/Noise.png"))
+	, HexGridSize(5, 5)
 	, HexCellRadius(100.0f)
 	, HexCellBorderWidth(10.0f)
 	, HexElevationStep(5.0f)
 	, MaxElevationForTerrace(4)
+	, PerturbingStrength(1.0f)
 {
  	PrimaryActorTick.bCanEverTick = true;
 
@@ -209,6 +215,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 	FHexCellConfigData ConfigData;
 	if (!LoadHexTerrainConfig(ConfigData))
 		return;
+
+	if (NoiseTexture.IsEmpty())
+	{
+		TArray<uint8> TextureBinData;
+		FFileHelper::LoadFileToArray(TextureBinData, *(FPaths::ProjectDir() / NoiseTexturePath));
+		CreateTextureFromData(NoiseTexture, TextureBinData, EImageFormat::PNG);
+	}
 
 	FCachedSectionData MeshSection;
 
@@ -353,7 +366,7 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 		{
 			FLinearColor TempVal;
 			TempVal.InitFromString(OutColorStr);
-			OutConfigData.ColorsMap.Add(TerrainType, TempVal.ToFColorSRGB());
+			OutConfigData.ColorsMap.Add(TerrainType, TempVal.ToFColor(false));
 		}
 	}
 	
@@ -414,6 +427,7 @@ void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCach
 	for (int32 Index = 0; Index < CORNER_NUM; ++Index)
 	{
 		OutCellMesh.Vertices.Add(InCellData.CellCenter + FHexCellData::HexVertices[Index]);
+		PerturbingVertex(OutCellMesh.Vertices.Last());
 		OutCellMesh.Normals.Add(FVector::UpVector);
 		OutCellMesh.VertexColors.Add(InCellData.SRGBColor);
 	}
@@ -499,6 +513,9 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 			CurStepColor.B = FMath::Lerp(InCellData.SRGBColor.B, OppositeCell.SRGBColor.B, RatioZ);
 			CurStepColor.A = FMath::Lerp(InCellData.SRGBColor.A, OppositeCell.SRGBColor.A, RatioZ);
 			
+			PerturbingVertex(CurStepV0);
+			PerturbingVertex(CurStepV1);
+
 			FillQuad(LastStepV0, LastStepV1, CurStepV0, CurStepV1, LastStepColor, LastStepColor, CurStepColor, CurStepColor, OutCellMesh);
 
 			LastStepV0 = CurStepV0;
@@ -508,6 +525,11 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	}
 	else
 	{
+		PerturbingVertex(FromV0);
+		PerturbingVertex(FromV1);
+		PerturbingVertex(ToV0);
+		PerturbingVertex(ToV1);
+
 		FillQuad(FromV0, FromV1, ToV0, ToV1, InCellData.SRGBColor, InCellData.SRGBColor, OppositeCell.SRGBColor, OppositeCell.SRGBColor, OutCellMesh);
 	}
 }
@@ -542,7 +564,11 @@ void AHexTerrainGenerator::GenerateNoTerraceCorner(const FHexCellData& Cell1, co
 	OutCellMesh.Vertices.Add(Cell1.CellCenter + FHexCellData::HexVertices[CornerData.VertsId.X]); // InnerHex: NW Corner
 	OutCellMesh.Vertices.Add(Cell2.CellCenter + FHexCellData::HexVertices[CornerData.VertsId.Y]); // NW Edge:  Vert0
 	OutCellMesh.Vertices.Add(Cell3.CellCenter + FHexCellData::HexVertices[CornerData.VertsId.Z]); // W  Edge:  Vert1
-	
+
+	PerturbingVertex(OutCellMesh.Vertices.Last(0));
+	PerturbingVertex(OutCellMesh.Vertices.Last(1));
+	PerturbingVertex(OutCellMesh.Vertices.Last(2));
+
 	OutCellMesh.VertexColors.Add(Cell1.SRGBColor);
 	OutCellMesh.VertexColors.Add(Cell2.SRGBColor);
 	OutCellMesh.VertexColors.Add(Cell3.SRGBColor);
@@ -730,6 +756,14 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	int32 NumOfLayers02 = Verts02.Num();
 	check(NumOfLayers01 == NumOfLayers02);
 	
+	for (int32 Index = 0; Index < NumOfLayers01; ++Index)
+	{
+		for (FVector& One : Verts01[Index])
+			PerturbingVertex(One);
+		for (FVector& One : Verts02[Index])
+			PerturbingVertex(One);
+	}
+
 	for (int32 Index = 1; Index < NumOfLayers01; ++Index)
 	{
 		// Cross Elevation
@@ -869,3 +903,90 @@ void AHexTerrainGenerator::FillQuad(const FVector& FromV0, const FVector& FromV1
 		OutCellMesh.Triangles.Add(BaseIndex + 1);
 	}
 };
+
+void AHexTerrainGenerator::PerturbingVertex(FVector& Vertex)
+{
+	if (NoiseTexture.IsEmpty())
+		return;
+
+	FLinearColor NoiseVector = SampleTextureBilinear(NoiseTexture, Vertex);
+
+	Vertex.X += (NoiseVector.R * 2.0f - 1.0f) * PerturbingStrength;
+	Vertex.Y += (NoiseVector.G * 2.0f - 1.0f) * PerturbingStrength;
+	Vertex.Z += (NoiseVector.B * 2.0f - 1.0f) * PerturbingStrength;
+}
+
+FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos)
+{
+	int32 SizeY = InTexture.Num();
+	int32 SizeX = InTexture[0].Num();
+	
+	int32 SampleX = FMath::FloorToInt(SamplePos.X);
+	int32 SampleY = FMath::FloorToInt(SamplePos.Y);
+	float RatioX = SamplePos.X - SampleX;
+	float RatioY = SamplePos.Y - SampleY;
+
+	if (SampleX < 0)
+		SampleX += SizeX * (1 - SampleX / SizeX);
+	if (SampleY < 0)
+		SampleY += SizeY * (1 - SampleY / SizeY);
+
+	SampleX = SampleX % SizeX;
+	SampleY = SampleY % SizeY;
+	int32 NextSampleX = (SampleX + 1) % SizeX;
+	int32 NextSampleY = (SampleY + 1) % SizeY;
+
+	const FColor& LTColor = InTexture[SampleY][SampleX];
+	const FColor& RTColor = InTexture[SampleY][NextSampleX];
+	const FColor& LDColor = InTexture[NextSampleY][SampleX];
+	const FColor& RDColor = InTexture[NextSampleY][NextSampleX];
+
+	FLinearColor TColor = FMath::Lerp(FLinearColor::FromSRGBColor(LTColor), FLinearColor::FromSRGBColor(RTColor), RatioX);
+	FLinearColor DColor = FMath::Lerp(FLinearColor::FromSRGBColor(LDColor), FLinearColor::FromSRGBColor(RDColor), RatioX);
+
+	return FMath::Lerp(TColor, DColor, RatioY);
+}
+
+void AHexTerrainGenerator::CreateTextureFromData(TArray<TArray<FColor>> &OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat)
+{
+	if (InBineryData.IsEmpty())
+	{
+		return;
+	}
+
+	static IImageWrapperModule* ImageWrapperModule = FModuleManager::LoadModulePtr<IImageWrapperModule>("ImageWrapper");
+	if (ImageWrapperModule == nullptr)
+	{
+		return;
+	}
+	
+	TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule->CreateImageWrapper(InFormat);
+	if (!ImageWrapper.IsValid() || !ImageWrapper->SetCompressed(InBineryData.GetData(), InBineryData.Num()))
+	{
+		return;
+	}
+
+	TArray<uint8> Uncompressed;
+	if (!ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, Uncompressed))
+	{
+		return;
+	}
+
+	OutTexture.Empty(ImageWrapper->GetHeight());
+	OutTexture.AddDefaulted(ImageWrapper->GetHeight());
+	for (int32 Y = 0; Y < ImageWrapper->GetHeight(); ++Y)
+	{
+		OutTexture[Y].AddUninitialized(ImageWrapper->GetWidth());
+		for (int32 X = 0; X < ImageWrapper->GetWidth(); ++X)
+		{
+			int32 Index = X + Y * ImageWrapper->GetWidth();
+			
+			OutTexture[Y][X].B = Uncompressed[Index * 4];
+			OutTexture[Y][X].G = Uncompressed[Index * 4 + 1];
+			OutTexture[Y][X].R = Uncompressed[Index * 4 + 2];
+			OutTexture[Y][X].A = Uncompressed[Index * 4 + 3];
+		}
+	}
+}
+
+#pragma optimize("", on)

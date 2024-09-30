@@ -14,6 +14,7 @@ public class HexTerrain : ModuleRules
 			"Engine",
 			"InputCore",
             "Json",
+            "ImageWrapper",
             "ProceduralMeshComponent"
         });
 
