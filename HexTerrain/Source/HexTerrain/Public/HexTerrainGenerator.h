@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Math/GenericOctree.h"
 #include "ProceduralMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "HexTerrainGenerator.generated.h"
@@ -69,6 +70,60 @@ struct FHexCellData
 	static EHexLinkState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
 };
 
+struct FHexVertexAttributeData
+{
+	FVector VertexPos;
+	FVector NoiseVector;
+
+	TSharedPtr<FOctreeElementId2> OctreeId;
+
+	FHexVertexAttributeData(const FVector& InVertex, const TSharedPtr<FOctreeElementId2>& InIdPtr)
+		: VertexPos(InVertex), NoiseVector(FVector::ZeroVector), OctreeId(InIdPtr)
+	{
+	}
+};
+
+struct FUniqueVertexArray
+{
+public:
+	FUniqueVertexArray()
+		: VectorOctree(FVector::ZeroVector, 750.0)
+	{}
+
+	FHexVertexAttributeData& FindOrAddVertex(const FVector& InVertex, bool& bFound);
+
+private:
+
+	static double VectorTolerence;
+
+	struct FUniqueVectorOctreeSemantics
+	{
+		enum { MaxElementsPerLeaf = 16 };
+		enum { MinInclusiveElementsPerNode = 7 };
+		enum { MaxNodeDepth = 16 };
+
+		typedef TInlineAllocator<MaxElementsPerLeaf, TAlignedHeapAllocator<alignof(FHexVertexAttributeData)>> ElementAllocator;
+
+		FORCEINLINE static FBoxCenterAndExtent GetBoundingBox(const FHexVertexAttributeData& Element)
+		{
+			return FBoxCenterAndExtent{ FVector(Element.VertexPos), FVector::ZeroVector };
+		}
+
+		FORCEINLINE static void SetElementId(const FHexVertexAttributeData& Element, FOctreeElementId2 Id)
+		{
+			FOctreeElementId2* CachedIdPtr = Element.OctreeId.Get();
+			*CachedIdPtr = Id;
+		}
+
+		FORCEINLINE static void ApplyOffset(FHexVertexAttributeData& Element, FVector Offset)
+		{
+			ensureMsgf(false, TEXT("Not implemented yet"));
+		}
+	};
+
+	TOctree2<FHexVertexAttributeData, FUniqueVectorOctreeSemantics> VectorOctree;
+};
+
 UCLASS()
 class HEXTERRAIN_API AHexTerrainGenerator : public AActor
 {
@@ -119,6 +174,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	float PerturbingStrength;
 
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	float PerturbingScaling;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -134,12 +192,14 @@ protected:
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 
+	
 	FVector CalcHexCellCenter(const FIntPoint& GridIndex, int32 Elevation);
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
-
-	void PerturbingVertex(FVector& Vertex);
+	
+	void PerturbingVertexInline(FVector& Vertex);
+	FVector PerturbingVertex(const FVector& Vertex);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
 
@@ -147,4 +207,5 @@ protected:
 
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
+	FUniqueVertexArray CacehdVertexData;
 };

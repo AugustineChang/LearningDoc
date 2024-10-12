@@ -107,6 +107,40 @@ EHexLinkState FHexCellData::CalcLinkState(const FHexCellData& Cell1, const FHexC
 	return LinkState;
 }
 
+double FUniqueVertexArray::VectorTolerence = 1e-2;
+
+FHexVertexAttributeData& FUniqueVertexArray::FindOrAddVertex(const FVector& InVertex, bool& bFound)
+{
+	FBoxCenterAndExtent QueryBox{ InVertex, VectorTolerence * FVector::OneVector };
+
+	float MinDistance = FLT_MAX;
+	TSharedPtr<FOctreeElementId2> NearestResults;
+
+	VectorOctree.FindElementsWithBoundsTest(QueryBox,
+		[&NearestResults, &MinDistance, &InVertex](const FHexVertexAttributeData& Element)
+		{
+			float Distance = (InVertex - Element.VertexPos).SquaredLength();
+			if (!NearestResults.IsValid() || Distance < MinDistance)
+			{
+				MinDistance = Distance;
+				NearestResults = Element.OctreeId;
+			}
+		});
+
+	bFound = NearestResults.IsValid();
+	if (NearestResults.IsValid())
+	{
+		return VectorOctree.GetElementById(*NearestResults);
+	}
+	else
+	{
+		FHexVertexAttributeData NewElement{ InVertex, MakeShareable(new FOctreeElementId2()) };
+		VectorOctree.AddElement(NewElement);
+
+		return VectorOctree.GetElementById(*NewElement.OctreeId);
+	}
+}
+
 struct FCachedSectionData
 {
 	TArray<FVector> Vertices;
@@ -174,6 +208,7 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	, HexElevationStep(5.0f)
 	, MaxElevationForTerrace(4)
 	, PerturbingStrength(1.0f)
+	, PerturbingScaling(0.1f)
 {
  	PrimaryActorTick.bCanEverTick = true;
 
@@ -427,7 +462,7 @@ void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCach
 	for (int32 Index = 0; Index < CORNER_NUM; ++Index)
 	{
 		OutCellMesh.Vertices.Add(InCellData.CellCenter + FHexCellData::HexVertices[Index]);
-		PerturbingVertex(OutCellMesh.Vertices.Last());
+		PerturbingVertexInline(OutCellMesh.Vertices.Last());
 		OutCellMesh.Normals.Add(FVector::UpVector);
 		OutCellMesh.VertexColors.Add(InCellData.SRGBColor);
 	}
@@ -479,16 +514,17 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	const FVector& OppositeCenter = OppositeCell.CellCenter;
 	FVector ToV0 = OppositeCenter + FHexCellData::HexVertices[HexLink.ToVert.X];
 	FVector ToV1 = OppositeCenter + FHexCellData::HexVertices[HexLink.ToVert.Y];
-	FVector FromV0 = OutCellMesh.Vertices[HexLink.FromVert.X];
-	FVector FromV1 = OutCellMesh.Vertices[HexLink.FromVert.Y];
+	FVector FromV0 = InCellData.CellCenter + FHexCellData::HexVertices[HexLink.FromVert.X];
+	FVector FromV1 = InCellData.CellCenter + FHexCellData::HexVertices[HexLink.FromVert.Y];
 
 	if (HexLink.LinkState == EHexLinkState::Terrace)
 	{
 		int32 NumOfZSteps = FMath::Abs(OppositeCell.Elevation - InCellData.Elevation);
 		int32 NumOfSteps = NumOfZSteps * 2 - 1;
 
-		FVector LastStepV0 = FromV0;
-		FVector LastStepV1 = FromV1;
+		FVector LastStepV0 = PerturbingVertex(FromV0);
+		FVector LastStepV1 = PerturbingVertex(FromV1);
+
 		FColor LastStepColor = InCellData.SRGBColor;
 		for (int32 StepIndex = 1; StepIndex <= NumOfSteps; ++StepIndex)
 		{
@@ -513,8 +549,8 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 			CurStepColor.B = FMath::Lerp(InCellData.SRGBColor.B, OppositeCell.SRGBColor.B, RatioZ);
 			CurStepColor.A = FMath::Lerp(InCellData.SRGBColor.A, OppositeCell.SRGBColor.A, RatioZ);
 			
-			PerturbingVertex(CurStepV0);
-			PerturbingVertex(CurStepV1);
+			PerturbingVertexInline(CurStepV0);
+			PerturbingVertexInline(CurStepV1);
 
 			FillQuad(LastStepV0, LastStepV1, CurStepV0, CurStepV1, LastStepColor, LastStepColor, CurStepColor, CurStepColor, OutCellMesh);
 
@@ -525,10 +561,10 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	}
 	else
 	{
-		PerturbingVertex(FromV0);
-		PerturbingVertex(FromV1);
-		PerturbingVertex(ToV0);
-		PerturbingVertex(ToV1);
+		PerturbingVertexInline(FromV0);
+		PerturbingVertexInline(FromV1);
+		PerturbingVertexInline(ToV0);
+		PerturbingVertexInline(ToV1);
 
 		FillQuad(FromV0, FromV1, ToV0, ToV1, InCellData.SRGBColor, InCellData.SRGBColor, OppositeCell.SRGBColor, OppositeCell.SRGBColor, OutCellMesh);
 	}
@@ -565,9 +601,9 @@ void AHexTerrainGenerator::GenerateNoTerraceCorner(const FHexCellData& Cell1, co
 	OutCellMesh.Vertices.Add(Cell2.CellCenter + FHexCellData::HexVertices[CornerData.VertsId.Y]); // NW Edge:  Vert0
 	OutCellMesh.Vertices.Add(Cell3.CellCenter + FHexCellData::HexVertices[CornerData.VertsId.Z]); // W  Edge:  Vert1
 
-	PerturbingVertex(OutCellMesh.Vertices.Last(0));
-	PerturbingVertex(OutCellMesh.Vertices.Last(1));
-	PerturbingVertex(OutCellMesh.Vertices.Last(2));
+	PerturbingVertexInline(OutCellMesh.Vertices.Last(0));
+	PerturbingVertexInline(OutCellMesh.Vertices.Last(1));
+	PerturbingVertexInline(OutCellMesh.Vertices.Last(2));
 
 	OutCellMesh.VertexColors.Add(Cell1.SRGBColor);
 	OutCellMesh.VertexColors.Add(Cell2.SRGBColor);
@@ -631,7 +667,11 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	FVector Vert1 = CellsList[1]->CellCenter + FHexCellData::HexVertices[VertsList[1]];
 	FVector Vert2 = CellsList[2]->CellCenter + FHexCellData::HexVertices[VertsList[2]];
 	
-	auto CalcTerraceVerts = [](TArray<TArray<FVector>>& OutVerts, TArray<TArray<FColor>>& OutColors,
+	FVector DisturbedVert0 = PerturbingVertex(Vert0);
+	FVector DisturbedVert1 = PerturbingVertex(Vert1);
+	FVector DisturbedVert2 = PerturbingVertex(Vert2);
+
+	auto CalcTerraceVerts = [this](TArray<TArray<FVector>>& OutVerts, TArray<TArray<FColor>>& OutColors,
 		const FVector& ToVert, const FVector& FromVert, const FColor& ToColor, const FColor& FromColor,
 		int32 ToElevation, int32 FromElevation)
 		{
@@ -652,6 +692,8 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 				CurStepVert.X = FMath::Lerp(FromVert.X, ToVert.X, RatioXY);
 				CurStepVert.Y = FMath::Lerp(FromVert.Y, ToVert.Y, RatioXY);
 				CurStepVert.Z = FMath::Lerp(FromVert.Z, ToVert.Z, RatioZ);
+
+				PerturbingVertexInline(CurStepVert);
 
 				FColor CurStepColor;
 				CurStepColor.R = FMath::Lerp(FromColor.R, ToColor.R, RatioZ);
@@ -703,9 +745,9 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	TArray<TArray<FColor>> Colors02;
 
 	Verts01.AddDefaulted();
-	Verts01[0].Add(Vert0);
+	Verts01[0].Add(DisturbedVert0);
 	Verts02.AddDefaulted();
-	Verts02[0].Add(Vert0);
+	Verts02[0].Add(DisturbedVert0);
 	Colors01.AddDefaulted();
 	Colors01[0].Add(CellsList[0]->SRGBColor);
 	Colors02.AddDefaulted();
@@ -717,7 +759,7 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	}
 	else
 	{
-		CalcLinearVerts(Verts01, Colors01, Vert1, Vert0, CellsList[1]->SRGBColor, CellsList[0]->SRGBColor, CellsList[1]->Elevation, CellsList[0]->Elevation);
+		CalcLinearVerts(Verts01, Colors01, DisturbedVert1, DisturbedVert0, CellsList[1]->SRGBColor, CellsList[0]->SRGBColor, CellsList[1]->Elevation, CellsList[0]->Elevation);
 	}
 
 	if (LinkState[2] == EHexLinkState::Terrace)
@@ -726,7 +768,7 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	}
 	else
 	{
-		CalcLinearVerts(Verts02, Colors02, Vert2, Vert0, CellsList[2]->SRGBColor, CellsList[0]->SRGBColor, CellsList[2]->Elevation, CellsList[0]->Elevation);
+		CalcLinearVerts(Verts02, Colors02, DisturbedVert2, DisturbedVert0, CellsList[2]->SRGBColor, CellsList[0]->SRGBColor, CellsList[2]->Elevation, CellsList[0]->Elevation);
 	}
 	
 	if (LinkState[1] == EHexLinkState::Terrace)
@@ -744,25 +786,17 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	{
 		if (CellsList[1]->Elevation < CellsList[2]->Elevation) // 1 -> 2
 		{
-			CalcLinearVerts(Verts01, Colors01, Vert2, Vert1, CellsList[2]->SRGBColor, CellsList[1]->SRGBColor, CellsList[2]->Elevation, CellsList[1]->Elevation);
+			CalcLinearVerts(Verts01, Colors01, DisturbedVert2, DisturbedVert1, CellsList[2]->SRGBColor, CellsList[1]->SRGBColor, CellsList[2]->Elevation, CellsList[1]->Elevation);
 		}
 		else if (CellsList[1]->Elevation > CellsList[2]->Elevation)// 2 -> 1
 		{
-			CalcLinearVerts(Verts02, Colors02, Vert1, Vert2, CellsList[1]->SRGBColor, CellsList[2]->SRGBColor, CellsList[1]->Elevation, CellsList[2]->Elevation);
+			CalcLinearVerts(Verts02, Colors02, DisturbedVert1, DisturbedVert2, CellsList[1]->SRGBColor, CellsList[2]->SRGBColor, CellsList[1]->Elevation, CellsList[2]->Elevation);
 		}
 	}
 	
 	int32 NumOfLayers01 = Verts01.Num();
 	int32 NumOfLayers02 = Verts02.Num();
 	check(NumOfLayers01 == NumOfLayers02);
-	
-	for (int32 Index = 0; Index < NumOfLayers01; ++Index)
-	{
-		for (FVector& One : Verts01[Index])
-			PerturbingVertex(One);
-		for (FVector& One : Verts02[Index])
-			PerturbingVertex(One);
-	}
 
 	for (int32 Index = 1; Index < NumOfLayers01; ++Index)
 	{
@@ -904,27 +938,45 @@ void AHexTerrainGenerator::FillQuad(const FVector& FromV0, const FVector& FromV1
 	}
 };
 
-void AHexTerrainGenerator::PerturbingVertex(FVector& Vertex)
+void AHexTerrainGenerator::PerturbingVertexInline(FVector& Vertex)
 {
 	if (NoiseTexture.IsEmpty())
 		return;
 
-	FLinearColor NoiseVector = SampleTextureBilinear(NoiseTexture, Vertex);
+	/*bool bFound = false;
+	FHexVertexAttributeData& VertAttribute = CacehdVertexData.FindOrAddVertex(Vertex, bFound);
+	if (!bFound)
+	{
+		FLinearColor NoiseVector = SampleTextureBilinear(NoiseTexture, Vertex);
+		VertAttribute.NoiseVector.X = NoiseVector.R * 2.0f - 1.0f;
+		VertAttribute.NoiseVector.Y = NoiseVector.G * 2.0f - 1.0f;
+		VertAttribute.NoiseVector.Z = NoiseVector.B * 2.0f - 1.0f;
+	}
+	
+	Vertex.X += VertAttribute.NoiseVector.X * PerturbingStrength;
+	Vertex.Y += VertAttribute.NoiseVector.Y * PerturbingStrength;*/
 
+	FLinearColor NoiseVector = SampleTextureBilinear(NoiseTexture, Vertex);
 	Vertex.X += (NoiseVector.R * 2.0f - 1.0f) * PerturbingStrength;
 	Vertex.Y += (NoiseVector.G * 2.0f - 1.0f) * PerturbingStrength;
-	Vertex.Z += (NoiseVector.B * 2.0f - 1.0f) * PerturbingStrength;
+}
+
+FVector AHexTerrainGenerator::PerturbingVertex(const FVector& Vertex)
+{
+	FVector NewVec = Vertex;
+	PerturbingVertexInline(NewVec);
+	return NewVec;
 }
 
 FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos)
 {
 	int32 SizeY = InTexture.Num();
 	int32 SizeX = InTexture[0].Num();
-	
-	int32 SampleX = FMath::FloorToInt(SamplePos.X);
-	int32 SampleY = FMath::FloorToInt(SamplePos.Y);
-	float RatioX = SamplePos.X - SampleX;
-	float RatioY = SamplePos.Y - SampleY;
+
+	int32 SampleX = FMath::FloorToInt(SamplePos.X * PerturbingScaling);
+	int32 SampleY = FMath::FloorToInt(SamplePos.Y * PerturbingScaling);
+	float RatioX = SamplePos.X * PerturbingScaling - SampleX;
+	float RatioY = SamplePos.Y * PerturbingScaling - SampleY;
 
 	if (SampleX < 0)
 		SampleX += SizeX * (1 - SampleX / SizeX);
