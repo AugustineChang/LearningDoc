@@ -46,6 +46,7 @@ struct FHexCellData
 	static int32 RowSize;
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
+	static TArray<FVector> HexSubVertices;
 
 	int32 GridId;
 	FIntPoint GridIndex;
@@ -166,16 +167,19 @@ protected:
 	float HexCellBorderWidth;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	uint8 HexCellSubdivision;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	float HexElevationStep;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	int32 MaxElevationForTerrace;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	float PerturbingStrength;
+	FVector2D PerturbingStrengthHV;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	float PerturbingScaling;
+	FVector2D PerturbingScalingHV;
 
 protected:
 	// Called when the game starts or when spawned
@@ -198,9 +202,10 @@ protected:
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
 	
-	void PerturbingVertexInline(FVector& Vertex);
-	FVector PerturbingVertex(const FVector& Vertex);
+	void PerturbingVertexInline(FVector& Vertex, int32 Elevation);
+	FVector PerturbingVertex(const FVector& Vertex, int32 Elevation);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
+	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY);
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
 
 protected:
@@ -208,4 +213,5 @@ protected:
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
 	FUniqueVertexArray CacehdVertexData;
+	TMap<int32, double> CachedNoiseZ;
 };
