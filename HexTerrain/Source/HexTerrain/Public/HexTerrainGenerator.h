@@ -43,13 +43,14 @@ struct FHexCellCorner
 
 struct FHexCellData
 {
-	static int32 RowSize;
+	static FIntPoint ChunkSize;
+	static int32 ChunkCountX;
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
 	static TArray<FVector> HexSubVertices;
 
-	int32 GridId;
-	FIntPoint GridIndex;
+	int32 GridIndex;
+	FIntVector4 GridId;
 	FIntVector GridCoord;
 
 	FVector CellCenter;
@@ -158,27 +159,30 @@ protected:
 	FString NoiseTexturePath;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	FIntPoint HexGridSize;
+	FIntPoint HexChunkCount;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	FIntPoint HexChunkSize;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	float HexCellRadius;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	float HexCellBorderWidth;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	uint8 HexCellSubdivision;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	float HexElevationStep;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	int32 MaxElevationForTerrace;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingScalingHV;
 
 protected:
@@ -197,7 +201,7 @@ protected:
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 
 	
-	FVector CalcHexCellCenter(const FIntPoint& GridIndex, int32 Elevation);
+	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation);
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);

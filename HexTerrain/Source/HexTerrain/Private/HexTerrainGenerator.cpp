@@ -9,16 +9,21 @@
 #pragma optimize("", off)
 
 //////////////////////////////////////////////////////////////////////////
-int32 FHexCellData::RowSize = 0;
+FIntPoint FHexCellData::ChunkSize{ 0, 0 };
+int32 FHexCellData::ChunkCountX = 0;
 int32 FHexCellData::MaxTerranceElevation = 0;
 TArray<FVector> FHexCellData::HexVertices;
 TArray<FVector> FHexCellData::HexSubVertices;
 
 FHexCellData::FHexCellData(const FIntPoint& InIndex)
-	: GridId(InIndex.X + InIndex.Y * RowSize)
-	, GridIndex(InIndex)
+	: GridIndex(InIndex.X + InIndex.Y * ChunkSize.X * ChunkCountX)
 	, GridCoord(CalcGridCoordinate(InIndex))
-{}
+{
+	GridId.X = InIndex.X / ChunkSize.X;
+	GridId.Y = InIndex.Y / ChunkSize.Y;
+	GridId.Z = InIndex.X - GridId.X * ChunkSize.X;
+	GridId.W = InIndex.Y - GridId.Y * ChunkSize.Y;
+}
 
 void FHexCellData::LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection)
 {
@@ -28,7 +33,7 @@ void FHexCellData::LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection
 	uint8 OtherLinkId = static_cast<uint8>(CalcOppositeDirection(LinkDirection));
 
 	FHexCellLink& Link1 = HexNeighbors[LinkId];
-	Link1.LinkedCellId = OtherCell.GridId;
+	Link1.LinkedCellId = OtherCell.GridIndex;
 	Link1.LinkState = LinkState;
 
 	Link1.FromVert.Y = LinkId;
@@ -37,7 +42,7 @@ void FHexCellData::LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection
 	Link1.ToVert.Y = (Link1.ToVert.X + CORNER_NUM - 1) % CORNER_NUM;
 	
 	FHexCellLink& Link2 = OtherCell.HexNeighbors[OtherLinkId];
-	Link2.LinkedCellId = GridId;
+	Link2.LinkedCellId = GridIndex;
 	Link2.LinkState = LinkState;
 
 	Link2.FromVert.Y = OtherLinkId;
@@ -51,9 +56,9 @@ void FHexCellData::LinkCorner(FHexCellData& Cell1, FHexCellData& Cell2, EHexDire
 	uint8 LinkId = static_cast<uint8>(LinkDirection);
 
 	FHexCellCorner& Corner = HexCorners[LinkId - 4];
-	Corner.LinkedCellsId.X = GridId;
-	Corner.LinkedCellsId.Y = Cell1.GridId;
-	Corner.LinkedCellsId.Z = Cell2.GridId;
+	Corner.LinkedCellsId.X = GridIndex;
+	Corner.LinkedCellsId.Y = Cell1.GridIndex;
+	Corner.LinkedCellsId.Z = Cell2.GridIndex;
 
 	Corner.LinkState[0] = CalcLinkState(*this, Cell1);
 	Corner.LinkState[1] = CalcLinkState(Cell1, Cell2);
@@ -87,6 +92,7 @@ int32 FHexCellData::CalcGridIndexByCoord(const FIntVector& InGridCoord)
 	int32 IndexY = InGridCoord.Z;
 	int32 IndexX = InGridCoord.X + IndexY / 2;
 
+	int32 RowSize = ChunkSize.X * ChunkCountX;
 	if (IndexX >= 0 && IndexX < RowSize && IndexY >= 0)
 		return IndexX + IndexY * RowSize;
 	else
@@ -163,8 +169,15 @@ enum class EHexTerrainType : uint8
 struct FHexCellConfigData
 {
 	TArray<int32> ElevationsList;
+	TArray<EHexTerrainType> TerrainTypesList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
-	TMap<int32, EHexTerrainType> TerrainTypesMap;
+
+	void GetHexCellTerrainData(int32 GridIndex, FColor& OutColor, int32& OutElevation)
+	{
+		EHexTerrainType TerrainType = TerrainTypesList[GridIndex];
+		OutColor = ColorsMap[TerrainType];
+		OutElevation = ElevationsList[GridIndex];
+	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
 	{
@@ -203,7 +216,8 @@ struct FHexCellConfigData
 // Sets default values
 AHexTerrainGenerator::AHexTerrainGenerator()
 	: NoiseTexturePath(TEXT("Content/Noise.png"))
-	, HexGridSize(5, 5)
+	, HexChunkCount(4, 3)
+	, HexChunkSize(5, 5)
 	, HexCellRadius(100.0f)
 	, HexCellBorderWidth(10.0f)
 	, HexCellSubdivision(2u)
@@ -260,32 +274,28 @@ void AHexTerrainGenerator::GenerateTerrain()
 		CreateTextureFromData(NoiseTexture, TextureBinData, EImageFormat::PNG);
 	}
 
-	FCachedSectionData MeshSection;
-
-	FHexCellData::RowSize = HexGridSize.X;
+	FHexCellData::ChunkSize = HexChunkSize;
+	FHexCellData::ChunkCountX = HexChunkCount.X;
 	FHexCellData::MaxTerranceElevation = MaxElevationForTerrace;
 	FHexCellData::HexVertices.Empty(6);
 	FHexCellData::HexSubVertices.Empty(6 * HexCellSubdivision);
 	CachedNoiseZ.Empty(10);
 
 	// Create HexCellData
-	HexGrids.Empty(HexGridSize.X * HexGridSize.Y);
-	for (int32 Y = 0; Y < HexGridSize.Y; ++Y)
+	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
+	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
+	HexGrids.Empty(HexGridSizeX * HexGridSizeY);
+	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
 	{
-		for (int32 X = 0; X < HexGridSize.X; ++X)
+		for (int32 X = 0; X < HexGridSizeX; ++X)
 		{
 			FIntPoint GridIndex{ X, Y };
 
 			FHexCellData OneCell{ GridIndex };
-			EHexTerrainType TerrainType = ConfigData.TerrainTypesMap[OneCell.GridId];
 
 			//OneCell.LinearColor = FLinearColor::MakeRandomColor();
 			//OneCell.SRGBColor = OneCell.LinearColor.ToFColorSRGB();
-			OneCell.SRGBColor = ConfigData.ColorsMap[TerrainType];//FColor::MakeRandomColor();
-			if (OneCell.GridId < ConfigData.ElevationsList.Num())
-				OneCell.Elevation = ConfigData.ElevationsList[OneCell.GridId];
-			else
-				OneCell.Elevation = 0;//(3 - FMath::Abs(X + Y - 3)) * 4;
+			ConfigData.GetHexCellTerrainData(OneCell.GridIndex, OneCell.SRGBColor, OneCell.Elevation);
 			OneCell.CellCenter = CalcHexCellCenter(GridIndex, OneCell.Elevation);
 
 			int32 WIndex  = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X - 1, OneCell.GridCoord.Y + 1, OneCell.GridCoord.Z });
@@ -307,39 +317,47 @@ void AHexTerrainGenerator::GenerateTerrain()
 	}
 
 	// Create HexCellMesh
-	for (int32 Y = 0; Y < HexGridSize.Y; ++Y)
+	ProceduralMeshComponent->ClearAllMeshSections();
+	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
 	{
-		for (int32 X = 0; X < HexGridSize.X; ++X)
+		for (int32 CX = 0; CX < HexChunkCount.X; ++CX)
 		{
-			int32 GridId = Y * HexGridSize.X + X;
-			const FHexCellData& CellData = HexGrids[GridId];
+			int32 ChunkIndex = CY * HexChunkCount.X + CX;
+			FCachedSectionData MeshSection;
+			for (int32 GY = 0; GY < HexChunkSize.Y; ++GY)
+			{
+				for (int32 GX = 0; GX < HexChunkSize.X; ++GX)
+				{
+					int32 GridId = (CY * HexChunkSize.Y + GY) * HexGridSizeX + (CX * HexChunkSize.X + GX);
+					const FHexCellData& CellData = HexGrids[GridId];
 
-			FCachedSectionData CellMesh;
-			GenerateHexCell(CellData, CellMesh);
+					FCachedSectionData CellMesh;
+					GenerateHexCell(CellData, CellMesh);
 
-			int32 BaseIndex = MeshSection.Vertices.Num();
-			MeshSection.Vertices.Append(CellMesh.Vertices);
-			MeshSection.Normals.Append(CellMesh.Normals);
-			MeshSection.VertexColors.Append(CellMesh.VertexColors);
-			
-			int32 NumOfIndices = CellMesh.Vertices.Num();
-			MeshSection.Triangles.Reserve(MeshSection.Triangles.Num() + NumOfIndices);
-			for (int32 Index : CellMesh.Triangles)
-				MeshSection.Triangles.Add(BaseIndex + Index);
+					int32 BaseIndex = MeshSection.Vertices.Num();
+					MeshSection.Vertices.Append(CellMesh.Vertices);
+					MeshSection.Normals.Append(CellMesh.Normals);
+					MeshSection.VertexColors.Append(CellMesh.VertexColors);
+
+					int32 NumOfIndices = CellMesh.Vertices.Num();
+					MeshSection.Triangles.Reserve(MeshSection.Triangles.Num() + NumOfIndices);
+					for (int32 Index : CellMesh.Triangles)
+						MeshSection.Triangles.Add(BaseIndex + Index);
+				}
+			}
+
+			// Submit Mesh
+			ProceduralMeshComponent->CreateMeshSection(ChunkIndex, MeshSection.Vertices, MeshSection.Triangles, MeshSection.Normals,
+				MeshSection.UV0s, MeshSection.VertexColors, MeshSection.Tangents, false);
+
+			// Set Material
+			if (!!HexTerrainMaterial)
+			{
+				ProceduralMeshComponent->SetMaterial(ChunkIndex, HexTerrainMaterial);
+			}
 		}
 	}
 	
-	// Create Mesh
-	ProceduralMeshComponent->ClearAllMeshSections();
-	ProceduralMeshComponent->CreateMeshSection(0, MeshSection.Vertices, MeshSection.Triangles, MeshSection.Normals, 
-		MeshSection.UV0s, MeshSection.VertexColors, MeshSection.Tangents, false);
-	
-	// Set Material
-	if (!!HexTerrainMaterial)
-	{
-		ProceduralMeshComponent->SetMaterial(0, HexTerrainMaterial);
-	}
-
 	// Grid Coordinates
 	if (!!TextMaterial)
 	{
@@ -347,11 +365,11 @@ void AHexTerrainGenerator::GenerateTerrain()
 	}
 	CoordTextComponent->ClearInstances();
 	CoordTextComponent->SetNumCustomDataFloats(2);
-	for (int32 Y = 0; Y < HexGridSize.Y; ++Y)
+	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
 	{
-		for (int32 X = 0; X < HexGridSize.X; ++X)
+		for (int32 X = 0; X < HexGridSizeX; ++X)
 		{
-			int32 GridId = Y * HexGridSize.X + X;
+			int32 GridId = Y * HexGridSizeX + X;
 			
 			const FHexCellData& CellData = HexGrids[GridId];
 
@@ -386,14 +404,20 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 
 	TArray<TSharedPtr<FJsonValue>> ElevationsList = JsonRoot->GetArrayField(TEXT("Elevations"));
 	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
-	TSharedPtr<FJsonObject> TypesMap = JsonRoot->GetObjectField(TEXT("HexTypes"));
-
-	OutConfigData.ElevationsList.Empty(ElevationsList.Num());
-	for (const TSharedPtr<FJsonValue>& OneVal : ElevationsList)
+	TArray<TSharedPtr<FJsonValue>> TypesList = JsonRoot->GetArrayField(TEXT("HexTypes"));
+	
+	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
+	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
+	OutConfigData.ElevationsList.Init(0, HexGridSizeX * HexGridSizeY);
+	for (int32 Y = 0; Y < ElevationsList.Num(); ++Y)
 	{
-		int32 TempVal = 0;
-		OneVal->TryGetNumber(TempVal);
-		OutConfigData.ElevationsList.Add(TempVal);
+		const TArray<TSharedPtr<FJsonValue>>& OneRow = ElevationsList[Y]->AsArray();
+		for (int32 X = 0; X < OneRow.Num(); ++X)
+		{
+			int32 TempVal = 0;
+			OneRow[X]->TryGetNumber(TempVal);
+			OutConfigData.ElevationsList[Y * HexGridSizeX + X] = TempVal;
+		}
 	}
 	
 	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
@@ -409,22 +433,19 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 		}
 	}
 	
-	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
+	OutConfigData.TerrainTypesList.Init(EHexTerrainType::Water, HexGridSizeX * HexGridSizeY);
+	for (int32 Y = 0; Y < TypesList.Num(); ++Y)
 	{
-		const TArray<TSharedPtr<FJsonValue>>* OutGridIdsList;
-		EHexTerrainType TerrainType = EHexTerrainType(Index);
-		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
-		if (TypesMap->TryGetArrayField(InTerrainTypeStr, OutGridIdsList))
+		const TArray<TSharedPtr<FJsonValue>>& OneRow = TypesList[Y]->AsArray();
+		for (int32 X = 0; X < OneRow.Num(); ++X)
 		{
-			for (const TSharedPtr<FJsonValue>& OneVal : *OutGridIdsList)
-			{
-				int32 TempVal = 0;
-				OneVal->TryGetNumber(TempVal);
-				OutConfigData.TerrainTypesMap.Add(TempVal, TerrainType);
-			}
+			uint8 TempVal = 0;
+			OneRow[X]->TryGetNumber(TempVal);
+			TempVal = FMath::Clamp(TempVal, 0u, uint8(EHexTerrainType::MAX));
+			OutConfigData.TerrainTypesList[Y * HexGridSizeX + X] = static_cast<EHexTerrainType>(TempVal);
 		}
 	}
-
+	
 	return true;
 }
 
@@ -863,14 +884,14 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	}
 }
 
-FVector AHexTerrainGenerator::CalcHexCellCenter(const FIntPoint& GridIndex, int32 Elevation)
+FVector AHexTerrainGenerator::CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation)
 {
 	static FVector2D VertOffsetScale{ 1.732050807568877, 1.5 };
 	float CellOuterRadius = HexCellRadius + HexCellBorderWidth;
 
 	FVector VertOffset;
-	VertOffset.X = (GridIndex.X + (GridIndex.Y % 2) * 0.5) * CellOuterRadius * VertOffsetScale.X;
-	VertOffset.Y = GridIndex.Y * CellOuterRadius * VertOffsetScale.Y;
+	VertOffset.X = (GridId.X + (GridId.Y % 2) * 0.5) * CellOuterRadius * VertOffsetScale.X;
+	VertOffset.Y = GridId.Y * CellOuterRadius * VertOffsetScale.Y;
 	VertOffset.Z = Elevation * HexElevationStep;
 	
 	return VertOffset;
