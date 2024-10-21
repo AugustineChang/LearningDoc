@@ -21,6 +21,12 @@ enum class EHexLinkState : uint8
 	Flat, Slope, Terrace, Cliff
 };
 
+UENUM()
+enum class EHexTerrainType : uint8
+{
+	None, Ice, Water, Grass, Sand, MAX
+};
+
 struct FHexCellLink
 {
 	int32 LinkedCellId;
@@ -126,6 +132,56 @@ private:
 	TOctree2<FHexVertexAttributeData, FUniqueVectorOctreeSemantics> VectorOctree;
 };
 
+struct FHexCellConfigData
+{
+	bool bConfigValid;
+	TArray<int32> ElevationsList;
+	TArray<EHexTerrainType> TerrainTypesList;
+	TMap<EHexTerrainType, FColor> ColorsMap;
+
+	FHexCellConfigData()
+		: bConfigValid(false)
+	{}
+
+	void GetHexCellTerrainData(int32 GridIndex, FColor& OutColor, int32& OutElevation)
+	{
+		EHexTerrainType TerrainType = TerrainTypesList[GridIndex];
+		OutColor = ColorsMap[TerrainType];
+		OutElevation = ElevationsList[GridIndex];
+	}
+
+	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
+	{
+		if (InTypeStr.Equals(TEXT("Ice")))
+			return EHexTerrainType::Ice;
+		else if (InTypeStr.Equals(TEXT("Water")))
+			return EHexTerrainType::Water;
+		else if (InTypeStr.Equals(TEXT("Grass")))
+			return EHexTerrainType::Grass;
+		else if (InTypeStr.Equals(TEXT("Sand")))
+			return EHexTerrainType::Sand;
+		else
+			return EHexTerrainType::None;
+	}
+
+	static FString GetHexTerrainString(EHexTerrainType InType)
+	{
+		switch (InType)
+		{
+		case EHexTerrainType::Ice:
+			return TEXT("Ice");
+		case EHexTerrainType::Water:
+			return TEXT("Water");
+		case EHexTerrainType::Grass:
+			return TEXT("Grass");
+		case EHexTerrainType::Sand:
+			return TEXT("Sand");
+		default:
+			return TEXT("");
+		}
+	}
+};
+
 UCLASS()
 class HEXTERRAIN_API AHexTerrainGenerator : public AActor
 {
@@ -137,6 +193,12 @@ public:
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	UFUNCTION(CallInEditor, Category = "HexTerrain")
+	void LoadTerrain();
+
+	UFUNCTION(CallInEditor, Category = "HexTerrain")
+	void SaveTerrain();
 
 	UFUNCTION(CallInEditor, Category = "HexTerrain")
 	void GenerateTerrain();
@@ -186,12 +248,24 @@ protected:
 	FVector2D PerturbingScalingHV;
 
 protected:
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor")
+	FIntPoint HexEditGridId;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor")
+	int32 HexEditElevation;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor")
+	EHexTerrainType HexEditTerrainType;
+
+protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	bool LoadHexTerrainConfig(FHexCellConfigData& OutConfigData);
+	bool LoadHexTerrainConfig();
+	void SaveHexTerrainConfig();
 
-	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
+	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);
 	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);
 	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutCellMesh);
 
@@ -212,10 +286,23 @@ protected:
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY);
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
 
+	UFUNCTION()
+	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
+	UFUNCTION()
+	void OnReleased(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
+
+public:
+	virtual void PostLoad() override;
+#if WITH_EDITOR
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+#endif
+
 protected:
 
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
 	FUniqueVertexArray CacehdVertexData;
 	TMap<int32, double> CachedNoiseZ;
+	FHexCellConfigData ConfigData;
+	TObjectPtr<APlayerController> PlayerController;
 };

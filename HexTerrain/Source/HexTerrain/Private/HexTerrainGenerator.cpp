@@ -3,6 +3,7 @@
 #include "Misc/FileHelper.h"
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
+#include "Kismet/GameplayStatics.h"
 
 #define	CORNER_NUM 6
 
@@ -159,55 +160,18 @@ struct FCachedSectionData
 	TArray<FProcMeshTangent> Tangents;
 	
 	//FBox BoundingBox;
-};
-
-enum class EHexTerrainType : uint8
-{
-	None, Ice, Water, Grass, Sand, MAX
-};
-
-struct FHexCellConfigData
-{
-	TArray<int32> ElevationsList;
-	TArray<EHexTerrainType> TerrainTypesList;
-	TMap<EHexTerrainType, FColor> ColorsMap;
-
-	void GetHexCellTerrainData(int32 GridIndex, FColor& OutColor, int32& OutElevation)
+	
+	void MeshSection(const FCachedSectionData &Other)
 	{
-		EHexTerrainType TerrainType = TerrainTypesList[GridIndex];
-		OutColor = ColorsMap[TerrainType];
-		OutElevation = ElevationsList[GridIndex];
-	}
+		int32 BaseIndex = Vertices.Num();
+		Vertices.Append(Other.Vertices);
+		Normals.Append(Other.Normals);
+		VertexColors.Append(Other.VertexColors);
 
-	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
-	{
-		if (InTypeStr.Equals(TEXT("Ice")))
-			return EHexTerrainType::Ice;
-		else if (InTypeStr.Equals(TEXT("Water")))
-			return EHexTerrainType::Water;
-		else if (InTypeStr.Equals(TEXT("Grass")))
-			return EHexTerrainType::Grass;
-		else if (InTypeStr.Equals(TEXT("Sand")))
-			return EHexTerrainType::Sand;
-		else
-			return EHexTerrainType::None;
-	}
-
-	static FString GetHexTerrainString(EHexTerrainType InType)
-	{
-		switch (InType)
-		{
-		case EHexTerrainType::Ice:
-			return TEXT("Ice");
-		case EHexTerrainType::Water:
-			return TEXT("Water");
-		case EHexTerrainType::Grass:
-			return TEXT("Grass");
-		case EHexTerrainType::Sand:
-			return TEXT("Sand");
-		default:
-			return TEXT("");
-		}
+		int32 NumOfIndices = Other.Triangles.Num();
+		Triangles.Reserve(Other.Triangles.Num() + NumOfIndices);
+		for (int32 Index : Other.Triangles)
+			Triangles.Add(BaseIndex + Index);
 	}
 };
 
@@ -225,16 +189,23 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	, MaxElevationForTerrace(4)
 	, PerturbingStrengthHV(1.0f, 1.0f)
 	, PerturbingScalingHV(0.25f, 1.0f)
+
+	, HexEditGridId(-1, -1)
+	, HexEditElevation(0)
+	, HexEditTerrainType(EHexTerrainType::None)
 {
  	PrimaryActorTick.bCanEverTick = true;
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
 
 	ProceduralMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("TerrainMeshComponent"));
-	ProceduralMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ProceduralMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ProceduralMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
 	ProceduralMeshComponent->Mobility = EComponentMobility::Movable;
 	ProceduralMeshComponent->SetGenerateOverlapEvents(false);
 	ProceduralMeshComponent->SetupAttachment(RootComponent);
+	ProceduralMeshComponent->OnClicked.AddDynamic(this, &AHexTerrainGenerator::OnClicked);
+	ProceduralMeshComponent->OnReleased.AddDynamic(this, &AHexTerrainGenerator::OnReleased);
 
 	CoordTextComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GridCoordComponent"));
 	CoordTextComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -260,11 +231,20 @@ void AHexTerrainGenerator::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void AHexTerrainGenerator::GenerateTerrain()
+void AHexTerrainGenerator::LoadTerrain()
 {
 	// Load Config
-	FHexCellConfigData ConfigData;
-	if (!LoadHexTerrainConfig(ConfigData))
+	ConfigData.bConfigValid = LoadHexTerrainConfig();
+}
+
+void AHexTerrainGenerator::SaveTerrain()
+{
+	SaveHexTerrainConfig();
+}
+
+void AHexTerrainGenerator::GenerateTerrain()
+{
+	if (!ConfigData.bConfigValid)
 		return;
 
 	if (NoiseTexture.IsEmpty())
@@ -317,6 +297,7 @@ void AHexTerrainGenerator::GenerateTerrain()
 	}
 
 	// Create HexCellMesh
+	FCachedSectionData CollisionMeshSection;
 	ProceduralMeshComponent->ClearAllMeshSections();
 	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
 	{
@@ -331,18 +312,11 @@ void AHexTerrainGenerator::GenerateTerrain()
 					int32 GridId = (CY * HexChunkSize.Y + GY) * HexGridSizeX + (CX * HexChunkSize.X + GX);
 					const FHexCellData& CellData = HexGrids[GridId];
 
-					FCachedSectionData CellMesh;
-					GenerateHexCell(CellData, CellMesh);
+					FCachedSectionData CellMesh, CellCollisionMesh;
+					GenerateHexCell(CellData, CellMesh, CellCollisionMesh);
 
-					int32 BaseIndex = MeshSection.Vertices.Num();
-					MeshSection.Vertices.Append(CellMesh.Vertices);
-					MeshSection.Normals.Append(CellMesh.Normals);
-					MeshSection.VertexColors.Append(CellMesh.VertexColors);
-
-					int32 NumOfIndices = CellMesh.Vertices.Num();
-					MeshSection.Triangles.Reserve(MeshSection.Triangles.Num() + NumOfIndices);
-					for (int32 Index : CellMesh.Triangles)
-						MeshSection.Triangles.Add(BaseIndex + Index);
+					MeshSection.MeshSection(CellMesh);
+					CollisionMeshSection.MeshSection(CellCollisionMesh);
 				}
 			}
 
@@ -357,7 +331,12 @@ void AHexTerrainGenerator::GenerateTerrain()
 			}
 		}
 	}
-	
+
+	// Create Collision
+	ProceduralMeshComponent->CreateMeshSection(HexChunkCount.X * HexChunkCount.Y, CollisionMeshSection.Vertices, CollisionMeshSection.Triangles,
+		CollisionMeshSection.Normals, CollisionMeshSection.UV0s, CollisionMeshSection.VertexColors, CollisionMeshSection.Tangents, true);
+	ProceduralMeshComponent->SetMeshSectionVisible(HexChunkCount.X * HexChunkCount.Y, false);
+
 	// Grid Coordinates
 	if (!!TextMaterial)
 	{
@@ -382,7 +361,7 @@ void AHexTerrainGenerator::GenerateTerrain()
 	CoordTextComponent->MarkRenderStateDirty();
 }
 
-bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigData)
+bool AHexTerrainGenerator::LoadHexTerrainConfig()
 {
 	FString ConfigFilePath = FPaths::ProjectConfigDir() + TEXT("HexTerrainConfig.json");
 	UE_LOG(LogTemp, Display, TEXT("Load Config From %s"), *ConfigFilePath);
@@ -408,7 +387,7 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 	
 	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
 	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
-	OutConfigData.ElevationsList.Init(0, HexGridSizeX * HexGridSizeY);
+	ConfigData.ElevationsList.Init(0, HexGridSizeX * HexGridSizeY);
 	for (int32 Y = 0; Y < ElevationsList.Num(); ++Y)
 	{
 		const TArray<TSharedPtr<FJsonValue>>& OneRow = ElevationsList[Y]->AsArray();
@@ -416,7 +395,7 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 		{
 			int32 TempVal = 0;
 			OneRow[X]->TryGetNumber(TempVal);
-			OutConfigData.ElevationsList[Y * HexGridSizeX + X] = TempVal;
+			ConfigData.ElevationsList[Y * HexGridSizeX + X] = TempVal;
 		}
 	}
 	
@@ -427,13 +406,17 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
 		if (ColorsMap->TryGetStringField(InTerrainTypeStr, OutColorStr))
 		{
-			FLinearColor TempVal;
+			//FLinearColor TempVal;
+			//TempVal.InitFromString(OutColorStr);
+			//ConfigData.ColorsMap.Add(TerrainType, TempVal.ToFColor(false));
+
+			FColor TempVal;
 			TempVal.InitFromString(OutColorStr);
-			OutConfigData.ColorsMap.Add(TerrainType, TempVal.ToFColor(false));
+			ConfigData.ColorsMap.Add(TerrainType, TempVal);
 		}
 	}
 	
-	OutConfigData.TerrainTypesList.Init(EHexTerrainType::Water, HexGridSizeX * HexGridSizeY);
+	ConfigData.TerrainTypesList.Init(EHexTerrainType::Water, HexGridSizeX * HexGridSizeY);
 	for (int32 Y = 0; Y < TypesList.Num(); ++Y)
 	{
 		const TArray<TSharedPtr<FJsonValue>>& OneRow = TypesList[Y]->AsArray();
@@ -442,14 +425,70 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig(FHexCellConfigData& OutConfigDat
 			uint8 TempVal = 0;
 			OneRow[X]->TryGetNumber(TempVal);
 			TempVal = FMath::Clamp(TempVal, 0u, uint8(EHexTerrainType::MAX));
-			OutConfigData.TerrainTypesList[Y * HexGridSizeX + X] = static_cast<EHexTerrainType>(TempVal);
+			ConfigData.TerrainTypesList[Y * HexGridSizeX + X] = static_cast<EHexTerrainType>(TempVal);
 		}
 	}
 	
 	return true;
 }
 
-void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh)
+void AHexTerrainGenerator::SaveHexTerrainConfig()
+{
+	FString StructuredJson;
+	TSharedRef<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+
+	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
+	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
+
+	TArray<TSharedPtr<FJsonValue>> ElevationsList;
+	TArray<TSharedPtr<FJsonValue>> TypesList;
+
+	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
+	{
+		TArray<TSharedPtr<FJsonValue>> ElevationRow;
+		TArray<TSharedPtr<FJsonValue>> TypeRow;
+
+		for (int32 X = 0; X < HexGridSizeX; ++X)
+		{
+			int32 GridIndex = Y * HexChunkSize.X * HexChunkCount.X + X;
+			ElevationRow.Add(MakeShared<FJsonValueNumber>(ConfigData.ElevationsList[GridIndex]));
+			TypeRow.Add(MakeShared<FJsonValueNumber>(uint8(ConfigData.TerrainTypesList[GridIndex])));
+		}
+
+		ElevationsList.Add(MakeShared<FJsonValueArray>(ElevationRow));
+		TypesList.Add(MakeShared<FJsonValueArray>(TypeRow));
+	}
+
+	TSharedPtr<FJsonObject> ColorsMap = MakeShareable(new FJsonObject());
+	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
+	{
+		FString OutColorStr;
+		EHexTerrainType TerrainType = EHexTerrainType(Index);
+		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
+		if (!InTerrainTypeStr.IsEmpty())
+		{
+			ColorsMap->SetStringField(InTerrainTypeStr, ConfigData.ColorsMap[TerrainType].ToString());
+		}
+	}
+	
+	JsonObject->SetArrayField(TEXT("Elevations"), ElevationsList);
+	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
+	JsonObject->SetArrayField(TEXT("HexTypes"), TypesList);
+
+	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&StructuredJson, /*Indent=*/0);
+
+	if (FJsonSerializer::Serialize(JsonObject, JsonWriter) == false)
+	{
+		UE_LOG(LogJson, Warning, TEXT("HexTerrain: Unable to write out json"));
+	}
+	JsonWriter->Close();
+
+	FString ConfigFilePath = FPaths::ProjectConfigDir() + TEXT("HexTerrainConfig.json");
+	FFileHelper::SaveStringToFile(StructuredJson, *ConfigFilePath);
+	UE_LOG(LogTemp, Display, TEXT("Save Config To %s"), *ConfigFilePath);
+}
+
+void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh)
 {
 // Hex Vertices Index
 //      4
@@ -524,6 +563,8 @@ void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCach
 		OutCellMesh.Triangles.Add((Index + 1) % NumOfVerts + 1);
 		OutCellMesh.Triangles.Add(Index + 1);
 	}
+
+	OutCellCollisionMesh = OutCellMesh;
 
 	// Border
 	int32 WIndex = InCellData.HexNeighbors[static_cast<uint8>(EHexDirection::W)].LinkedCellId;
@@ -1139,5 +1180,80 @@ void AHexTerrainGenerator::CreateTextureFromData(TArray<TArray<FColor>> &OutText
 		}
 	}
 }
+
+void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+	if (!ConfigData.bConfigValid)
+		return;
+
+	if (PlayerController.IsNull())
+		PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+	if (PlayerController.IsNull())
+		return;
+
+	FHitResult HitResult;
+	if (PlayerController->GetHitResultUnderCursor(ECC_Visibility, true, HitResult))
+	{
+		static FVector2D VertOffsetScale{ 1.732050807568877, 1.5 };
+		float CellOuterRadius = HexCellRadius + HexCellBorderWidth;
+
+		FIntPoint GridId;
+		GridId.Y = FMath::RoundToInt(HitResult.Location.Y / (CellOuterRadius * VertOffsetScale.Y));
+		GridId.X = FMath::RoundToInt(HitResult.Location.X / (CellOuterRadius * VertOffsetScale.X) - (GridId.Y % 2) * 0.5);
+
+		//UE_LOG(LogTemp, Display, TEXT("HitPos:%s %s"), *HitResult.Location.ToString(), *GridId.ToString());
+
+		HexEditGridId.X = GridId.X;
+		HexEditGridId.Y = GridId.Y;
+
+		int32 GridIndex = GridId.Y * HexChunkSize.X * HexChunkCount.X + GridId.X;
+		HexEditElevation = ConfigData.ElevationsList[GridIndex];
+		HexEditTerrainType = ConfigData.TerrainTypesList[GridIndex];
+	}
+	else
+	{
+		HexEditGridId = FIntPoint(-1, -1);
+		HexEditElevation = 0;
+		HexEditTerrainType = EHexTerrainType::None;
+	}
+}
+
+void AHexTerrainGenerator::OnReleased(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+	//UE_LOG(LogTemp, Display, TEXT("OnRelease!!"));
+}
+
+void AHexTerrainGenerator::PostLoad()
+{
+	Super::PostLoad();
+
+	LoadTerrain();
+}
+
+#if WITH_EDITOR
+
+void AHexTerrainGenerator::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+	Super::PostEditChangeProperty(PropertyChangedEvent);
+
+	FProperty* MemberPropertyThatChanged = PropertyChangedEvent.MemberProperty;
+	const FName MemberPropertyName = MemberPropertyThatChanged != NULL ? MemberPropertyThatChanged->GetFName() : NAME_None;
+
+	static FName Name_HexEditElevation = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditElevation);
+	static FName Name_HexEditTerrainType = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditTerrainType);
+	if (MemberPropertyName == Name_HexEditElevation || MemberPropertyName == Name_HexEditTerrainType)
+	{
+		if (HexEditGridId.X >= 0 && HexEditGridId.Y >= 0)
+		{
+			int32 GridIndex = HexEditGridId.Y * HexChunkSize.X * HexChunkCount.X + HexEditGridId.X;
+			ConfigData.ElevationsList[GridIndex] = HexEditElevation;
+			ConfigData.TerrainTypesList[GridIndex] = HexEditTerrainType;
+
+			GenerateTerrain();
+		}
+	}
+}
+
+#endif
 
 #pragma optimize("", on)
