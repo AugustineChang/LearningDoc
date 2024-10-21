@@ -134,20 +134,23 @@ private:
 
 struct FHexCellConfigData
 {
+	static int32 DefaultElevation;
+	static EHexTerrainType DefaultTerrainType;
+
 	bool bConfigValid;
-	TArray<int32> ElevationsList;
-	TArray<EHexTerrainType> TerrainTypesList;
+	TArray<TArray<int32>> ElevationsList;
+	TArray< TArray<EHexTerrainType>> TerrainTypesList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
 
 	FHexCellConfigData()
 		: bConfigValid(false)
 	{}
 
-	void GetHexCellTerrainData(int32 GridIndex, FColor& OutColor, int32& OutElevation)
+	void GetHexCellTerrainData(const FIntPoint& GridId, FColor& OutColor, int32& OutElevation)
 	{
-		EHexTerrainType TerrainType = TerrainTypesList[GridIndex];
+		EHexTerrainType TerrainType = TerrainTypesList[GridId.Y][GridId.X];
 		OutColor = ColorsMap[TerrainType];
-		OutElevation = ElevationsList[GridIndex];
+		OutElevation = ElevationsList[GridId.Y][GridId.X];
 	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
@@ -263,6 +266,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	bool LoadHexTerrainConfig();
+	void UpdateHexTerrainConfig();
 	void SaveHexTerrainConfig();
 
 	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);
