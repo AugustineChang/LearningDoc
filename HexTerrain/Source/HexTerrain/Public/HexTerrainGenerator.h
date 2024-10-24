@@ -11,12 +11,13 @@ struct FCachedSectionData;
 struct FHexCellConfigData;
 enum class EImageFormat : int8;
 
+UENUM()
 enum class EHexDirection : uint8
 {
 	E, SE, SW, W, NW, NE
 };
 
-enum class EHexLinkState : uint8
+enum class EHexBorderState : uint8
 {
 	Flat, Slope, Terrace, Cliff
 };
@@ -27,24 +28,49 @@ enum class EHexTerrainType : uint8
 	None, Ice, Water, Grass, Sand, MAX
 };
 
-struct FHexCellLink
+enum class EHexRiverState : uint8
 {
-	int32 LinkedCellId;
-	EHexLinkState LinkState;
+	None, StartPoint, EndPoint, PassThrough
+};
+
+UENUM()
+enum class EHexEditMode : uint8
+{
+	Cell, River
+};
+
+struct FHexCellBorder
+{
+	int32 LinkedCellIndex;
+	EHexBorderState LinkState;
 
 	FIntPoint FromVert;
 	FIntPoint ToVert;
 
-	FHexCellLink()
-		: LinkedCellId(-1), LinkState(EHexLinkState::Flat)
+	FHexCellBorder()
+		: LinkedCellIndex(-1), LinkState(EHexBorderState::Flat), FromVert(-1), ToVert(-1)
 	{}
 };
 
 struct FHexCellCorner
 {
-	FIntVector LinkedCellsId;
-	EHexLinkState LinkState[3];
+	FIntVector LinkedCellsIndex;
+	EHexBorderState LinkState[3];
 	FIntVector VertsId;
+};
+
+struct FHexCellRiver
+{
+	int32 RiverIndex;
+
+	EHexRiverState RiverState;
+	FColor RiverColor;
+	EHexDirection IncomingDirection;
+	EHexDirection OutgoingDirection;
+
+	FHexCellRiver()
+		: RiverIndex(-1), RiverState(EHexRiverState::None), RiverColor(0u), IncomingDirection(EHexDirection::E), OutgoingDirection(EHexDirection::E)
+	{}
 };
 
 struct FHexCellData
@@ -64,18 +90,22 @@ struct FHexCellData
 	FColor SRGBColor;
 	int32 Elevation;
 
-	FHexCellLink HexNeighbors[6]; // E, SE, SW, W, NW, NE
+	// Borders
+	FHexCellBorder HexNeighbors[6]; // E, SE, SW, W, NW, NE
 	FHexCellCorner HexCorners[2]; // NW, N
 
+	// River
+	FHexCellRiver HexRiver;
+
 	FHexCellData(const FIntPoint& InIndex);
-	void LinkCell(FHexCellData& OtherCell, EHexDirection LinkDirection);
+	void LinkBorder(FHexCellData& OtherCell, EHexDirection LinkDirection);
 	void LinkCorner(FHexCellData& Cell1, FHexCellData& Cell2, EHexDirection LinkDirection);
 	bool operator<(const FHexCellData& Other) const;
 
 	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
 	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
 	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord);
-	static EHexLinkState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
+	static EHexBorderState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
 };
 
 struct FHexVertexAttributeData
@@ -132,6 +162,12 @@ private:
 	TOctree2<FHexVertexAttributeData, FUniqueVectorOctreeSemantics> VectorOctree;
 };
 
+struct FHexRiverConfigData
+{
+	FIntPoint RiverStartPoint;
+	TArray<EHexDirection> RiverFlowDirections;
+};
+
 struct FHexCellConfigData
 {
 	static int32 DefaultElevation;
@@ -139,7 +175,8 @@ struct FHexCellConfigData
 
 	bool bConfigValid;
 	TArray<TArray<int32>> ElevationsList;
-	TArray< TArray<EHexTerrainType>> TerrainTypesList;
+	TArray<TArray<EHexTerrainType>> TerrainTypesList;
+	TArray<FHexRiverConfigData> RiversList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
 
 	FHexCellConfigData()
@@ -251,15 +288,33 @@ protected:
 	FVector2D PerturbingScalingHV;
 
 protected:
+	
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Common")
+	EHexEditMode HexEditMode;
 
-	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor")
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Cells")
 	FIntPoint HexEditGridId;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor")
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Cells")
 	int32 HexEditElevation;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor")
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Cells")
 	EHexTerrainType HexEditTerrainType;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
+	int32 HexEditRiverId;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
+	FIntPoint HexEditRiverStartPoint;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
+	FIntPoint HexEditRiverLastPoint;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
+	TArray<FIntPoint> HexEditRiverPoints;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
+	TArray<EHexDirection> HexEditRiverFlowDirections;
 
 protected:
 	// Called when the game starts or when spawned
@@ -269,17 +324,20 @@ protected:
 	void UpdateHexTerrainConfig();
 	void SaveHexTerrainConfig();
 
+	void UpdateHexGridsData();
+
 	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);
 	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);
 	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutCellMesh);
+	void GenerateSimpleRiver(const FHexCellData& InCellData, FCachedSectionData& OutRiverMesh);
 
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
-
 	
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation);
+	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
@@ -294,6 +352,8 @@ protected:
 	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 	UFUNCTION()
 	void OnReleased(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
+
+	void ClearEditParameters(EHexEditMode ModeToClear);
 
 public:
 	virtual void PostLoad() override;
