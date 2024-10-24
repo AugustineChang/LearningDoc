@@ -187,7 +187,7 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	, HexChunkSize(5, 5)
 	, HexCellRadius(100.0f)
 	, HexCellBorderWidth(10.0f)
-	, HexCellSubdivision(2u)
+	, HexCellSubdivision(3u)
 	, HexElevationStep(5.0f)
 	, MaxElevationForTerrace(4)
 	, PerturbingStrengthHV(1.0f, 1.0f)
@@ -866,7 +866,7 @@ void AHexTerrainGenerator::GenerateSimpleRiver(const FHexCellData& InCellData, F
 
 	FVector CellCenter = InCellData.CellCenter + FVector::UpVector * 2.0;
 
-	int32 Sub0Index = (HexCellSubdivision - 1) / 2;
+	int32 Sub0Index = (HexCellSubdivision - 1) / 2 - HexCellSubdivision % 2;
 	int32 Sub1Index = HexCellSubdivision - 1 - Sub0Index;
 
 	if (InCellData.HexRiver.RiverState == EHexRiverState::StartPoint)
@@ -1411,19 +1411,24 @@ void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey
 		}
 		else if (HexEditMode == EHexEditMode::River)
 		{
-			if (HexEditRiverStartPoint.X < 0 || HexEditRiverStartPoint.Y < 0)
+			if (HexEditRiverStartPoint.X < 0 || HexEditRiverStartPoint.Y < 0) // river's first node
 			{
 				HexEditRiverStartPoint = GridId;
 				HexEditRiverLastPoint = GridId;
 				HexEditRiverPoints.Add(GridId);
 			}
-			else if (!HexEditRiverPoints.Contains(GridId))
+			else if (!HexEditRiverPoints.Contains(GridId)) // river's other nodes
 			{
 				bool bNearbyGrid = false;
 				int32 LastGridIndex = HexEditRiverLastPoint.Y * HexChunkCount.X * HexChunkSize.X + HexEditRiverLastPoint.X;
+
+				const FHexCellData& CurGrid = HexGrids[GridIndex];
+				const FHexCellData& LastGrid = HexGrids[LastGridIndex];
+
 				for (int32 Index = 0; Index < CORNER_NUM; ++Index)
 				{     
-					if (HexGrids[LastGridIndex].HexNeighbors[Index].LinkedCellIndex == GridIndex)
+					if (CurGrid.Elevation <= LastGrid.Elevation && 
+						LastGrid.HexNeighbors[Index].LinkedCellIndex == GridIndex)
 					{
 						HexEditRiverFlowDirections.Add(static_cast<EHexDirection>(Index));
 						HexEditRiverLastPoint = GridId;
@@ -1432,12 +1437,12 @@ void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey
 						break;
 					}
 				}
-
-				if (!bNearbyGrid)
+				
+				if (!bNearbyGrid && CurGrid.HexRiver.RiverState != EHexRiverState::None) // select another river
 				{
 					ClearEditParameters(EHexEditMode::River);
 
-					int32 RiverIndex = HexGrids[GridIndex].HexRiver.RiverIndex;
+					int32 RiverIndex = CurGrid.HexRiver.RiverIndex;
 					const FHexRiverConfigData& RiverConfig = ConfigData.RiversList[RiverIndex];
 
 					HexEditRiverId = RiverIndex;
@@ -1463,7 +1468,7 @@ void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey
 					}
 				}
 			}
-			else
+			else // remove river's nodes
 			{
 				int32 FoundIndex = -1;
 				HexEditRiverPoints.Find(GridId, FoundIndex);
