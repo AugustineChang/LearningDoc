@@ -64,12 +64,11 @@ struct FHexCellRiver
 	int32 RiverIndex;
 
 	EHexRiverState RiverState;
-	FColor RiverColor;
 	EHexDirection IncomingDirection;
 	EHexDirection OutgoingDirection;
 
 	FHexCellRiver()
-		: RiverIndex(-1), RiverState(EHexRiverState::None), RiverColor(0u), IncomingDirection(EHexDirection::E), OutgoingDirection(EHexDirection::E)
+		: RiverIndex(-1), RiverState(EHexRiverState::None), IncomingDirection(EHexDirection::E), OutgoingDirection(EHexDirection::E)
 	{}
 };
 
@@ -282,6 +281,9 @@ protected:
 	int32 MaxElevationForTerrace;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	int32 RiverElevationOffset;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
@@ -327,16 +329,18 @@ protected:
 	void UpdateHexGridsData();
 
 	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);
+	void GenerateHexCenter(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
 	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);
 	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutCellMesh);
-	void GenerateSimpleRiver(const FHexCellData& InCellData, FCachedSectionData& OutRiverMesh);
-
+	
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 	
-	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation);
+	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
+	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert) const;
+	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool &bOutRiverVert) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
