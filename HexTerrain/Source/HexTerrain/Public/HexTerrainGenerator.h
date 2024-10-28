@@ -259,10 +259,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	FString NoiseTexturePath;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain")
 	FIntPoint HexChunkCount;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FIntPoint HexChunkSize;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
@@ -323,9 +323,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	bool LoadHexTerrainConfig();
-	void UpdateHexTerrainConfig();
 	void SaveHexTerrainConfig();
-
 	void UpdateHexGridsData();
 
 	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);

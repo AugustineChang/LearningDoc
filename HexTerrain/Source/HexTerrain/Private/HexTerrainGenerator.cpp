@@ -348,6 +348,12 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 		return false;
 	}
 
+	TArray<TSharedPtr<FJsonValue>> ChunkSizeData = JsonRoot->GetArrayField(TEXT("ChunkSize"));
+	ChunkSizeData[0]->TryGetNumber(HexChunkSize.X);
+	ChunkSizeData[1]->TryGetNumber(HexChunkSize.Y);
+	ChunkSizeData[2]->TryGetNumber(HexChunkCount.X);
+	ChunkSizeData[3]->TryGetNumber(HexChunkCount.Y);
+
 	TArray<TSharedPtr<FJsonValue>> ElevationsList = JsonRoot->GetArrayField(TEXT("Elevations"));
 	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
 	TArray<TSharedPtr<FJsonValue>> TypesList = JsonRoot->GetArrayField(TEXT("HexTypes"));
@@ -435,36 +441,6 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 	return true;
 }
 
-void AHexTerrainGenerator::UpdateHexTerrainConfig()
-{
-	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
-	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
-
-	int32 ConfigGridSizeX = ConfigData.ElevationsList[0].Num();
-	int32 ConfigGridSizeY = ConfigData.ElevationsList.Num();
-
-	if (ConfigGridSizeX >= HexGridSizeX && ConfigGridSizeY >= HexGridSizeY)
-		return;
-
-	if (ConfigGridSizeY < HexGridSizeY)
-	{
-		ConfigData.ElevationsList.AddDefaulted(HexGridSizeY - ConfigGridSizeY);
-		ConfigData.TerrainTypesList.AddDefaulted(HexGridSizeY - ConfigGridSizeY);
-	}
-		
-	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
-	{
-		for (int32 X = ConfigData.ElevationsList[Y].Num(); X < HexGridSizeX; ++X)
-		{
-			ConfigData.ElevationsList[Y].Add(FHexCellConfigData::DefaultElevation);
-		}
-		for (int32 X = ConfigData.TerrainTypesList[Y].Num(); X < HexGridSizeX; ++X)
-		{
-			ConfigData.TerrainTypesList[Y].Add(FHexCellConfigData::DefaultTerrainType);
-		}
-	}
-}
-
 void AHexTerrainGenerator::SaveHexTerrainConfig()
 {
 	FString StructuredJson;
@@ -472,6 +448,12 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 
 	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
 	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
+
+	TArray<TSharedPtr<FJsonValue>> ChunkSizeData;
+	ChunkSizeData.Add(MakeShared<FJsonValueNumber>(HexChunkSize.X));
+	ChunkSizeData.Add(MakeShared<FJsonValueNumber>(HexChunkSize.Y));
+	ChunkSizeData.Add(MakeShared<FJsonValueNumber>(HexChunkCount.X));
+	ChunkSizeData.Add(MakeShared<FJsonValueNumber>(HexChunkCount.Y));
 
 	TArray<TSharedPtr<FJsonValue>> ElevationsList;
 	TArray<TSharedPtr<FJsonValue>> TypesList;
@@ -525,6 +507,7 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 		RiversList.Add(MakeShared<FJsonValueObject>(RiverData));
 	}
 
+	JsonObject->SetArrayField(TEXT("ChunkSize"), ChunkSizeData);
 	JsonObject->SetArrayField(TEXT("Elevations"), ElevationsList);
 	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
 	JsonObject->SetArrayField(TEXT("HexTypes"), TypesList);
@@ -1645,14 +1628,6 @@ void AHexTerrainGenerator::PostEditChangeProperty(FPropertyChangedEvent& Propert
 			UpdateHexGridsData();
 			GenerateTerrain();
 		}
-	}
-
-	static FName Name_HexChunkSize = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexChunkSize);
-	static FName Name_HexChunkCount = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexChunkCount);
-	if (MemberPropertyName == Name_HexChunkSize || MemberPropertyName == Name_HexChunkCount)
-	{
-		UpdateHexTerrainConfig();
-		UpdateHexGridsData();
 	}
 }
 
