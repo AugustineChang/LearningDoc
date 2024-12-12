@@ -76,6 +76,7 @@ struct FHexCellData
 {
 	static FIntPoint ChunkSize;
 	static int32 ChunkCountX;
+	static uint8 CellSubdivision;
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
 	static TArray<FVector> HexSubVertices;
@@ -103,8 +104,11 @@ struct FHexCellData
 
 	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
 	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
+	static EHexDirection CalcPreviousDirection(EHexDirection InDirection);
+	static EHexDirection CalcNextDirection(EHexDirection InDirection);
 	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord);
 	static EHexBorderState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
+	static uint8 GetVertIdFromDirection(EHexDirection InDirection, bool bSubVert = true, uint8 InState = 1u); // state: 0-start 1-mid 2-end
 };
 
 struct FHexVertexAttributeData
@@ -284,6 +288,9 @@ protected:
 	int32 RiverElevationOffset;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	uint8 RiverSubdivision;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
@@ -331,6 +338,10 @@ protected:
 	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);
 	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutCellMesh);
 	
+	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
+	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
+	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
+
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
 		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
@@ -340,12 +351,23 @@ protected:
 	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert) const;
 	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool &bOutRiverVert) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
+	FVector CalcRiverVertOffset() const { return FVector::UpVector * RiverElevationOffset * HexElevationStep; }
+
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
+	
+	void FillGrid(const TArray<FVector>& FromV, const TArray<FColor>& FromC, const TArray<FVector>& ToV, const TArray<FColor>& ToC, 
+		int32 NumOfSteps, FCachedSectionData& OutCellMesh, bool bTerrace = false, bool bClosed = false);
+	void FillStrip(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
+		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, 
+		int32 NumOfSteps, FCachedSectionData& OutCellMesh, bool bTerrace = false);
 	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
 		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
-	
-	void PerturbingVertexInline(FVector& Vertex, int32 Elevation);
-	FVector PerturbingVertex(const FVector& Vertex, int32 Elevation);
+	void FillFan(const FVector& CenterV, const FColor& CenterC, const TArray<FVector>& EdgesV, const TArray<FColor>& EdgesC, 
+		const TArray<bool>& bRecalcNormal, FCachedSectionData& OutCellMesh, bool bClosed = false);
+
+	void PerturbingVertexInline(FVector& Vertex);
+	void PerturbingVerticesInline(TArray<FVector>& Vertices);
+	FVector PerturbingVertex(const FVector& Vertex);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY);
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
