@@ -287,7 +287,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	int32 RiverElevationOffset;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	uint8 RiverSubdivision;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)

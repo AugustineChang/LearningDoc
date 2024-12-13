@@ -920,12 +920,8 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 	EHexDirection InDirection = InCellData.HexRiver.IncomingDirection;
 	EHexDirection OutDirection = InCellData.HexRiver.OutgoingDirection;
 
-	uint8 InSVertId = FHexCellData::GetVertIdFromDirection(InDirection, true, 0u);
 	uint8 InMVertId = FHexCellData::GetVertIdFromDirection(InDirection, true, 1u);
-	uint8 InEVertId = FHexCellData::GetVertIdFromDirection(InDirection, true, 2u);
-	uint8 OutSVertId = FHexCellData::GetVertIdFromDirection(OutDirection, true, 0u);
 	uint8 OutMVertId = FHexCellData::GetVertIdFromDirection(OutDirection, true, 1u);
-	uint8 OutEVertId = FHexCellData::GetVertIdFromDirection(OutDirection, true, 2u);
 
 	FVector InDir = FHexCellData::HexSubVertices[InMVertId];
 	FVector OutDir = FHexCellData::HexSubVertices[OutMVertId];
@@ -957,13 +953,19 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 
 	FColor WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
 	
+	bool bSharpLeftTurn = OutDirection == FHexCellData::CalcNextDirection(InDirection);
+	bool bSharpRightTurn = OutDirection == FHexCellData::CalcPreviousDirection(InDirection);
+
 	auto GenerateRiverFan = [this, WaterColor](const FHexCellData& InCellData, FCachedSectionData& OutCellMesh,
-		const FVector &InCenterL, const FVector& InCenter, const FVector& InCenterR,
-		EHexDirection Direction, uint8 SVertId, uint8 MVertId, uint8 EVertId) -> void
+		const FVector& InCenterL, const FVector& InCenter, const FVector& InCenterR, EHexDirection Direction) -> void
 		{
+			uint8 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
+			uint8 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
+			uint8 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
+
 			TArray<bool> Dummy;
 
-			//Left Fan
+			// Left Fan
 			TArray<FVector> EgdesLV;
 			TArray<FColor> EgdesLC;
 			uint8 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
@@ -990,7 +992,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FillStrip(InCenterL, InCenter, EdgeL, EdgeC, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, WaterColor, RiverSubdivision, OutCellMesh);
 			FillStrip(InCenter, InCenterR, EdgeC, EdgeR, WaterColor, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, RiverSubdivision, OutCellMesh);
 
-			//Right Fan
+			// Right Fan
 			TArray<FVector> EgdesRV;
 			TArray<FColor> EgdesRC;
 			for (uint8 Index = MVertId + 1u; Index <= EVertId; ++Index)
@@ -1010,8 +1012,109 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FillGrid(CentersRV, CentersRC, EgdesRV, EgdesRC, RiverSubdivision, OutCellMesh);
 		};
 	
-	GenerateRiverFan(InCellData, OutCellMesh, CenterL, Center, CenterR, OutDirection, OutSVertId, OutMVertId, OutEVertId);
-	GenerateRiverFan(InCellData, OutCellMesh, CenterR, Center, CenterL, InDirection, InSVertId, InMVertId, InEVertId);
+	auto GenerateSharpRiverFan = [this, WaterColor](const FHexCellData& InCellData, FCachedSectionData& OutCellMesh,
+		const FVector& InCenterL, const FVector& InCenter, const FVector& InCenterR, EHexDirection Direction, bool bMoveLeft) -> void
+		{
+			uint8 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
+			uint8 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
+			uint8 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
+
+			TArray<bool> Dummy;
+
+			// Left Fan
+			TArray<FVector> EgdesLV;
+			TArray<FColor> EgdesLC;
+			uint8 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
+			EgdesLV.Add(CalcHexCellVertex(InCellData, MainVertL, false));
+			EgdesLC.Add(InCellData.SRGBColor);
+			for (uint8 Index = SVertId; Index <= MVertId - 2u; ++Index)
+			{
+				EgdesLV.Add(CalcHexCellVertex(InCellData, Index, true));
+				EgdesLC.Add(InCellData.SRGBColor);
+			}
+
+			TArray<FVector> CentersLV;
+			TArray<FColor> CentersLC;
+			CentersLV.Init(InCenterL, EgdesLV.Num());
+			CentersLC.Init(InCellData.SRGBColor, EgdesLC.Num());
+
+			FillGrid(CentersLV, CentersLC, EgdesLV, EgdesLC, RiverSubdivision, OutCellMesh);
+
+
+			// Center Two Quads
+			
+			uint8 MainVertIdL = FHexCellData::GetVertIdFromDirection(Direction, false);
+			uint8 MainVertIdR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
+			
+			FVector EdgeL2 = MVertId - 2u < SVertId ? CalcHexCellVertex(InCellData, MainVertIdL, false) : CalcHexCellVertex(InCellData, MVertId - 2u, true);
+			FVector EdgeL1 = CalcHexCellVertex(InCellData, MVertId - 1u, true);
+			FVector EdgeC = CalcHexCellVertex(InCellData, MVertId, true);
+			FVector EdgeR1 = CalcHexCellVertex(InCellData, MVertId + 1u, true);
+			FVector EdgeR2 = MVertId + 2u > EVertId ? CalcHexCellVertex(InCellData, MainVertIdR, false) : CalcHexCellVertex(InCellData, MVertId + 2u, true);
+
+			FVector EdgeCNoOffset = EdgeC - CalcRiverVertOffset();
+			FVector MidL = bMoveLeft ? (InCenterL + EdgeL2) * 0.5 : (InCenterL + EdgeCNoOffset) * 0.5;
+			FVector MidC = bMoveLeft ? (InCenter + EdgeL1) * 0.5 : (InCenter + EdgeR1) * 0.5;
+			FVector MidR = bMoveLeft ? (InCenterR + EdgeCNoOffset) * 0.5 : (InCenterR + EdgeR2) * 0.5;
+
+			if (bMoveLeft)
+			{
+				FillQuad(MidL, MidL, EdgeL2, EdgeL1, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+			}
+			else
+			{
+				FVector MidL2 = (InCenterL + EdgeL2) * 0.5;
+				FillQuad(InCenterL, InCenterL, MidL2, MidL, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+				FillQuad(MidL2, MidL, EdgeL2, EdgeL1, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+			}
+
+			FillQuad(InCenterL, InCenter, MidL, MidC, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, WaterColor, OutCellMesh);
+			FillQuad(MidL, MidC, EdgeL1, EdgeC, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, WaterColor, OutCellMesh);
+
+			FillQuad(InCenter, InCenterR, MidC, MidR, WaterColor, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, OutCellMesh);
+			FillQuad(MidC, MidR, EdgeC, EdgeR1, WaterColor, InCellData.SRGBColor, WaterColor, InCellData.SRGBColor, OutCellMesh);
+
+			if (bMoveLeft)
+			{
+				FVector MidR2 = (InCenterR + EdgeR2) * 0.5;
+				FillQuad(InCenterR, InCenterR, MidR, MidR2, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+				FillQuad(MidR, MidR2, EdgeR1, EdgeR2, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+			}
+			else
+			{
+				FillQuad(MidR, MidR, EdgeR1, EdgeR2, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, InCellData.SRGBColor, OutCellMesh);
+			}
+
+			// Right Fan
+			TArray<FVector> EgdesRV;
+			TArray<FColor> EgdesRC;
+			for (uint8 Index = MVertId + 2u; Index <= EVertId; ++Index)
+			{
+				EgdesRV.Add(CalcHexCellVertex(InCellData, Index, true));
+				EgdesRC.Add(InCellData.SRGBColor);
+			}
+			uint8 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
+			EgdesRV.Add(CalcHexCellVertex(InCellData, MainVertR, false));
+			EgdesRC.Add(InCellData.SRGBColor);
+
+			TArray<FVector> CentersRV;
+			TArray<FColor> CentersRC;
+			CentersRV.Init(InCenterR, EgdesRV.Num());
+			CentersRC.Init(InCellData.SRGBColor, EgdesRC.Num());
+
+			FillGrid(CentersRV, CentersRC, EgdesRV, EgdesRC, RiverSubdivision, OutCellMesh);
+		};
+
+	if (bSharpLeftTurn || bSharpRightTurn)
+	{
+		GenerateSharpRiverFan(InCellData, OutCellMesh, CenterL, Center, CenterR, OutDirection, bSharpRightTurn);
+		GenerateSharpRiverFan(InCellData, OutCellMesh, CenterR, Center, CenterL, InDirection, !bSharpRightTurn);
+	}
+	else
+	{
+		GenerateRiverFan(InCellData, OutCellMesh, CenterL, Center, CenterR, OutDirection);
+		GenerateRiverFan(InCellData, OutCellMesh, CenterR, Center, CenterL, InDirection);
+	}
 
 	auto GenerateFansWithoutRiver = [this, WaterColor](const FHexCellData& InCellData, FCachedSectionData& OutCellMesh,
 		EHexDirection FromDirection, EHexDirection ToDirection, const FVector& InCenter) -> void
