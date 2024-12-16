@@ -183,6 +183,8 @@ struct FHexVertexData
 
 	static FHexVertexData LerpVertex(const FHexVertexData& FromV, const FHexVertexData& ToV, FVector PosRatio, float AttrRatio);
 
+	void SetUV0(const FVector2D& InUV0);
+
 	FVector Position;
 	FVector Normal;
 	FVector2D UV0;
@@ -289,6 +291,9 @@ protected:
 	TObjectPtr<UMaterialInterface> HexTerrainMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	TObjectPtr<UMaterialInterface> RiverMaterial;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	TObjectPtr<UMaterialInterface> TextMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
@@ -364,34 +369,54 @@ protected:
 	void SaveHexTerrainConfig();
 	void UpdateHexGridsData();
 
-	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh, FCachedSectionData& OutCellCollisionMesh);
-	void GenerateHexCenter(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
-	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutCellMesh);
-	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutCellMesh);
+	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh, FCachedSectionData& OutCollisionMesh);
+	void GenerateHexCenter(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
+	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
+	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutTerrainMesh);
 	
-	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
-	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
-	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedSectionData& OutCellMesh);
+	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh);
+	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
+	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
 
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
-		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
+		const FHexCellCorner& CornerData, FCachedSectionData& OutTerrainMesh);
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
-		const FHexCellCorner& CornerData, FCachedSectionData& OutCellMesh);
+		const FHexCellCorner& CornerData, FCachedSectionData& OutTerrainMesh);
 	
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
 	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert) const;
 	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool &bOutRiverVert) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
-	FVector CalcRiverVertOffset() const { return FVector::UpVector * RiverElevationOffset * HexElevationStep; }
+	FVector CalcRiverVertOffset(bool bWater = false) const 
+	{
+		double RiverElevOffset = static_cast<double>(RiverElevationOffset);
+		if (bWater)
+			RiverElevOffset += 0.5;
+
+		return FVector::UpVector * RiverElevOffset * HexElevationStep;
+	}
+
+	float CalcRiverUVScale(bool bBorder = false, int32 ElevDiff = 0) const
+	{
+		if (bBorder)
+		{
+			float RealBoderLength = ElevDiff <= 0 ? HexCellBorderWidth : FMath::Sqrt(FMath::Square(HexCellBorderWidth) + FMath::Square(ElevDiff * HexElevationStep));
+			return FMath::RoundToFloat(RealBoderLength / HexCellBorderWidth);
+		}
+		else
+		{
+			return FMath::RoundToFloat(0.4330127f * HexCellRadius / HexCellBorderWidth);
+		}
+	}
 
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
-	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutCellMesh,
+	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
 		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false);
 	void FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,
-		FCachedSectionData& OutCellMesh, int32 NumOfSteps, bool bTerrace = false);
-	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutCellMesh);
-	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutCellMesh, bool bClosed = false);
+		FCachedSectionData& OutTerrainMesh, int32 NumOfSteps, bool bTerrace = false);
+	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh);
+	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutTerrainMesh, bool bClosed = false);
 
 	void PerturbingVertexInline(FVector& Vertex);
 	void PerturbingVerticesInline(TArray<FVector>& Vertices);
