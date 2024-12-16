@@ -165,6 +165,34 @@ private:
 	TOctree2<FHexVertexAttributeData, FUniqueVectorOctreeSemantics> VectorOctree;
 };
 
+struct FHexVertexData
+{
+	FHexVertexData() = delete;
+
+	FHexVertexData(const FVector& InPos);
+
+	FHexVertexData(const FVector& InPos, const FColor& InColor);
+
+	FHexVertexData(const FVector& InPos, const FVector2D& InUV0);
+
+	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal);
+
+	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector2D& InUV0);
+
+	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal, const FVector2D& InUV0);
+
+	static FHexVertexData LerpVertex(const FHexVertexData& FromV, const FHexVertexData& ToV, FVector PosRatio, float AttrRatio);
+
+	FVector Position;
+	FVector Normal;
+	FVector2D UV0;
+	FColor VertexColor;
+
+	uint32 bHasNormal : 1;
+	uint32 bHasUV0 : 1;
+	uint32 bHasVertexColor : 1;
+};
+
 struct FHexRiverConfigData
 {
 	FIntPoint RiverStartPoint;
@@ -230,6 +258,9 @@ class HEXTERRAIN_API AHexTerrainGenerator : public AActor
 {
 	GENERATED_BODY()
 	
+public:
+	friend class B;
+
 public:	
 	// Sets default values for this actor's properties
 	AHexTerrainGenerator();
@@ -355,15 +386,12 @@ protected:
 
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
-	void FillGrid(const TArray<FVector>& FromV, const TArray<FColor>& FromC, const TArray<FVector>& ToV, const TArray<FColor>& ToC, 
-		int32 NumOfSteps, FCachedSectionData& OutCellMesh, bool bTerrace = false, bool bClosed = false);
-	void FillStrip(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
-		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, 
-		int32 NumOfSteps, FCachedSectionData& OutCellMesh, bool bTerrace = false);
-	void FillQuad(const FVector& FromV0, const FVector& FromV1, const FVector& ToV0, const FVector& ToV1,
-		const FColor& FromC0, const FColor& FromC1, const FColor& ToC0, const FColor& ToC1, FCachedSectionData& OutCellMesh);
-	void FillFan(const FVector& CenterV, const FColor& CenterC, const TArray<FVector>& EdgesV, const TArray<FColor>& EdgesC, 
-		const TArray<bool>& bRecalcNormal, FCachedSectionData& OutCellMesh, bool bClosed = false);
+	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutCellMesh,
+		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false);
+	void FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,
+		FCachedSectionData& OutCellMesh, int32 NumOfSteps, bool bTerrace = false);
+	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutCellMesh);
+	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutCellMesh, bool bClosed = false);
 
 	void PerturbingVertexInline(FVector& Vertex);
 	void PerturbingVerticesInline(TArray<FVector>& Vertices);
@@ -389,7 +417,7 @@ protected:
 
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
-	FUniqueVertexArray CacehdVertexData;
+	//FUniqueVertexArray CacehdVertexData;
 	TMap<int32, double> CachedNoiseZ;
 	FHexCellConfigData ConfigData;
 	TObjectPtr<APlayerController> PlayerController;
