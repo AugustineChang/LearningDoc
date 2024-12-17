@@ -9,7 +9,7 @@
 #define	CORNER_UNUM 6u
 #define	CORNER_HALF_UNUM 3u
 
-#pragma optimize("", off)
+//#pragma optimize("", off)
 
 //////////////////////////////////////////////////////////////////////////
 FIntPoint FHexCellData::ChunkSize{ 0, 0 };
@@ -1035,12 +1035,6 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	}
 	else
 	{
-		for (int32 Index = 0; Index < NumOfVerts; ++Index)
-		{
-			PerturbingVertexInline(FromVerts[Index].Position);
-			PerturbingVertexInline(ToVerts[Index].Position);
-		}
-
 		int32 NumOfSegments = NumOfVerts - 1;
 		for (int32 Index = 0; Index < NumOfSegments; ++Index)
 		{
@@ -1131,8 +1125,6 @@ void AHexTerrainGenerator::GenerateNoRiverCenter(const FHexCellData& InCellData,
 			else
 				CurVertex = CalcHexCellVertex(InCellData, EdgeIndex * HexCellSubdivision + SubIndex - 1, true, bRiverVert);
 
-			PerturbingVertexInline(CurVertex);
-
 			EgdesV.Add(FHexVertexData{ 
 				CurVertex, 
 				bRiverVert ? ConfigData.ColorsMap[EHexTerrainType::Water] : InCellData.SRGBColor,
@@ -1142,7 +1134,6 @@ void AHexTerrainGenerator::GenerateNoRiverCenter(const FHexCellData& InCellData,
 	}
 
 	FHexVertexData CenterV{ InCellData.CellCenter, InCellData.SRGBColor, FVector::UpVector };
-	PerturbingVertexInline(CenterV.Position);
 
 	TArray<bool> Dummy;
 	FillFan(CenterV, EgdesV, Dummy, OutTerrainMesh, true);
@@ -1377,21 +1368,6 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FHexVertexData Center = InCenter;
 			FHexVertexData CenterR = InCenterR;
 
-			PerturbingVertexInline(CenterL.Position);
-			PerturbingVertexInline(Center.Position);
-			PerturbingVertexInline(CenterR.Position);
-
-			PerturbingVertexInline(EdgeL2.Position);
-			PerturbingVertexInline(EdgeL1.Position);
-			PerturbingVertexInline(EdgeC.Position);
-			PerturbingVertexInline(EdgeR1.Position);
-			PerturbingVertexInline(EdgeR2.Position);
-
-			PerturbingVertexInline(MidL.Position);
-			PerturbingVertexInline(MidC.Position);
-			PerturbingVertexInline(MidR.Position);
-			PerturbingVertexInline(MidE.Position);
-
 			if (bMoveLeft)
 			{
 				FillQuad(MidL, MidL, EdgeL2, EdgeL1, OutTerrainMesh);
@@ -1576,13 +1552,6 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	FHexVertexData Vert0{ CalcHexCellVertex(*CellsList[0], VertsList[0], false), CellsList[0]->SRGBColor };
 	FHexVertexData Vert1{ CalcHexCellVertex(*CellsList[1], VertsList[1], false), CellsList[1]->SRGBColor };
 	FHexVertexData Vert2{ CalcHexCellVertex(*CellsList[2], VertsList[2], false), CellsList[2]->SRGBColor };
-	
-	FHexVertexData DisturbedVert0 = Vert0;
-	FHexVertexData DisturbedVert1 = Vert1;
-	FHexVertexData DisturbedVert2 = Vert2;
-	PerturbingVertexInline(DisturbedVert0.Position);
-	PerturbingVertexInline(DisturbedVert1.Position);
-	PerturbingVertexInline(DisturbedVert2.Position);
 
 	auto CalcTerraceVerts = [this](TArray<TArray<FHexVertexData>>& OutVerts, 
 		const FHexVertexData& ToVert, const FHexVertexData& FromVert, int32 ToElevation, int32 FromElevation)
@@ -1600,7 +1569,6 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 				float RatioZ = float(StepZIndex) / float(NumOfZSteps);
 				
 				FHexVertexData CurStepVert = FHexVertexData::LerpVertex(FromVert, ToVert, FVector{ RatioXY, RatioXY, RatioZ }, RatioXY);
-				PerturbingVertexInline(CurStepVert.Position);
 
 				OutVerts[BaseIndex + StepZIndex - 1].Add(CurStepVert);
 			}
@@ -1633,9 +1601,9 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	TArray<TArray<FHexVertexData>> Verts02;
 
 	Verts01.AddDefaulted();
-	Verts01[0].Add(DisturbedVert0);
+	Verts01[0].Add(Vert0);
 	Verts02.AddDefaulted();
-	Verts02[0].Add(DisturbedVert0);
+	Verts02[0].Add(Vert0);
 
 	if (LinkState[0] == EHexBorderState::Terrace)
 	{
@@ -1643,7 +1611,7 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	}
 	else
 	{
-		CalcLinearVerts(Verts01, DisturbedVert1, DisturbedVert0, CellsList[1]->Elevation, CellsList[0]->Elevation);
+		CalcLinearVerts(Verts01, Vert1, Vert0, CellsList[1]->Elevation, CellsList[0]->Elevation);
 	}
 
 	if (LinkState[2] == EHexBorderState::Terrace)
@@ -1652,7 +1620,7 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	}
 	else
 	{
-		CalcLinearVerts(Verts02, DisturbedVert2, DisturbedVert0, CellsList[2]->Elevation, CellsList[0]->Elevation);
+		CalcLinearVerts(Verts02, Vert2, Vert0, CellsList[2]->Elevation, CellsList[0]->Elevation);
 	}
 	
 	if (LinkState[1] == EHexBorderState::Terrace)
@@ -1670,11 +1638,11 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	{
 		if (CellsList[1]->Elevation < CellsList[2]->Elevation) // 1 -> 2
 		{
-			CalcLinearVerts(Verts01, DisturbedVert2, DisturbedVert1, CellsList[2]->Elevation, CellsList[1]->Elevation);
+			CalcLinearVerts(Verts01, Vert2, Vert1, CellsList[2]->Elevation, CellsList[1]->Elevation);
 		}
 		else if (CellsList[1]->Elevation > CellsList[2]->Elevation)// 2 -> 1
 		{
-			CalcLinearVerts(Verts02, DisturbedVert1, DisturbedVert2, CellsList[1]->Elevation, CellsList[2]->Elevation);
+			CalcLinearVerts(Verts02, Vert1, Vert2, CellsList[1]->Elevation, CellsList[2]->Elevation);
 		}
 	}
 	
@@ -1795,9 +1763,6 @@ void AHexTerrainGenerator::FillStrip(const FHexVertexData& FromV0, const FHexVer
 	FHexVertexData LastStepV1 = FromV1;
 	int32 NumOfFinalSteps = bTerrace ? NumOfSteps * 2 - 1 : NumOfSteps;
 
-	PerturbingVertexInline(LastStepV0.Position);
-	PerturbingVertexInline(LastStepV1.Position);
-
 	for (int32 StepIndex = 1; StepIndex <= NumOfFinalSteps; ++StepIndex)
 	{
 		float RatioXY = 0.0f;
@@ -1817,9 +1782,6 @@ void AHexTerrainGenerator::FillStrip(const FHexVertexData& FromV0, const FHexVer
 		FHexVertexData CurStepV0 = FHexVertexData::LerpVertex(FromV0, ToV0, FVector{ RatioXY ,RatioXY ,RatioZ }, RatioXY);
 		FHexVertexData CurStepV1 = FHexVertexData::LerpVertex(FromV1, ToV1, FVector{ RatioXY ,RatioXY ,RatioZ }, RatioXY);
 
-		PerturbingVertexInline(CurStepV0.Position);
-		PerturbingVertexInline(CurStepV1.Position);
-
 		FillQuad(LastStepV0, LastStepV1, CurStepV0, CurStepV1, OutTerrainMesh);
 
 		LastStepV0 = CurStepV0;
@@ -1829,37 +1791,48 @@ void AHexTerrainGenerator::FillStrip(const FHexVertexData& FromV0, const FHexVer
 
 void AHexTerrainGenerator::FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh)
 {
+	FHexVertexData FromV0_C = PerturbingVertex(FromV0);
+	FHexVertexData FromV1_C = PerturbingVertex(FromV1);
+	FHexVertexData ToV0_C = PerturbingVertex(ToV0);
+	FHexVertexData ToV1_C = PerturbingVertex(ToV1);
+
 	if ((FromV0.Position - FromV1.Position).IsNearlyZero())
 	{
-		OutTerrainMesh.AddTriangle(ToV0, FromV0, ToV1);
+		OutTerrainMesh.AddTriangle(ToV0_C, FromV0_C, ToV1_C);
 	}
 	else if ((ToV0.Position - ToV1.Position).IsNearlyZero())
 	{
-		OutTerrainMesh.AddTriangle(ToV0, FromV0, FromV1);
+		OutTerrainMesh.AddTriangle(ToV0_C, FromV0_C, FromV1_C);
 	}
 	else if ((ToV0.Position - FromV0.Position).IsNearlyZero())
 	{
-		OutTerrainMesh.AddTriangle(ToV0, FromV1, ToV1);
+		OutTerrainMesh.AddTriangle(ToV0_C, FromV1_C, ToV1_C);
 	}
 	else if ((ToV1.Position - FromV1.Position).IsNearlyZero())
 	{
-		OutTerrainMesh.AddTriangle(ToV0, FromV0, ToV1);
+		OutTerrainMesh.AddTriangle(ToV0_C, FromV0_C, ToV1_C);
 	}
 	else
 	{
-		OutTerrainMesh.AddQuad(ToV0, ToV1, FromV0, FromV1);
+		OutTerrainMesh.AddQuad(ToV0_C, ToV1_C, FromV0_C, FromV1_C);
 	}
 };
 
 void AHexTerrainGenerator::FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV,
 	const TArray<bool>& bRecalcNormal, FCachedSectionData& OutTerrainMesh, bool bClosed)
 {
-	int32 BaseIndex = OutTerrainMesh.AddVertex(CenterV);
+	FHexVertexData DisturbedCenter = PerturbingVertex(CenterV);
+	int32 NumOfEdges = EdgesV.Num();
+	TArray<FHexVertexData> DisturbedEdges;
+	DisturbedEdges.Reserve(NumOfEdges);
+	for (const FHexVertexData& OneEdge : EdgesV)
+		DisturbedEdges.Add(PerturbingVertex(OneEdge));
+
+	int32 BaseIndex = OutTerrainMesh.AddVertex(DisturbedCenter);
 
 	bool bShouldRecalcNormal = bRecalcNormal.Num() > 0;
 	TArray<int32> IndicesList;
-
-	int32 NumOfEdges = EdgesV.Num();
+	
 	for (int32 EdgeIndex = 0; EdgeIndex < NumOfEdges; ++EdgeIndex)
 	{
 		if (bShouldRecalcNormal)
@@ -1869,7 +1842,7 @@ void AHexTerrainGenerator::FillFan(const FHexVertexData& CenterV, const TArray<F
 
 		if (!bShouldRecalcNormal || !bRecalcNormal[EdgeIndex])
 		{
-			OutTerrainMesh.AddVertex(EdgesV[EdgeIndex]);
+			OutTerrainMesh.AddVertex(DisturbedEdges[EdgeIndex]);
 		}
 	}
 	
@@ -1888,11 +1861,7 @@ void AHexTerrainGenerator::FillFan(const FHexVertexData& CenterV, const TArray<F
 				CurIndex = FMath::Abs(CurIndex);
 				NextIndex = FMath::Abs(NextIndex);
 
-				FHexVertexData V0{ CenterV.Position, CenterV.VertexColor };
-				FHexVertexData V1{ EdgesV[NextIndex].Position, EdgesV[NextIndex].VertexColor };
-				FHexVertexData V2{ EdgesV[CurIndex].Position, EdgesV[CurIndex].VertexColor };
-
-				OutTerrainMesh.AddTriangle(V0, V1, V2);
+				OutTerrainMesh.AddTriangle(DisturbedCenter, DisturbedEdges[NextIndex], DisturbedEdges[CurIndex]);
 				continue;
 			}
 		}
@@ -1941,13 +1910,11 @@ void AHexTerrainGenerator::PerturbingVertexInline(FVector& Vertex)
 	Vertex.Z += CachedNoiseZ[Elevation] * PerturbingStrengthHV.Y;
 }
 
-void AHexTerrainGenerator::PerturbingVerticesInline(TArray<FVector>& Vertices)
+FHexVertexData AHexTerrainGenerator::PerturbingVertex(const FHexVertexData& Vertex)
 {
-	int32 NumOfVerts = Vertices.Num();
-	for (int32 Index = 0; Index < NumOfVerts; ++Index)
-	{
-		PerturbingVertexInline(Vertices[Index]);
-	}
+	FHexVertexData NewVert = Vertex;
+	PerturbingVertexInline(NewVert.Position);
+	return NewVert;
 }
 
 FVector AHexTerrainGenerator::PerturbingVertex(const FVector& Vertex)
@@ -2264,4 +2231,4 @@ void AHexTerrainGenerator::ClearEditParameters(EHexEditMode ModeToClear)
 	}
 }
 
-#pragma optimize("", on)
+//#pragma optimize("", on)

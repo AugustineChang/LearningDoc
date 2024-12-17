@@ -419,7 +419,7 @@ protected:
 	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutTerrainMesh, bool bClosed = false);
 
 	void PerturbingVertexInline(FVector& Vertex);
-	void PerturbingVerticesInline(TArray<FVector>& Vertices);
+	FHexVertexData PerturbingVertex(const FHexVertexData& Vertex);
 	FVector PerturbingVertex(const FVector& Vertex);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY);
