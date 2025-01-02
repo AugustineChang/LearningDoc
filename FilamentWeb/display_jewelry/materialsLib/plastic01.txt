@@ -1,0 +1,7 @@
+BC: plastic/plastic_base_Base_Color.ktx2
+BC2: [0.7, 0.05, 0.05]
+Roughness: plastic/plastic_base_Roughness.ktx2
+Metallic: 0.0
+Normal: plastic/plastic_base_Normal.ktx2
+AO: plastic/plastic_base_Ambient_Occlusion.ktx2
+Tiling: 4.0

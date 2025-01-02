@@ -1,0 +1,6 @@
+BC: ceramic/Porcelain Flowers Diffuse.ktx2
+Roughness: ceramic/Porcelain Flowers Diffuse Roughness.ktx2
+Metallic: 0.2
+Normal: common/T_Bump_N.ktx2
+NormalStrength: 0.5
+Tiling: 2.0

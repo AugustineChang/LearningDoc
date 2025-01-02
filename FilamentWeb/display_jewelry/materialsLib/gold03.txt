@@ -1,0 +1,4 @@
+BC: [1.0, 0.585, 0.106]
+Roughness: metal/iron_rough_Roughness.ktx2
+Metallic: 1.0
+Normal: metal/iron_rough_Normal.ktx2

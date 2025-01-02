@@ -1,0 +1,37 @@
+material {
+    name : DisplayGlass,
+    shadingModel : lit,
+	doubleSided : true,
+	blending : opaque,
+	refractionMode : cubemap,
+    refractionType : solid,
+	requires : [ uv0 ],
+	parameters : [
+		{ type : sampler2d, name : NormalTex },
+		{ type : float, name : Roughness },
+		{ type : float, name : Metallic },
+		{ type : float, name : IOR },
+		{ type : float3, name : GlassColor },
+		{ type : float2, name : TexTiling },
+		{ type : float, name : NormalStrength }
+	]
+}
+
+fragment {
+    void material(inout MaterialInputs material) 
+	{
+		float2 sampleUV = getUV0() * materialParams.TexTiling;
+	
+		material.normal = texture(materialParams_NormalTex, sampleUV).xyz * 2.0 - 1.0;
+		material.normal = mix(float3(0.0, 0.0, 1.0), material.normal, materialParams.NormalStrength);
+		
+		prepareMaterial(material);
+        
+		material.baseColor = float4(1.0, 1.0, 1.0, 1.0);
+		material.roughness = materialParams.Roughness;
+		material.metallic = materialParams.Metallic;
+		material.absorption = float3(1.0, 1.0, 1.0) - materialParams.GlassColor; // color
+		material.ior = materialParams.IOR;
+		material.transmission = 1.0;
+    }
+}

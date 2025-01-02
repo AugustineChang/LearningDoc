@@ -1,0 +1,10 @@
+BC: ceramic/GeYaoKaiPian_Base_Color.ktx2
+BC2: [0.22, 0.29, 0.33]
+Brightness: [2.55, 2.55, 3.0]
+Roughness: ceramic/GeYaoKaiPian_Roughness.ktx2
+Metallic: 0.0
+Normal: ceramic/GeYaoKaiPian_Normal.ktx2
+NormalStrength: 2.0
+ClearCoat: 1.0
+ClearCoatRoughness: 0.3
+Tiling: 4.0

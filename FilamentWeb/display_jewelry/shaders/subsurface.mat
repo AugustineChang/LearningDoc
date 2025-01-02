@@ -1,0 +1,36 @@
+material {
+    name : DisplayPorcelain,
+    shadingModel : subsurface,
+	clearCoatIorChange : false,
+	requires : [ uv0 ],
+	parameters : [
+		{ type : float3, name : BC },
+        { type : float, name : Roughness },
+        { type : float, name : Metallic },
+		{ type : sampler2d, name : NormalTex },
+		{ type : float, name : NormalStrength },
+		{ type : float2, name : TexTiling },
+        { type : float3, name : SubsurfaceColor },
+        { type : float, name : SubsurfacePower }
+	]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+		float2 sampleUV = getUV0() * materialParams.TexTiling;
+		
+		material.normal = texture(materialParams_NormalTex, sampleUV).xyz * 2.0 - 1.0;
+		material.normal = mix(float3(0.0, 0.0, 1.0), material.normal, materialParams.NormalStrength);
+		
+		prepareMaterial(material);
+        
+		material.baseColor.rgb = materialParams.BC;
+		material.baseColor.a   = 1.0;
+		
+        material.roughness = materialParams.Roughness;
+        material.metallic = materialParams.Metallic;
+		
+		material.subsurfacePower = materialParams.SubsurfacePower;//12.234;
+		material.subsurfaceColor = materialParams.SubsurfaceColor;
+    }
+}

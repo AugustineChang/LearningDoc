@@ -1,0 +1,190 @@
+material {
+    name : DisplayJewelry,
+    shadingModel : lit,
+	requires : [],
+	parameters : [
+		{ type : sampler2d, name : facetTexture },
+		{ type : float, name : facetTextureWidth },
+		{ type : float, name : numOfFacets },
+		{ type : float, name : absorptionScale },
+		{ type : float, name : numOfBounce },
+		{ type : float, name : refractiveIndex },
+		{ type : samplerCubemap, name : skyColorTexture },
+		{ type : float, name : skyColorBrightness },
+		{ type : float3, name : gemColor }
+	]
+}
+
+fragment {
+	
+	#define DIAMOND_ROUGHNESS 0.6
+	#define UE_TO_FILAMENT 0
+	
+	void GetFacetData(float FacetId, out float3 PointOnFacet, out float3 FacetNormal)
+	{
+		float TextureWidth = materialParams.facetTextureWidth;
+		float SampleOffset = 0.5 / TextureWidth;
+		
+		float RowId = floor(FacetId / TextureWidth);
+		float PosX = (FacetId - RowId * TextureWidth) / TextureWidth + SampleOffset;
+		float PosY = RowId*2.0 / TextureWidth + SampleOffset;
+		float NormalY = (RowId*2.0+1.0) / TextureWidth + SampleOffset;
+		
+	#if UE_TO_FILAMENT
+		float3 PointOnFacet_UE = texture(materialParams_facetTexture, float2(PosX, PosY)).xyz;
+		float3 FacetNormal_UE = texture(materialParams_facetTexture, float2(PosX, NormalY)).xyz;
+		
+		PointOnFacet = float3(-PointOnFacet_UE.y, PointOnFacet_UE.z, PointOnFacet_UE.x);
+		FacetNormal = float3(-FacetNormal_UE.y, FacetNormal_UE.z, FacetNormal_UE.x);
+	#else
+		PointOnFacet = texture(materialParams_facetTexture, float2(PosX, PosY)).xyz;
+		FacetNormal = texture(materialParams_facetTexture, float2(PosX, NormalY)).xyz;
+	#endif
+		PointOnFacet = mulMat4x4Float3(object_uniforms_worldFromModelMatrix, PointOnFacet).xyz;
+		FacetNormal = mulMat3x3Float3(float4x4(object_uniforms_worldFromModelNormalMatrix), FacetNormal);
+	}
+
+
+    void GetHitResult(float3 RayStart, float3 RayDir, inout float HitDistance, out float3 HitPosNormal)
+	{
+		float NumOfFacets = materialParams.numOfFacets;
+		for (float facet = 0.0; facet < NumOfFacets; facet += 1.0)
+		{
+			float3 PointOnFacet, FacetNormal;
+			GetFacetData(facet, PointOnFacet, FacetNormal);
+			
+			float b = dot(RayDir, FacetNormal);
+			if (b > 0.0) // pseudo face culling
+			{ 
+				//distance from eye to facet in eyeDir
+				float DistanceEyeToFacet = dot(PointOnFacet - RayStart, FacetNormal) / b;
+
+				if (DistanceEyeToFacet < HitDistance) 
+				{
+					HitDistance = DistanceEyeToFacet;
+					HitPosNormal = FacetNormal;
+				}
+			}
+		}
+	}
+	
+	float CalcLightLossRate(float3 RayDir, float3 FacetNormal, float3 RefractDir, float RefractiveIndex, float CriticalAngle) 
+	{
+		float cosI = abs(dot(FacetNormal, RayDir));
+
+		if (cosI < CriticalAngle) 
+		{
+			return 1.0; // total reflection
+		}
+		
+		float cosT = abs(dot(FacetNormal, RefractDir));
+		
+		// n1 = RefractiveIndex, n2 = 1
+		float n1_cosI = RefractiveIndex * cosI;
+		float n1_cosT = RefractiveIndex * cosT;
+		
+		// Fresnel Equation
+		float Rp = (n1_cosT - cosI) / (n1_cosT + cosI);
+		float Rs = (n1_cosI - cosT) / (n1_cosI + cosT);
+		return 0.5f * (Rp * Rp + Rs * Rs);
+	}
+	
+	float3 GetSkyColor(float3 RayDir, float Brightness)
+	{
+		float3 RayDirWS = mulMat3x3Float3(getUserWorldFromWorldMatrix(), RayDir);
+	
+		/*float value = 0.8f * (1.0 + step(0.6f, RayDirWS.z)); // RayDirWS.z > 0.6 ? 1.6 : 0.8
+	
+		float headShadow = max(0.2f, step(RayDirWS.z, 0.98f)); // RayDirWS.z > 0.99f ? 0.2f : 1.0f
+		return float3(1,1,1) * value * headShadow * Brightness;*/
+		
+		float skyLod = frameUniforms.iblRoughnessOneLevel * DIAMOND_ROUGHNESS * (2.0 - DIAMOND_ROUGHNESS);
+		float3 EnvColor = textureLod(materialParams_skyColorTexture, RayDirWS, skyLod).xyz;
+		float EnvLumin = luminance(EnvColor);
+		return float3(EnvLumin, EnvLumin, EnvLumin) * Brightness;// * frameUniforms.iblLuminance;
+	}
+	
+	float3 exp_float3(float3 InVal)
+	{
+		float3 Result;
+		Result.r = exp(InVal.r);
+		Result.g = exp(InVal.g);
+		Result.b = exp(InVal.b);
+		return Result;
+	}
+	
+	float3 DiamondRayTraceRGB(
+		float3 InRayStart, float3 InRayDir, float3 SurfaceNormal, 
+		float NumOfBounce, float RefractiveIndex, float3 AbsorptionFactor, float SkyColorBrightness)
+	{
+		float3 InnerColor = float3(0,0,0);
+		float RayDistance = 0.0f;
+		float RayLuminance = 1.0f;
+		//float HitTimes = 0.0f;
+		float CriticalAngle = sqrt(max(0.0f, 1.0f - 1.0f / (RefractiveIndex * RefractiveIndex)));
+		
+		float FirstRefractiveIndex = 1.0 / RefractiveIndex;
+		float3 RayStart = InRayStart;
+		float3 RayDir = refract(InRayDir, SurfaceNormal, FirstRefractiveIndex);
+		
+		for (float step = 0.0; step < NumOfBounce; step += 1.0)
+		{
+			float3 HitPosNormal = float3(0,0,0);
+			float HitDistance = 10000.0;
+
+			GetHitResult(RayStart, RayDir, HitDistance, HitPosNormal);
+			HitPosNormal = -HitPosNormal;// to inner
+			
+			float3 EscapeDir = refract(RayDir, HitPosNormal, RefractiveIndex);
+			float RayRemainRate = CalcLightLossRate(RayDir, HitPosNormal, EscapeDir, RefractiveIndex, CriticalAngle);
+			
+			RayDistance += HitDistance;
+			if (RayRemainRate < 1.0f)
+			{
+				InnerColor += RayLuminance * (1.0f - RayRemainRate) * GetSkyColor(EscapeDir, SkyColorBrightness) * exp_float3(-AbsorptionFactor * RayDistance);
+			
+				RayLuminance *= RayRemainRate;
+				if (RayLuminance < 0.001f) 
+				{
+					break;
+				}
+			}
+			
+			//HitTimes += HitDistance < 10000.0f ? 1.0f : 0.0f;
+			RayStart = RayStart + RayDir * HitDistance;
+			RayDir = reflect(RayDir, HitPosNormal);
+		}
+		
+		// Last Rafract
+		InnerColor += RayLuminance * 0.5f * GetSkyColor(RayDir, SkyColorBrightness) * exp_float3(-AbsorptionFactor * RayDistance); // directly go out
+		
+		return InnerColor;
+	}
+	
+	void material(inout MaterialInputs material) 
+	{
+        material.normal = float3(0,0,1);
+		prepareMaterial(material);
+		
+		float3 RayStart = getWorldPosition();
+		float3 RayDir = -getWorldViewVector();
+		float3 SurfaceNormal = getWorldGeometricNormalVector();
+		
+		float3 AbsorptionFactor = materialParams.absorptionScale * (float3(1.0f, 1.0f, 1.0f) - materialParams.gemColor);
+		
+		float3 DiamondInnerColor = DiamondRayTraceRGB(
+			RayStart, RayDir, SurfaceNormal,
+			materialParams.numOfBounce, materialParams.refractiveIndex, 
+			AbsorptionFactor, materialParams.skyColorBrightness
+		);
+		
+		//material.postLightingColor = float4(DiamondInnerColor, 1.0);
+		material.baseColor = float4(DiamondInnerColor, 1.0); // float4(0,0,0,1);
+		material.emissive = float4(DiamondInnerColor*0.15, 0.0); // float4(0,0,0,0);
+		material.roughness = DIAMOND_ROUGHNESS;
+		material.metallic = 0.2;
+		material.clearCoat = 1.0;
+		material.clearCoatRoughness = 0.05;
+		material.ambientOcclusion = 0.0;
+    }
+}

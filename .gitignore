@@ -23,6 +23,13 @@
 *.fxo
 *.cod
 
+*.ktx
+*.ktx1
+*.ktx2
+*.filamat
+*.filamesh
+*sh.txt
+
 *.suo
 *.ppm
 MyD3D11Project/MyD3D11Project/x64/

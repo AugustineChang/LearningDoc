@@ -1,0 +1,6 @@
+BC: [1.0, 0.585, 0.106]
+Roughness: metal/iron_hammered_Roughness.ktx2
+Metallic: 1.0
+Normal: metal/iron_hammered_Normal.ktx2
+NormalStrength: 2.0
+Tiling: 2.0

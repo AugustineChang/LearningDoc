@@ -1,0 +1,5 @@
+BC: wood/Wood23_Base_Color.ktx2
+Roughness: wood/Wood23_Roughness.ktx2
+Metallic: 0.0
+Normal: wood/Wood23_Normal.ktx2
+Tiling: 4.0

@@ -1,0 +1,9 @@
+Section1: 16 73
+Section2: 16 72
+Section3: 16 73
+Section4: 16 72
+Section5: 16 72
+Section6: 16 72
+Section7: 16 72
+MatTypes: [0,1,1,1,1,1,1,1]
+BoundingBox: -91.4840,-120.8790,-22.0588;95.7620,231.3020,55.8583

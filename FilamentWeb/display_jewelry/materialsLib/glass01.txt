@@ -1,0 +1,8 @@
+Shader: glass
+BC: [0.2, 0.6196, 0.8549]
+Roughness: 0.2
+Metallic: 0.0
+IOR: 1.33
+Normal: common/T_Noise_01_N.ktx2
+NormalStrength: 1.0
+Tiling: 2.0

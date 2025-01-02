@@ -1,0 +1,14 @@
+material {
+    name : DebugMat,
+    shadingModel : lit
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+		
+		material.baseColor = float4(vertex_worldNormal, 1.0);
+		material.roughness = 1.0;
+		material.metallic = 0.0;
+    }
+}

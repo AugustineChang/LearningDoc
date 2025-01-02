@@ -1,0 +1,6 @@
+BC: wood/Wood19_Base_Color.ktx2
+Roughness: wood/Wood19_Roughness.ktx2
+Metallic: 0.0
+Normal: wood/Wood19_Normal.ktx2
+AO: wood/Wood19_Ambient_Occlusion.ktx2
+Tiling: 4.0

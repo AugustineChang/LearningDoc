@@ -1,0 +1,5 @@
+BC: ceramic/CeramicTile_Base_Color.ktx2
+Roughness: ceramic/CeramicTile_Roughness.ktx2
+Metallic: ceramic/CeramicTile_Metallic.ktx2
+Normal: ceramic/CeramicTile_Normal.ktx2
+Tiling: 4.0

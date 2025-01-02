@@ -1,0 +1,6 @@
+BC: [0.22, 0.29, 0.33]
+Roughness: ceramic/PorcelainSubstance001_Roughness.ktx2
+Metallic: 0.0
+Normal: ceramic/PorcelainSubstance001_Normal.ktx2
+NormalStrength: 0.5
+Tiling: 4.0

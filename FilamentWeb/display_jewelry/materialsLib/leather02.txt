@@ -1,0 +1,6 @@
+BC: leather/Natural_Leather_Base_Color.ktx2
+Roughness: leather/Natural_Leather_Roughness.ktx2
+Metallic: 0.0
+Normal: leather/Natural_Leather_Normal.ktx2
+AO: leather/Natural_Leather_Ambient_Occlusion.ktx2
+Tiling: 2.0

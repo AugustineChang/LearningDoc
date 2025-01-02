@@ -1,0 +1,58 @@
+material {
+    name : DisplayJewelry,
+    shadingModel : lit,
+	doubleSided : true,
+	clearCoatIorChange : false,
+	requires : [ uv0 ],
+	parameters : [
+		{ type : sampler2d, name : BCTex },
+		{ type : float3, name : BC },
+		{ type : float3, name : Brightness },
+        { type : sampler2d, name : RoughnessTex },
+        { type : float, name : Roughness },
+        { type : sampler2d, name : MetallicTex },
+        { type : float, name : Metallic },
+        { type : sampler2d, name : NormalTex },
+		{ type : float, name : NormalStrength },
+		{ type : sampler2d, name : AOTex },
+		{ type : float2, name : TexTiling },
+		{ type : float, name : ClearCoat },
+		{ type : float, name : ClearCoatHeight },
+		{ type : float, name : ClearCoatRoughness },
+		{ type : sampler2d, name : ClearCoatRoughnessTex },
+		{ type : sampler2d, name : ClearCoatNormalTex },
+		{ type : float, name : ClearCoatNormalStrength }
+	]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+		float2 sampleUV = getUV0() * materialParams.TexTiling;
+		float2 TopUV = sampleUV;
+		
+		/*if (materialParams.ClearCoat > 0.0)
+		{
+			float3x3 WorldToTangent = transpose(getWorldTangentFrame());
+			float3 BottomUVOffset = mulMat3x3Float3(float4x4(WorldToTangent), getWorldViewVector());
+			sampleUV += BottomUVOffset.rg * 0.05 * materialParams.ClearCoatHeight;
+		}*/
+		
+        material.normal = texture(materialParams_NormalTex, sampleUV).xyz * 2.0 - 1.0;
+		material.normal = mix(float3(0.0, 0.0, 1.0), material.normal, materialParams.NormalStrength);
+		
+		material.clearCoatNormal = texture(materialParams_ClearCoatNormalTex, TopUV).xyz * 2.0 - 1.0;
+		material.clearCoatNormal = mix(float3(0.0, 0.0, 1.0), material.clearCoatNormal, materialParams.ClearCoatNormalStrength);
+		
+		prepareMaterial(material);
+        
+		material.baseColor.rgb = materialParams.BC * materialParams.Brightness * texture(materialParams_BCTex, sampleUV).rgb;
+		material.baseColor.a   = 1.0;
+		
+        material.roughness = materialParams.Roughness * texture(materialParams_RoughnessTex, sampleUV).r;
+        material.metallic = materialParams.Metallic * texture(materialParams_MetallicTex, sampleUV).r;
+        
+        material.ambientOcclusion = texture(materialParams_AOTex, sampleUV).r;
+		material.clearCoat = materialParams.ClearCoat;
+		material.clearCoatRoughness  = materialParams.ClearCoatRoughness * texture(materialParams_ClearCoatRoughnessTex, TopUV).r;
+    }
+}

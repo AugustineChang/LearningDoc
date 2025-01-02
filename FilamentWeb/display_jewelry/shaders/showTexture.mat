@@ -1,0 +1,18 @@
+material {
+    name : Triangle,
+    shadingModel : unlit,
+	requires : [ uv0, color ],
+	parameters : [
+        { type : sampler2d, name : displayTexture }
+    ]
+}
+
+fragment {
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+		
+		//material.baseColor.rgb = getColor().rgb;
+		material.baseColor = texture(materialParams_displayTexture, getUV0());
+    }
+}

@@ -1,0 +1,33 @@
+material {
+    name : Triangle,
+    shadingModel : lit
+}
+
+fragment {
+    float sRGB_to_linear(float color) 
+	{
+		return color <= 0.04045 ? color / 12.92 : pow((color + 0.055) / 1.055, 2.4);
+	}
+	
+	void material(inout MaterialInputs material) 
+	{
+        prepareMaterial(material);
+		
+		float3 worldNormal = getWorldGeometricNormalVector();
+		float3 viewNormal = mulMat3x3Float3(getViewFromWorldMatrix(), worldNormal);
+		viewNormal = normalize(viewNormal);
+		//worldNormal.zyx * float3(1,1,-1)
+		
+		float3 outColor = viewNormal * float3(0.5, 0.5, 0.5) + float3(0.5, 0.5, 0.5);
+		outColor.x = sRGB_to_linear(outColor.x);
+		outColor.y = sRGB_to_linear(outColor.y);
+		outColor.z = sRGB_to_linear(outColor.z);
+		outColor *= float3(1.0, 1.0, 2.0); 
+		
+		material.postLightingColor = float4(outColor, 1.0);
+		material.postLightingMixFactor = 1.0;
+		material.baseColor = float4(0.0, 0.0, 0.0, 1.0);
+		material.roughness = 1.0;
+		material.metallic = 0.0;
+    }
+}
