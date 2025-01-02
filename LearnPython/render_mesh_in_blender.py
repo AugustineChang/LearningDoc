@@ -61,24 +61,7 @@ def setup_settings() -> None:
     # Set the device_type
     bpy.context.preferences.system.audio_device = 'None'
     bpy.context.preferences.addons["cycles"].preferences.compute_device_type = 'CUDA' # or "OPENCL"
-    bpy.context.preferences.addons["cycles"].preferences.refresh_devices()
-    
-    rawDevicesList = bpy.context.preferences.addons["cycles"].preferences.devices
-    for device in rawDevicesList:
-        print(device.use, device.id)
-    
-    numOfDevices = len(rawDevicesList)
-    
-    gpuDevicesList = []
-    for index in range(numOfDevices):
-        device = rawDevicesList[index]
-        if device.id != "CPU":
-            gpuDevicesList.append(index)
-        print(device.use, device.id)
-    
-    if len(gpuDevicesList) > 1:
-        rawDevicesList[gpuDevicesList[1]].use = True
-    
+    bpy.context.preferences.addons["cycles"].preferences.refresh_devices()    
     bpy.context.scene.cycles.tile_size = 8192
         
     # eevee
@@ -394,7 +377,6 @@ if __name__ == "__main__":
     reset_scene()
     setup_settings()
     setup_lights()
-    sys.exit(0)
     
     #reset_scene()
     load_object(inputGlbPath);

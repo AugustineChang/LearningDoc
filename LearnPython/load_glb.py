@@ -1,7 +1,9 @@
+import io
 import os
 import sys
 import json
 import struct
+from PIL import Image 
 
 import bpy
 import bmesh
@@ -52,6 +54,42 @@ class BinDataInfo:
         self.bytesOffset = None
         self.bytesStride = None
 
+class TextureData:
+    def __init__(self):
+        self.name = None
+        self.imageType = None
+        self.sampleMagFilter = None
+        self.sampleMinFilter = None
+        self.sampleWrapU = None
+        self.sampleWrapV = None
+        self.sampleUVId = 0.0
+        self.scale = 1.0
+        self.texBinData = None
+
+class MaterialData:
+    def __init__(self):
+        self.name = None
+        self.baseColorTexture = None
+        self.baseColorFactor = [1.0, 1.0, 1.0, 1.0]
+        self.metallicRoughnessTexture = None
+        self.metallicFactor = 1.0
+        self.roughnessFactor = 1.0
+        self.normalTexture = None
+
+class GlobalMeshCache:
+    def __init__(self):
+        # mesh
+        self.vertexList = [] # len = numOfVerts
+        self.indexList = [] # len = 3 * numOfFaces, 
+        self.normalList = [] # len == numOfVerts
+        self.uv0List = [] # len == numOfVerts
+        self.uv1List = [] # len == numOfVerts
+        self.colorList = [] # len == numOfVerts
+        self.matIdList = [] # len == numOfFaces
+        
+        # materials
+        self.materialList = [] # num Of materials
+
 def createObject(context, objName, objData):
     global view_layer
     context.currentObject = bpy.data.objects.new(name=objName, object_data=objData)
@@ -76,7 +114,13 @@ def processGlbFile(jsonData, binData):
         context.binData = binData
         context.worldMatrix = mathutils.Matrix()
         processOneNode(context, rootNodeId)
-
+    
+    matContext = TreeNodeContext()
+    matContext.jsonData = jsonData
+    matContext.binData = binData
+    for oneMat in jsonData["materials"]:
+        createMaterial(matContext, oneMat)
+    
 def processOneNode(context, nodeId):
     curNode = context.jsonData["nodes"][nodeId]
     
@@ -166,6 +210,39 @@ def createStaticMesh(context, meshId):
         
         colorList = getAttributeDataArray(context, colorIndex)
         
+        global globalCache
+        
+        baseIndex = len(globalCache.vertexList)
+        numOfVert = len(vertexList)
+        globalCache.vertexList.extend(vertexList)
+        
+        if len(normalList) > 0:
+            globalCache.normalList.extend(normalList)
+        else:
+            globalCache.normalList.extend([None] * numOfVert)
+        
+        if len(colorList) > 0:
+            globalCache.colorList.extend(colorList)
+        else:
+            globalCache.colorList.extend([None] * numOfVert)
+        
+        if len(uv0List) > 0:
+            globalCache.uv0List.extend(uv0List)
+        else:
+            globalCache.uv0List.extend([None] * numOfVert)
+        
+        if len(uv1List) > 0:
+            globalCache.uv1List.extend(uv1List)
+        else:
+            globalCache.uv1List.extend([None] * numOfVert)
+        
+        numOfFaces = len(indexList) // 3
+        for index in range(numOfFaces):
+            globalCache.indexList.append(baseIndex + indexList[index*3])
+            globalCache.indexList.append(baseIndex + indexList[index*3+1])
+            globalCache.indexList.append(baseIndex + indexList[index*3+2])
+            globalCache.matIdList.append(materialIndex if materialIndex >= 0 else None)
+        
         ################################################################################
         numOfVertices = len(vertexList)
         numOfIndices = len(indexList)
@@ -228,7 +305,6 @@ def createStaticMesh(context, meshId):
                         loop[uvLayer].uv = uvList[loop.vert.index]
         
         ################################################################################
-        #createMaterial(context, materialIndex)
     
     bmesh.ops.remove_doubles(meshBuilder, verts=blenderVertexList, dist=0.0001)
     if needCalcNormal:
@@ -341,14 +417,113 @@ def getAttributeDataArray(context, attrId):
     else:
        return dataList
 
+def sampler_int_to_string(intVal):
+    if intVal == 9728:
+        return "NEAREST"
+    elif intVal == 9729:
+        return "LINEAR"
+    elif intVal == 9984:
+        return "NEAREST_MIPMAP_NEAREST"
+    elif intVal == 9985:
+        return "LINEAR_MIPMAP_NEAREST"
+    elif intVal == 9986:
+        return "NEAREST_MIPMAP_LINEAR"
+    elif intVal == 9987:
+        return "LINEAR_MIPMAP_LINEAR"
+    elif intVal == 33071:
+        return "CLAMP_TO_EDGE"
+    elif intVal == 33648:
+        return "MIRRORED_REPEAT"
+    elif intVal == 10497:
+        return "REPEAT"
+    return ""
 
-def createMaterial(context, materialId):
-    # TODO..
-    pass
+def processOneTexture(context, textureInfo):
+    textureId = textureInfo["index"]
+    texNode = context.jsonData["textures"][textureId]
+    imageId = texNode["source"]
+    imageNode = context.jsonData["images"][imageId]
+    
+    if "uri" in imageNode:
+        imageName = imageNode["name"] if "name" in imageNode else "unknow"
+        imageUri = imageNode["uri"]
+        print(f"image({imageName}) need to download({imageUri})")
+        return None
+    
+    bufferId = imageNode["bufferView"]
+    bufferNode = context.jsonData["bufferViews"][bufferId]
+    
+    texData = TextureData()
+    if "texCoord" in textureInfo:
+        texData.sampleUVId = textureInfo["texCoord"]
+    
+    if "scale" in textureInfo:
+        texData.scale = textureInfo["scale"]
+    elif "strength" in textureInfo:
+        texData.scale = textureInfo["strength"]
+    
+    if "name" in texNode:
+        texData.name = texNode["name"]
+    elif "name" in imageNode:
+        texData.name = imageNode["name"]
+    elif "name" in bufferNode:
+        texData.name = bufferNode["name"]
+    
+    texData.imageType = imageNode["mimeType"]
+    if "sampler" in texNode:
+        samplerId = texNode["sampler"]
+        texSamplerNode = context.jsonData["samplers"][samplerId]
+        
+        texData.sampleMagFilter = sampler_int_to_string(9729)
+        texData.sampleMinFilter = sampler_int_to_string(9985)
+        texData.sampleWrapU = sampler_int_to_string(33071)
+        texData.sampleWrapV = sampler_int_to_string(33071)
+        
+        if "magFilter" in texSamplerNode:
+            texData.sampleMagFilter = sampler_int_to_string(texSamplerNode["magFilter"])
+        if "minFilter" in texSamplerNode:
+            texData.sampleMinFilter = sampler_int_to_string(texSamplerNode["minFilter"])
+        if "wrapS" in texSamplerNode:
+            texData.sampleWrapU = sampler_int_to_string(texSamplerNode["wrapS"])
+        if "wrapT" in texSamplerNode:
+            texData.sampleWrapV = sampler_int_to_string(texSamplerNode["wrapT"])
+    
+    bytesLen = bufferNode["byteLength"]
+    bytesOffset = bufferNode["byteOffset"] if "byteOffset" in bufferNode else 0
+    texData.texBinData = context.binData[bytesOffset: bytesOffset + bytesLen]
+    return texData
+    
+def createMaterial(context, materialNode):
+    matData = MaterialData()
+    
+    if "name" in materialNode:
+        matData.name = materialNode["name"]
+    
+    if "normalTexture" in materialNode:
+        matData.normalTexture = processOneTexture(context, materialNode["normalTexture"])
+    
+    if "pbrMetallicRoughness" in materialNode:
+        pbrNode = materialNode["pbrMetallicRoughness"]
+        if "baseColorTexture" in pbrNode:
+            matData.baseColorTexture = processOneTexture(context, pbrNode["baseColorTexture"])
+        if "baseColorFactor" in pbrNode:
+            matData.baseColorFactor = pbrNode["baseColorFactor"]
+        
+        if "metallicRoughnessTexture" in pbrNode:
+            matData.metallicRoughnessTexture = processOneTexture(context, pbrNode["metallicRoughnessTexture"])
+        if "metallicFactor" in pbrNode:
+            matData.metallicFactor = pbrNode["metallicFactor"]
+        if "roughnessFactor" in pbrNode:
+            matData.roughnessFactor = pbrNode["roughnessFactor"]
+        
+    ################################################################################
+    ################################################################################
+    global globalCache
+    globalCache.materialList.append(matData)
 
 ###################################################################################
 
-glbMeshPath = r"D:\Temp\0031b7a50ac14fc483c3ee36605eb51f.glb"
+glbMeshPath = r"D:\Temp\2786b7849299482ba6767fd86b5a3bb7.glb"
 if not os.path.exists(glbMeshPath):
     print("glb does not exist!")
     sys.exit(0)
@@ -405,7 +580,15 @@ if jsonData is None or binData is None:
     print("file is incomplete")
     sys.exit(0)
 
+globalCache = GlobalMeshCache()
 processGlbFile(jsonData, binData)
+
+material0 = globalCache.materialList[0]
+print(material0.normalTexture)
+
+if material0.normalTexture is not None:
+    normalImage = Image.open(io.BytesIO(material0.normalTexture.texBinData))
+    normalImage.show()
 
 #debug save
 debugBlenderPath = glbMeshPath.replace(".glb", ".blend")
