@@ -154,7 +154,7 @@ def processOneNode(context, nodeId):
     
     staticMesh = None
     if "mesh" in curNode:
-        staticMesh = createStaticMesh(context, curNode["mesh"])
+        staticMesh = processStaticMesh(context, curNode["mesh"])
     
     objName = curNode["name"] if "name" in curNode else "NoNameObj"
     createObject(context, objName, staticMesh)
@@ -171,11 +171,97 @@ def processOneNode(context, nodeId):
             
             processOneNode(childContext, childId)
 
-
-def createStaticMesh(context, meshId):
-    curMesh = context.jsonData["meshes"][meshId]
-    
+def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, colorList):
     meshBuilder = bmesh.new()
+    
+    ################################################################################
+    numOfVertices = len(vertexList)
+    numOfIndices = len(indexList)
+    
+    blenderVertexList = [None] * numOfVertices
+    for index in range(numOfVertices):
+        curVert = meshBuilder.verts.new(vertexList[index])
+        curVert.index = index
+        blenderVertexList[index] = curVert
+    
+    needCalcNormal = False
+    numOfNormals = len(normalList)
+    if numOfNormals > 0 and numOfNormals == numOfVertices and normalList[0] is not None:
+        for index in range(numOfVertices):
+            blenderVertexList[index].normal = normalList[index]
+    else:
+        needCalcNormal = True
+    
+    numOfColors = len(colorList)
+    if numOfColors > 0 and numOfColors == numOfVertices and colorList[0] is not None:
+        colorLayer = meshBuilder.verts.layers.color.new("VertexColor")
+        for index in range(numOfVertices):
+            colorLen = len(colorList[index])
+            blenderVertexList[index][colorLayer] = colorList[index]
+    
+    numOfFaces = numOfIndices // 3
+    blenderFaceList = [None] * numOfFaces
+    for index in range(numOfFaces):
+        i0 = indexList[index*3]
+        i1 = indexList[index*3+1]
+        i2 = indexList[index*3+2]
+        
+        #if i0 >= numOfVertices or i1 >= numOfVertices or i2 >= numOfVertices:
+        #    continue
+        
+        v0 = blenderVertexList[i0]
+        v1 = blenderVertexList[i1]
+        v2 = blenderVertexList[i2]
+        
+        try:
+            curFace = meshBuilder.faces.new((v0, v1, v2))
+            curFace.index = index
+            blenderFaceList[index] = curFace
+            if needCalcNormal:
+                curFace.smooth = True
+        except ValueError:
+            pass
+    
+    numOfUVs = len(uvsList)
+    for uvIndex in range(numOfUVs):
+        uvList = uvsList[uvIndex]
+        numOfCurUV = len(uvList)
+        if numOfCurUV > 0 and numOfCurUV == numOfVertices and uvList[0] is not None:
+            uvLayer = meshBuilder.loops.layers.uv.new(f"UV{uvIndex}")
+            for index in range(numOfFaces):
+                if blenderFaceList[index] is None:
+                    continue
+                
+                for loop in blenderFaceList[index].loops:
+                    loop[uvLayer].uv = uvList[loop.vert.index]
+    
+    ################################################################################
+    
+    bmesh.ops.remove_doubles(meshBuilder, verts=blenderVertexList, dist=0.0001)
+    if needCalcNormal:
+        meshBuilder.normal_update()
+    
+    newMesh = bpy.data.meshes.new(name=meshName)
+    newMesh.use_auto_smooth = True
+    newMesh.auto_smooth_angle = 1.3089969 # 70 degree
+    meshBuilder.to_mesh(newMesh)
+    meshBuilder.free()
+    
+    return newMesh
+    
+
+def processStaticMesh(context, meshId):
+    curMesh = context.jsonData["meshes"][meshId]
+    meshName = curMesh["name"] if "name" in curMesh else "NoNameMesh"
+    
+    worldNormalMatrix = context.worldMatrix.inverted_safe()
+    worldNormalMatrix.transpose()
+    
+    meshVertexList = []
+    meshIndexList = []
+    meshNormalList = []
+    meshUVsList = [[], []]
+    meshColorList = []
     
     sections = curMesh["primitives"]
     for oneSection in sections:
@@ -206,118 +292,79 @@ def createStaticMesh(context, meshId):
         
         uv0List = getAttributeDataArray(context, uv0Index)
         uv1List = getAttributeDataArray(context, uv1Index)
-        uvsList = [uv0List, uv1List]
         
         colorList = getAttributeDataArray(context, colorIndex)
         
-        global globalCache
-        
-        baseIndex = len(globalCache.vertexList)
+        #########################################################
+        meshBaseIndex = len(meshVertexList)
         numOfVert = len(vertexList)
-        globalCache.vertexList.extend(vertexList)
+        numOfNormal = len(normalList)
+        numOfColor = len(colorList)
+        numOfUV0 = len(uv0List)
+        numOfUV1 = len(uv1List)
         
-        if len(normalList) > 0:
-            globalCache.normalList.extend(normalList)
+        meshVertexList.extend(vertexList)
+        
+        if numOfNormal > 0:
+            meshNormalList.extend(normalList)
+        else:
+            meshNormalList.extend([None] * numOfVert)
+        
+        if numOfColor > 0:
+            meshColorList.extend(colorList)
+        else:
+            meshColorList.extend([None] * numOfVert)
+        
+        if numOfUV0 > 0:
+            meshUVsList[0].extend(uv0List)
+        else:
+            meshUVsList[0].extend([None] * numOfVert)
+        
+        if numOfUV1 > 0:
+            meshUVsList[1].extend(uv1List)
+        else:
+            meshUVsList[1].extend([None] * numOfVert)
+        
+        numOfFaces = len(indexList) // 3
+        for index in range(numOfFaces):
+            meshIndexList.append(meshBaseIndex + indexList[index*3])
+            meshIndexList.append(meshBaseIndex + indexList[index*3+1])
+            meshIndexList.append(meshBaseIndex + indexList[index*3+2])
+            
+        #########################################################
+        global globalCache
+        baseIndex = len(globalCache.vertexList)
+        for oneVert in vertexList:
+            globalCache.vertexList.append(context.worldMatrix @ oneVert)
+        
+        if numOfNormal > 0:
+            for oneNormal in normalList:
+                globalCache.normalList.append(worldNormalMatrix @ oneNormal)
         else:
             globalCache.normalList.extend([None] * numOfVert)
         
-        if len(colorList) > 0:
+        if numOfColor > 0:
             globalCache.colorList.extend(colorList)
         else:
             globalCache.colorList.extend([None] * numOfVert)
         
-        if len(uv0List) > 0:
+        if numOfUV0 > 0:
             globalCache.uv0List.extend(uv0List)
         else:
             globalCache.uv0List.extend([None] * numOfVert)
         
-        if len(uv1List) > 0:
+        if numOfUV1 > 0:
             globalCache.uv1List.extend(uv1List)
         else:
             globalCache.uv1List.extend([None] * numOfVert)
         
-        numOfFaces = len(indexList) // 3
         for index in range(numOfFaces):
             globalCache.indexList.append(baseIndex + indexList[index*3])
             globalCache.indexList.append(baseIndex + indexList[index*3+1])
             globalCache.indexList.append(baseIndex + indexList[index*3+2])
             globalCache.matIdList.append(materialIndex if materialIndex >= 0 else None)
-        
-        ################################################################################
-        numOfVertices = len(vertexList)
-        numOfIndices = len(indexList)
-        
-        blenderVertexList = [None] * numOfVertices
-        for index in range(numOfVertices):
-            curVert = meshBuilder.verts.new(vertexList[index])
-            curVert.index = index
-            blenderVertexList[index] = curVert
-        
-        needCalcNormal = False
-        numOfNormals = len(normalList)
-        if numOfNormals > 0 and numOfNormals == numOfVertices:
-            for index in range(numOfVertices):
-                blenderVertexList[index].normal = normalList[index]
-        else:
-            needCalcNormal = True
-        
-        numOfColors = len(colorList)
-        if numOfColors > 0 and numOfColors == numOfVertices:
-            colorLayer = meshBuilder.verts.layers.color.new("VertexColor")
-            for index in range(numOfVertices):
-                colorLen = len(colorList[index])
-                blenderVertexList[index][colorLayer] = colorList[index]
-        
-        numOfFaces = numOfIndices // 3
-        blenderFaceList = [None] * numOfFaces
-        for index in range(numOfFaces):
-            i0 = indexList[index*3]
-            i1 = indexList[index*3+1]
-            i2 = indexList[index*3+2]
-            
-            #if i0 >= numOfVertices or i1 >= numOfVertices or i2 >= numOfVertices:
-            #    continue
-            
-            v0 = blenderVertexList[i0]
-            v1 = blenderVertexList[i1]
-            v2 = blenderVertexList[i2]
-            
-            try:
-                curFace = meshBuilder.faces.new((v0, v1, v2))
-                curFace.index = index
-                blenderFaceList[index] = curFace
-                if needCalcNormal:
-                    curFace.smooth = True
-            except ValueError:
-                pass
-        
-        numOfUVs = len(uvsList)
-        for uvIndex in range(numOfUVs):
-            uvList = uvsList[uvIndex]
-            numOfCurUV = len(uvList)
-            if numOfCurUV > 0 and numOfCurUV == numOfVertices:
-                uvLayer = meshBuilder.loops.layers.uv.new(f"UV{uvIndex}")
-                for index in range(numOfFaces):
-                    if blenderFaceList[index] is None:
-                        continue
-                    
-                    for loop in blenderFaceList[index].loops:
-                        loop[uvLayer].uv = uvList[loop.vert.index]
-        
-        ################################################################################
     
-    bmesh.ops.remove_doubles(meshBuilder, verts=blenderVertexList, dist=0.0001)
-    if needCalcNormal:
-        meshBuilder.normal_update()
-    
-    meshName = curMesh["name"] if "name" in curMesh else "NoNameMesh"
-    newMesh = bpy.data.meshes.new(name=meshName)
-    newMesh.use_auto_smooth = True
-    newMesh.auto_smooth_angle = 1.3089969 # 70 degree
-    meshBuilder.to_mesh(newMesh)
-    meshBuilder.free()
-    
-    return newMesh
+    return createStaticMesh(meshName, meshVertexList, meshIndexList, meshNormalList, meshUVsList, meshColorList)
 
 def getAttributeDataInfo(context, attrId):
     curDataAccessor = context.jsonData["accessors"][attrId]
@@ -517,13 +564,14 @@ def createMaterial(context, materialNode):
             matData.roughnessFactor = pbrNode["roughnessFactor"]
         
     ################################################################################
+    # TODO: create blender material
     ################################################################################
     global globalCache
     globalCache.materialList.append(matData)
 
 ###################################################################################
 
-glbMeshPath = r"D:\Temp\2786b7849299482ba6767fd86b5a3bb7.glb"
+glbMeshPath = r"D:\Temp\a87e002d68bb4554aa7a64b4a81a3066.glb" #r"D:\Temp\2786b7849299482ba6767fd86b5a3bb7.glb"
 if not os.path.exists(glbMeshPath):
     print("glb does not exist!")
     sys.exit(0)
@@ -583,12 +631,22 @@ if jsonData is None or binData is None:
 globalCache = GlobalMeshCache()
 processGlbFile(jsonData, binData)
 
+'''
+
+testContext = TreeNodeContext()
+testContext.jsonData = jsonData
+testContext.binData = binData
+testContext.worldMatrix = mathutils.Matrix()
+globalMesh = createStaticMesh("globalMesh", globalCache.vertexList, globalCache.indexList, globalCache.normalList, [globalCache.uv0List, globalCache.uv1List], globalCache.colorList)
+createObject(testContext, "globalObj", globalMesh)
+
 material0 = globalCache.materialList[0]
 print(material0.normalTexture)
 
-if material0.normalTexture is not None:
-    normalImage = Image.open(io.BytesIO(material0.normalTexture.texBinData))
+if material0.metallicRoughnessTexture is not None:
+    normalImage = Image.open(io.BytesIO(material0.metallicRoughnessTexture.texBinData))
     normalImage.show()
+'''
 
 #debug save
 debugBlenderPath = glbMeshPath.replace(".glb", ".blend")
