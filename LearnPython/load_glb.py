@@ -53,6 +53,18 @@ class BinDataInfo:
         self.bytesLen = None
         self.bytesOffset = None
         self.bytesStride = None
+    
+    def __str__(self):
+        return f"{self.componentType}\n{self.dataType}\n{self.dataCount}\n{self.bytesLen}\n{self.bytesOffset}\n{self.bytesStride}"
+
+class UVTransform:
+    def __init__(self):
+        self.offset = [0.0, 0.0]
+        self.rotation = 0.0
+        self.scale = [1.0, 1.0]
+    
+    def __str__(self):
+        return f"offset:{self.offset};rotation:{self.rotation};scale:{self.scale};"
 
 class TextureData:
     def __init__(self):
@@ -65,30 +77,48 @@ class TextureData:
         self.sampleUVId = 0.0
         self.scale = 1.0
         self.texBinData = None
+        self.uv_transform = None
+
+    def __str__(self):
+        return f"name:{self.name}\nimageType:{self.imageType}\nmagFilter:{self.sampleMagFilter}\nminFilter:{self.sampleMinFilter}\nwrapU:{self.sampleWrapU}\nwrapV:{self.sampleWrapV}\nuvId:{self.sampleUVId}\nscale:{self.scale}\nuv_transform:{self.uv_transform}"
 
 class MaterialData:
     def __init__(self):
+        self.blenderMatObj = None
         self.name = None
         self.baseColorTexture = None
         self.baseColorFactor = [1.0, 1.0, 1.0, 1.0]
         self.metallicRoughnessTexture = None
+        self.metallicTexture = None
+        self.roughnessTexture = None
         self.metallicFactor = 1.0
         self.roughnessFactor = 1.0
         self.normalTexture = None
-
+    
+    def __str__(self):
+        if self.metallicRoughnessTexture is not None:
+            return f"***************\nname:{self.name}\n\nBC:{self.baseColorFactor}\nBCTex:\n{self.baseColorTexture}\n\nNormal:\n{self.normalTexture}\n\nRoughness:{self.roughnessFactor}\nMetallic:{self.metallicFactor}\nmetallicRoughnessTex:\n{self.metallicRoughnessTexture}\n***************\n"
+        else:
+            return f"***************\nname:{self.name}\n\nBC:{self.baseColorFactor}\nBCTex:\n{self.baseColorTexture}\n\nNormal:\n{self.normalTexture}\n\nRoughness:{self.roughnessFactor}\nRoughnessTex:\n{self.roughnessTexture}\n\nMetallic:{self.metallicFactor}\nMetallicTexture:\n{self.metallicTexture}\n***************\n"
+    
 class GlobalMeshCache:
     def __init__(self):
         # mesh
         self.vertexList = [] # len = numOfVerts
         self.indexList = [] # len = 3 * numOfFaces, 
         self.normalList = [] # len == numOfVerts
-        self.uv0List = [] # len == numOfVerts
-        self.uv1List = [] # len == numOfVerts
+        self.uvsList = [[], [], [], [], [], [], [], []] # len == numOfVerts
         self.colorList = [] # len == numOfVerts
         self.matIdList = [] # len == numOfFaces
         
         # materials
         self.materialList = [] # num Of materials
+        
+        #flags
+        self.numOfValidUV = 0
+        self.hasValidUVs = [False] * 8
+        self.hasValidColor = False
+        self.hasValidNormal = False
 
 def createObject(context, objName, objData):
     global view_layer
@@ -101,8 +131,7 @@ def createObject(context, objName, objData):
     else:
         context.currentObject.matrix_local = context.worldMatrix 
 
-
-def processGlbFile(jsonData, binData):
+def processGlbFile(jsonData, binData, osgjsMatData):
     defaultScene = 0
     if "scene" in jsonData:
         defaultScene = jsonData["scene"]
@@ -115,12 +144,52 @@ def processGlbFile(jsonData, binData):
         context.worldMatrix = mathutils.Matrix()
         processOneNode(context, rootNodeId)
     
+    global globalCache
+    numOfUVs = 8
+    globalCache.numOfValidUV = 0
+    for uvIndex in range(numOfUVs):
+        if not globalCache.hasValidUVs[uvIndex]:
+            globalCache.uvsList[uvIndex] = []
+        else:
+            globalCache.numOfValidUV += 1
+        
+    inputNormalList = globalCache.normalList if globalCache.hasValidNormal else []
+    inputColorList = globalCache.colorList if globalCache.hasValidColor else []
+    
+    inputUVsList = [[]] * numOfUVs
+    for uvIndex in range(numOfUVs):
+        if globalCache.hasValidUVs[uvIndex]:
+            inputUVsList[uvIndex] = globalCache.uvsList[uvIndex]
+    
+    globalMesh = createStaticMesh("globalMesh", globalCache.vertexList, globalCache.indexList, inputNormalList, inputUVsList, inputColorList, globalCache.matIdList)
+    
     matContext = TreeNodeContext()
+    matContext.worldMatrix = mathutils.Matrix()
+    createObject(matContext, "globalMeshObj", globalMesh)
+    
+    # load materials from glb
     matContext.jsonData = jsonData
     matContext.binData = binData
     for oneMat in jsonData["materials"]:
         createMaterial(matContext, oneMat)
     
+    # override materials
+    if osgjsMatData is not None:
+        loadOsgjsMaterialInfo(osgjsMatData)
+    
+    # apply materials
+    for matData in globalCache.materialList:
+        if matData.baseColorTexture is not None:
+            setupMaterialTexture(matData.baseColorTexture, matData.blenderMatObj, "Base Color", matData.baseColorFactor)
+        if matData.normalTexture is not None:
+            setupMaterialTexture(matData.normalTexture, matData.blenderMatObj, "Normal", 1.0)
+        if matData.metallicRoughnessTexture is not None:
+            setupMaterialTexture(matData.metallicRoughnessTexture, matData.blenderMatObj, "MetalRough", [matData.metallicFactor, matData.roughnessFactor])
+        if matData.roughnessTexture is not None:
+            setupMaterialTexture(matData.roughnessTexture, matData.blenderMatObj, "Roughness", matData.roughnessFactor)
+        if matData.metallicTexture is not None:
+            setupMaterialTexture(matData.metallicTexture, matData.blenderMatObj, "Metallic", matData.metallicFactor)
+        
 def processOneNode(context, nodeId):
     curNode = context.jsonData["nodes"][nodeId]
     
@@ -152,12 +221,11 @@ def processOneNode(context, nodeId):
         context.localMatrix = mathutils.Matrix.LocRotScale(translationVec, rotQuat, scaleVec)
     context.worldMatrix = context.worldMatrix @ context.localMatrix 
     
-    staticMesh = None
     if "mesh" in curNode:
-        staticMesh = processStaticMesh(context, curNode["mesh"])
+        processStaticMesh(context, curNode["mesh"])
     
-    objName = curNode["name"] if "name" in curNode else "NoNameObj"
-    createObject(context, objName, staticMesh)
+    #objName = curNode["name"] if "name" in curNode else "NoNameObj"
+    #createObject(context, objName, staticMesh)
 
     if "children" in curNode:
         childrenNodesId = curNode["children"]
@@ -171,12 +239,16 @@ def processOneNode(context, nodeId):
             
             processOneNode(childContext, childId)
 
-def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, colorList):
+def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, colorList, matIdsList):
     meshBuilder = bmesh.new()
     
     ################################################################################
     numOfVertices = len(vertexList)
     numOfIndices = len(indexList)
+    
+    numOfColors = len(colorList)
+    if numOfColors > 0 and numOfColors == numOfVertices and colorList[0] is not None:
+        colorLayer = meshBuilder.verts.layers.color.new("VertexColor")
     
     blenderVertexList = [None] * numOfVertices
     for index in range(numOfVertices):
@@ -192,11 +264,8 @@ def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, color
     else:
         needCalcNormal = True
     
-    numOfColors = len(colorList)
     if numOfColors > 0 and numOfColors == numOfVertices and colorList[0] is not None:
-        colorLayer = meshBuilder.verts.layers.color.new("VertexColor")
-        for index in range(numOfVertices):
-            colorLen = len(colorList[index])
+        for index in range(numOfVertices): 
             blenderVertexList[index][colorLayer] = colorList[index]
     
     numOfFaces = numOfIndices // 3
@@ -216,6 +285,7 @@ def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, color
         try:
             curFace = meshBuilder.faces.new((v0, v1, v2))
             curFace.index = index
+            curFace.material_index = matIdsList[index]
             blenderFaceList[index] = curFace
             if needCalcNormal:
                 curFace.smooth = True
@@ -233,7 +303,8 @@ def createStaticMesh(meshName, vertexList, indexList, normalList, uvsList, color
                     continue
                 
                 for loop in blenderFaceList[index].loops:
-                    loop[uvLayer].uv = uvList[loop.vert.index]
+                    cachedUV = uvList[loop.vert.index]
+                    loop[uvLayer].uv = mathutils.Vector((cachedUV.x, 1.0-cachedUV.y))
     
     ################################################################################
     
@@ -257,12 +328,12 @@ def processStaticMesh(context, meshId):
     worldNormalMatrix = context.worldMatrix.inverted_safe()
     worldNormalMatrix.transpose()
     
-    meshVertexList = []
-    meshIndexList = []
-    meshNormalList = []
-    meshUVsList = [[], []]
-    meshColorList = []
-    
+    #meshVertexList = []
+    #meshIndexList = []
+    #meshNormalList = []
+    #meshUVsList = [[], []]
+    #meshColorList = []
+    numOfUVs = 8
     sections = curMesh["primitives"]
     for oneSection in sections:
         vertAttr = oneSection["attributes"]
@@ -274,8 +345,10 @@ def processStaticMesh(context, meshId):
         vertIndex = vertAttr["POSITION"] if "POSITION" in vertAttr else -1
         normalIndex = vertAttr["NORMAL"] if "NORMAL" in vertAttr else -1
         tangentIndex = vertAttr["TANGENT"] if "TANGENT" in vertAttr else -1
-        uv0Index = vertAttr["TEXCOORD_0"] if "TEXCOORD_0" in vertAttr else -1
-        uv1Index = vertAttr["TEXCOORD_1"] if "TEXCOORD_1" in vertAttr else -1
+        uvsIndices = [-1] * numOfUVs
+        for uvIndex in range(numOfUVs):
+            uvKey = f"TEXCOORD_{uvIndex}"
+            uvsIndices[uvIndex] = vertAttr[uvKey] if uvKey in vertAttr else -1
         colorIndex = vertAttr["COLOR_0"] if "COLOR_0" in vertAttr else -1
         triangleIndex = oneSection["indices"] if "indices" in oneSection else -1
         materialIndex = oneSection["material"] if "material" in oneSection else -1
@@ -290,47 +363,47 @@ def processStaticMesh(context, meshId):
         else:
             indexList = getAttributeDataArray(context, triangleIndex)
         
-        uv0List = getAttributeDataArray(context, uv0Index)
-        uv1List = getAttributeDataArray(context, uv1Index)
+        uvsList = [None] * numOfUVs
+        for uvIndex in range(numOfUVs):
+            uvsList[uvIndex] = getAttributeDataArray(context, uvsIndices[uvIndex])
         
         colorList = getAttributeDataArray(context, colorIndex)
         
-        #########################################################
-        meshBaseIndex = len(meshVertexList)
         numOfVert = len(vertexList)
         numOfNormal = len(normalList)
         numOfColor = len(colorList)
-        numOfUV0 = len(uv0List)
-        numOfUV1 = len(uv1List)
-        
-        meshVertexList.extend(vertexList)
-        
-        if numOfNormal > 0:
-            meshNormalList.extend(normalList)
-        else:
-            meshNormalList.extend([None] * numOfVert)
-        
-        if numOfColor > 0:
-            meshColorList.extend(colorList)
-        else:
-            meshColorList.extend([None] * numOfVert)
-        
-        if numOfUV0 > 0:
-            meshUVsList[0].extend(uv0List)
-        else:
-            meshUVsList[0].extend([None] * numOfVert)
-        
-        if numOfUV1 > 0:
-            meshUVsList[1].extend(uv1List)
-        else:
-            meshUVsList[1].extend([None] * numOfVert)
-        
         numOfFaces = len(indexList) // 3
-        for index in range(numOfFaces):
-            meshIndexList.append(meshBaseIndex + indexList[index*3])
-            meshIndexList.append(meshBaseIndex + indexList[index*3+1])
-            meshIndexList.append(meshBaseIndex + indexList[index*3+2])
-            
+        
+        #########################################################
+        #meshBaseIndex = len(meshVertexList)
+        #
+        #meshVertexList.extend(vertexList)
+        #
+        #if numOfNormal > 0:
+        #    meshNormalList.extend(normalList)
+        #else:
+        #    meshNormalList.extend([None] * numOfVert)
+        #
+        #if numOfColor > 0:
+        #    meshColorList.extend(colorList)
+        #else:
+        #    meshColorList.extend([None] * numOfVert)
+        #
+        #if numOfUV0 > 0:
+        #    meshUVsList[0].extend(uv0List)
+        #else:
+        #    meshUVsList[0].extend([None] * numOfVert)
+        #
+        #if numOfUV1 > 0:
+        #    meshUVsList[1].extend(uv1List)
+        #else:
+        #    meshUVsList[1].extend([None] * numOfVert)
+        #
+        #for index in range(numOfFaces):
+        #    meshIndexList.append(meshBaseIndex + indexList[index*3])
+        #    meshIndexList.append(meshBaseIndex + indexList[index*3+1])
+        #    meshIndexList.append(meshBaseIndex + indexList[index*3+2])
+        #    
         #########################################################
         global globalCache
         baseIndex = len(globalCache.vertexList)
@@ -340,31 +413,28 @@ def processStaticMesh(context, meshId):
         if numOfNormal > 0:
             for oneNormal in normalList:
                 globalCache.normalList.append(worldNormalMatrix @ oneNormal)
+            globalCache.hasValidNormal = True
         else:
-            globalCache.normalList.extend([None] * numOfVert)
+            globalCache.normalList.extend([mathutils.Vector((0.0,0.0,1.0))] * numOfVert)
         
         if numOfColor > 0:
             globalCache.colorList.extend(colorList)
+            globalCache.hasValidColor = True
         else:
-            globalCache.colorList.extend([None] * numOfVert)
+            globalCache.colorList.extend([mathutils.Vector((1.0,1.0,1.0,1.0))] * numOfVert)
         
-        if numOfUV0 > 0:
-            globalCache.uv0List.extend(uv0List)
-        else:
-            globalCache.uv0List.extend([None] * numOfVert)
-        
-        if numOfUV1 > 0:
-            globalCache.uv1List.extend(uv1List)
-        else:
-            globalCache.uv1List.extend([None] * numOfVert)
+        for uvIndex in range(numOfUVs):
+            if len(uvsList[uvIndex]) > 0:
+                globalCache.uvsList[uvIndex].extend(uvsList[uvIndex])
+                globalCache.hasValidUVs[uvIndex] = True
+            else:
+                globalCache.uvsList[uvIndex].extend([mathutils.Vector((0.0,0.0))] * numOfVert)
         
         for index in range(numOfFaces):
             globalCache.indexList.append(baseIndex + indexList[index*3])
             globalCache.indexList.append(baseIndex + indexList[index*3+1])
             globalCache.indexList.append(baseIndex + indexList[index*3+2])
             globalCache.matIdList.append(materialIndex if materialIndex >= 0 else None)
-    
-    return createStaticMesh(meshName, meshVertexList, meshIndexList, meshNormalList, meshUVsList, meshColorList)
 
 def getAttributeDataInfo(context, attrId):
     curDataAccessor = context.jsonData["accessors"][attrId]
@@ -509,6 +579,18 @@ def processOneTexture(context, textureInfo):
     elif "strength" in textureInfo:
         texData.scale = textureInfo["strength"]
     
+    if "extensions" in textureInfo:
+        if "KHR_texture_transform" in textureInfo["extensions"]:
+            texTransfromNode = textureInfo["extensions"]["KHR_texture_transform"]
+            
+            texData.uv_transform = UVTransform()
+            if "offset" in texTransfromNode:
+                texData.uv_transform.offset = texTransfromNode["offset"]
+            if "rotation" in texTransfromNode:
+                texData.uv_transform.rotation = texTransfromNode["rotation"]
+            if "scale" in texTransfromNode:
+                texData.uv_transform.scale = texTransfromNode["scale"]
+            
     if "name" in texNode:
         texData.name = texNode["name"]
     elif "name" in imageNode:
@@ -538,40 +620,351 @@ def processOneTexture(context, textureInfo):
     bytesLen = bufferNode["byteLength"]
     bytesOffset = bufferNode["byteOffset"] if "byteOffset" in bufferNode else 0
     texData.texBinData = context.binData[bytesOffset: bytesOffset + bytesLen]
-    return texData
     
+    return texData
+
+def searchTextureId(textureId, channelsNode, channelName):
+    if channelName in channelsNode:
+        if "texture" in channelsNode[channelName]:
+            if "uid" in channelsNode[channelName]["texture"]:
+                foundUid = channelsNode[channelName]["texture"]["uid"]
+                return foundUid.startswith(textureId);
+    return False
+
+def searchBaseColorChannel(matChannelsNode):
+    searchKeys = ["AlbedoPBR", "DiffusePBR", "DiffuseColor"]
+    
+    validKeys = []
+    for index in range(len(searchKeys)):
+        key = searchKeys[index]
+        if key not in matChannelsNode:
+            continue
+        
+        curChannel = matChannelsNode[key]
+        if not curChannel["enable"]:
+            continue
+        
+        validKeys.append(key)
+        
+    for index in range(len(validKeys)):
+        key = validKeys[index]
+        curChannel = matChannelsNode[key]
+        
+        if "texture" in curChannel:
+            return key;
+    
+    return validKeys[0]
+
+def loadOsgjsTextureInfo(textureInfoNode, texturesId2Name):
+    textureNode = textureInfoNode["texture"]
+    texUid = textureNode["uid"]
+    if texUid not in texturesId2Name:
+        print(f"Failed to find texture {texUid}")
+        return None
+    
+    texData = TextureData()
+    
+    texData.name = texturesId2Name[texUid]
+    texData.imageType = "external"
+    texData.sampleWrapU = textureNode["wrapS"] if "wrapS" in textureNode else "CLAMP_TO_EDGE"
+    texData.sampleWrapV = textureNode["wrapT"] if "wrapT" in textureNode else "CLAMP_TO_EDGE"
+    texData.sampleMagFilter = textureNode["magFilter"] if "magFilter" in textureNode else "LINEAR"
+    texData.sampleMinFilter = textureNode["minFilter"] if "minFilter" in textureNode else "LINEAR_MIPMAP_LINEAR"
+    texData.sampleUVId = textureNode["texCoordUnit"] if "texCoordUnit" in textureNode else 0.0
+    
+    if "UVTransforms" in textureInfoNode:
+        uvTransformNode = textureInfoNode["UVTransforms"]
+        texData.uv_transform = UVTransform()
+        texData.uv_transform.scale[0] = uvTransformNode["scale"][0]
+        texData.uv_transform.scale[1] = uvTransformNode["scale"][1] * -1 #flip uv y
+        
+        texData.uv_transform.offset[0] = uvTransformNode["offset"][0]
+        texData.uv_transform.offset[1] = uvTransformNode["offset"][1]
+        
+        texData.uv_transform.rotation = uvTransformNode["rotation"]
+    else:
+        texData.uv_transform.scale.y = -1 #flip uv y
+    
+    return texData
+
+def loadOsgjsMaterialInfo(osgjsMatJson):
+    global glbMeshPath
+    if "-" in glbMeshPath:
+        index = glbMeshPath.find("-")
+        osgjsId = glbMeshPath[index+1:-4]
+    else:
+        osgjsId = os.path.basename(glbMeshPath)[:-4]
+    
+    modelNode = osgjsMatJson[f"/i/models/{osgjsId}"];
+    materialsNode = modelNode["options"]["materials"];
+    
+    materialsMap = {}
+    for matNode in materialsNode.values():
+        if isinstance(matNode, dict):
+            materialsMap[matNode["name"]] = matNode
+    
+    texturesId2Name = {}
+    texturesList = osgjsMatJson[f"/i/models/{osgjsId}/textures?optimized=1"]["results"]
+    for oneTex in texturesList:
+        texturesId2Name[oneTex["uid"]] = oneTex["name"]
+    
+    global globalCache
+    for matObj in globalCache.materialList:
+        matName = matObj.name
+        
+        matNode = None
+        if matName in materialsMap:
+            matNode = materialsMap[matName]
+        elif matName.startswith("tex_"):
+            textureId = matName[4:]
+            for val in materialsMap.values():
+                channelsNode = val["channels"]
+                if searchTextureId(textureId, channelsNode, "AlbedoPBR"):
+                    matNode = val
+                    break
+                    
+                if searchTextureId(textureId, channelsNode, "DiffusePBR"):
+                    matNode = val
+                    break
+                
+                if searchTextureId(textureId, channelsNode, "DiffuseColor"):
+                    matNode = val
+                    break
+                
+        else:
+            for key in materialsMap.keys():
+                if key.startswith(matName):
+                    matNode = materialsMap[key]
+                    break
+        
+        if matNode is None:
+            print(f"Failed to find material {matName}")
+            continue
+        
+        matChannelsNode = matNode["channels"]
+        BCChannelName = searchBaseColorChannel(matChannelsNode);
+        
+        matObj.baseColorTexture = None
+        matObj.baseColorFactor = [1.0, 1.0, 1.0, 1.0]
+        bcChannelNode = matChannelsNode[BCChannelName]
+        if bcChannelNode["enable"]:
+            if "texture" in bcChannelNode:
+                matObj.baseColorTexture = loadOsgjsTextureInfo(bcChannelNode, texturesId2Name)
+            
+            if "color" in bcChannelNode:
+                matObj.baseColorFactor = bcChannelNode["color"]
+                matObj.baseColorFactor.append(1.0)
+            
+            if "factor" in bcChannelNode:
+                scale = bcChannelNode["factor"]
+                matObj.baseColorFactor[0] *= scale
+                matObj.baseColorFactor[1] *= scale
+                matObj.baseColorFactor[2] *= scale
+                matObj.baseColorFactor[3] *= scale
+        
+        matObj.metallicRoughnessTexture = None
+        if BCChannelName.endswith("PBR"):
+            matObj.metallicTexture = None
+            matObj.metallicFactor = 1.0
+            if "MetalnessPBR" in matChannelsNode:
+                metalChannelNode = matChannelsNode["MetalnessPBR"]
+                if metalChannelNode["enable"]:
+                    if "texture" in metalChannelNode:
+                        matObj.metallicTexture = loadOsgjsTextureInfo(metalChannelNode, texturesId2Name)
+                    
+                    if "factor" in metalChannelNode:
+                        matObj.metallicFactor = metalChannelNode["factor"]
+            
+            matObj.roughnessTexture = None
+            matObj.roughnessFactor = 1.0
+            if "RoughnessPBR" in matChannelsNode:
+                roughChannelNode = matChannelsNode["RoughnessPBR"]
+                if roughChannelNode["enable"]:
+                    if "texture" in roughChannelNode:
+                        matObj.roughnessTexture = loadOsgjsTextureInfo(roughChannelNode, texturesId2Name)
+                    
+                    if "factor" in roughChannelNode:
+                        matObj.roughnessFactor = roughChannelNode["factor"]
+        else:
+            matObj.metallicTexture = None
+            matObj.roughnessTexture = None
+            matObj.roughnessFactor = 1.0
+            matObj.metallicFactor = 0.0
+        
+        matObj.normalTexture = None
+        if "NormalMap" in matChannelsNode:
+            normalChannelNode = matChannelsNode["NormalMap"]
+            if normalChannelNode["enable"]:
+                if "texture" in normalChannelNode:
+                    matObj.normalTexture = loadOsgjsTextureInfo(normalChannelNode, texturesId2Name) 
+        
+
 def createMaterial(context, materialNode):
     matData = MaterialData()
     
     if "name" in materialNode:
         matData.name = materialNode["name"]
+    else:
+        matData.name = "unknow_material"
+    
+    matData.blenderMatObj = bpy.data.materials.new(matData.name)
+    matData.blenderMatObj.use_nodes = True
+    context.currentObject.data.materials.append(matData.blenderMatObj)
     
     if "normalTexture" in materialNode:
         matData.normalTexture = processOneTexture(context, materialNode["normalTexture"])
     
     if "pbrMetallicRoughness" in materialNode:
         pbrNode = materialNode["pbrMetallicRoughness"]
-        if "baseColorTexture" in pbrNode:
-            matData.baseColorTexture = processOneTexture(context, pbrNode["baseColorTexture"])
         if "baseColorFactor" in pbrNode:
             matData.baseColorFactor = pbrNode["baseColorFactor"]
+        if "baseColorTexture" in pbrNode:
+            matData.baseColorTexture = processOneTexture(context, pbrNode["baseColorTexture"])
         
-        if "metallicRoughnessTexture" in pbrNode:
-            matData.metallicRoughnessTexture = processOneTexture(context, pbrNode["metallicRoughnessTexture"])
         if "metallicFactor" in pbrNode:
             matData.metallicFactor = pbrNode["metallicFactor"]
         if "roughnessFactor" in pbrNode:
             matData.roughnessFactor = pbrNode["roughnessFactor"]
-        
-    ################################################################################
-    # TODO: create blender material
-    ################################################################################
+        if "metallicRoughnessTexture" in pbrNode:
+            matData.metallicRoughnessTexture = processOneTexture(context, pbrNode["metallicRoughnessTexture"])
+    
     global globalCache
     globalCache.materialList.append(matData)
 
+def setupMaterialDefaultValue(matObj, socketName, defaultVal):
+    pbrNode = matObj.node_tree.nodes.get('Principled BSDF')
+    pbrNode.inputs[socketName].default_value = defaultVal
+
+def setupMaterialTexture(textureData, matObj, socketName, socketScale):
+    if textureData.imageType == "external":
+        global glbMeshRoot
+        imagePath = f"{glbMeshRoot}/{textureData.name}"
+        if not os.path.exists(imagePath):
+            return
+        blenderImg = bpy.data.images.load(imagePath)
+        blenderImg.pack()
+    else:
+        tempImagePath = f"{os.getcwd()}/{textureData.name}.png"
+        pillowImg = Image.open(io.BytesIO(textureData.texBinData))
+        pillowImg.save(tempImagePath)
+        blenderImg = bpy.data.images.load(tempImagePath)
+        blenderImg.pack()
+        os.remove(tempImagePath)
+    
+    tex_node = matObj.node_tree.nodes.new(type='ShaderNodeTexImage')
+    tex_node.image = blenderImg
+    
+    global globalCache
+    uv_node = matObj.node_tree.nodes.new(type='ShaderNodeUVMap')
+    uvIndex = int(textureData.sampleUVId)
+    uvIndex = min(uvIndex, globalCache.numOfValidUV-1)
+    uv_node.uv_map = f"UV{uvIndex}"
+    
+    uv_mapping_node = matObj.node_tree.nodes.new(type='ShaderNodeMapping')
+    if textureData.uv_transform is not None:
+        uvTransformNode = textureData.uv_transform
+        uv_mapping_node.inputs["Scale"].default_value.x = uvTransformNode.scale[0]
+        uv_mapping_node.inputs["Scale"].default_value.y = uvTransformNode.scale[1]
+        
+        uv_mapping_node.inputs["Location"].default_value.x = uvTransformNode.offset[0]
+        uv_mapping_node.inputs["Location"].default_value.y = uvTransformNode.offset[1]
+        
+        uv_mapping_node.inputs["Rotation"].default_value.z = uvTransformNode.rotation
+        
+    if textureData.sampleWrapU == "CLAMP_TO_EDGE":
+        tex_node.extension = 'EXTEND'
+    elif textureData.sampleWrapU == "MIRRORED_REPEAT":
+        tex_node.extension = 'REPEAT' # blender don't support mirrored repeat
+    elif textureData.sampleWrapU == "REPEAT":
+        tex_node.extension = 'REPEAT'
+    
+    if textureData.sampleMagFilter == "NEAREST":
+        tex_node.interpolation = 'Closest'
+    elif textureData.sampleMagFilter == "LINEAR":
+        tex_node.interpolation = 'Linear'
+    if textureData.sampleMinFilter == "LINEAR_MIPMAP_LINEAR":
+        tex_node.interpolation = 'Cubic'
+    
+    pbrNode = matObj.node_tree.nodes.get('Principled BSDF')
+    pbrNodeLocation = pbrNode.location
+    
+    lastNode = tex_node
+    if socketName == "Base Color":
+        uv_node.location = (pbrNodeLocation[0] - 1200, pbrNodeLocation[1] + 300)
+        uv_mapping_node.location = (pbrNodeLocation[0] - 950, pbrNodeLocation[1] + 300)
+        tex_node.location = (pbrNodeLocation[0] - 700, pbrNodeLocation[1] + 300)
+        
+        scale_node = matObj.node_tree.nodes.new(type='ShaderNodeVectorMath')
+        scale_node.operation = 'MULTIPLY'
+        scale_node.location = (pbrNodeLocation[0] - 350, pbrNodeLocation[1] + 300)
+        scale_node.inputs[1].default_value = socketScale[:3]
+        matObj.node_tree.links.new(tex_node.outputs[0], scale_node.inputs[0])
+        lastNode = scale_node
+        
+    elif socketName == "Metallic" or socketName == "Roughness":
+        bRoughness = socketName == "Roughness"
+        locYOffset = -500 if bRoughness else -100
+        
+        blenderImg.colorspace_settings.name = 'Non-Color'
+        uv_node.location = (pbrNodeLocation[0] - 1200, pbrNodeLocation[1] + locYOffset)
+        uv_mapping_node.location = (pbrNodeLocation[0] - 950, pbrNodeLocation[1] + locYOffset)
+        tex_node.location = (pbrNodeLocation[0] - 700, pbrNodeLocation[1] + locYOffset)
+        
+        separate_node = matObj.node_tree.nodes.new(type='ShaderNodeSeparateColor')
+        separate_node.location = (pbrNodeLocation[0] - 420, pbrNodeLocation[1] + locYOffset)
+        
+        scale_node = matObj.node_tree.nodes.new(type='ShaderNodeMath')
+        scale_node.operation = 'MULTIPLY'
+        scale_node.location = (pbrNodeLocation[0] - 250, pbrNodeLocation[1] + locYOffset)
+        scale_node.inputs[1].default_value = socketScale
+        
+        matObj.node_tree.links.new(tex_node.outputs[0], separate_node.inputs["Color"])
+        matObj.node_tree.links.new(separate_node.outputs["Red"], scale_node.inputs[0])
+        lastNode = scale_node
+    
+    elif socketName == "MetalRough":
+        blenderImg.colorspace_settings.name = 'Non-Color'
+        uv_node.location = (pbrNodeLocation[0] - 1200, pbrNodeLocation[1] - 300)
+        uv_mapping_node.location = (pbrNodeLocation[0] - 950, pbrNodeLocation[1] - 300)
+        tex_node.location = (pbrNodeLocation[0] - 700, pbrNodeLocation[1] - 300)
+        
+        scale_node = matObj.node_tree.nodes.new(type='ShaderNodeVectorMath')
+        scale_node.operation = 'MULTIPLY'
+        scale_node.location = (pbrNodeLocation[0] - 420, pbrNodeLocation[1] - 300)
+        scale_node.inputs[1].default_value = (1.0, socketScale[1], socketScale[0])
+        matObj.node_tree.links.new(tex_node.outputs[0], scale_node.inputs[0])
+        
+        separate_node = matObj.node_tree.nodes.new(type='ShaderNodeSeparateColor')
+        separate_node.location = (pbrNodeLocation[0] - 250, pbrNodeLocation[1] - 300)
+        matObj.node_tree.links.new(scale_node.outputs[0], separate_node.inputs["Color"])
+        
+        matObj.node_tree.links.new(separate_node.outputs["Green"], pbrNode.inputs["Roughness"])
+        matObj.node_tree.links.new(separate_node.outputs["Blue"], pbrNode.inputs["Metallic"])
+        
+    elif socketName == "Normal":
+        blenderImg.colorspace_settings.name = 'Non-Color'
+        uv_node.location = (pbrNodeLocation[0] - 1200, pbrNodeLocation[1] - 900)
+        uv_mapping_node.location = (pbrNodeLocation[0] - 950, pbrNodeLocation[1] - 900)
+        tex_node.location = (pbrNodeLocation[0] - 700, pbrNodeLocation[1] - 900)
+        
+        normal_map_node = matObj.node_tree.nodes.new(type='ShaderNodeNormalMap')
+        normal_map_node.uv_map = uv_node.uv_map
+        normal_map_node.location = (pbrNodeLocation[0] - 350, pbrNodeLocation[1] - 900)
+        normal_map_node.inputs["Strength"].default_value = socketScale
+        matObj.node_tree.links.new(tex_node.outputs[0], normal_map_node.inputs["Color"])
+        lastNode = normal_map_node
+        
+    # links
+    matObj.node_tree.links.new(uv_node.outputs[0], uv_mapping_node.inputs["Vector"])
+    matObj.node_tree.links.new(uv_mapping_node.outputs[0], tex_node.inputs["Vector"])
+    if socketName in pbrNode.inputs:
+        matObj.node_tree.links.new(lastNode.outputs[0], pbrNode.inputs[socketName])
+
 ###################################################################################
 
-glbMeshPath = r"D:\Temp\a87e002d68bb4554aa7a64b4a81a3066.glb" #r"D:\Temp\2786b7849299482ba6767fd86b5a3bb7.glb"
+glbMeshPath = r"D:\Temp\55a55b189204298225b056beb61e4efc117014a9c63036a6be4d6db6af7c0610.glb"
+#glbMeshPath = r"D:\0cb0efd8bd8a405f89ce5f757ecf6e8d\0cb0efd8bd8a405f89ce5f757ecf6e8d.glb"
+glbMeshRoot = os.path.dirname(glbMeshPath)
 if not os.path.exists(glbMeshPath):
     print("glb does not exist!")
     sys.exit(0)
@@ -628,8 +1021,18 @@ if jsonData is None or binData is None:
     print("file is incomplete")
     sys.exit(0)
 
+glbRootPath = os.path.dirname(glbMeshPath)
+osgjsMaterialJsonPath = os.path.join(glbRootPath, "detail.json")
+osgjsMatData = None
+if os.path.exists(osgjsMaterialJsonPath):
+    osgjsMaterialFile = open(osgjsMaterialJsonPath, "r", encoding='utf-8')
+    matJsonStr = osgjsMaterialFile.read()
+    osgjsMaterialFile.close()
+
+    osgjsMatData = json.loads(matJsonStr)
+
 globalCache = GlobalMeshCache()
-processGlbFile(jsonData, binData)
+processGlbFile(jsonData, binData, osgjsMatData)
 
 '''
 
