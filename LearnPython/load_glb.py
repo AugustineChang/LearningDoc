@@ -167,17 +167,15 @@ def processGlbFile(jsonData, binData, osgjsMatData):
     matContext.worldMatrix = mathutils.Matrix()
     createObject(matContext, "globalMeshObj", globalMesh)
     
-    # load materials from glb
     matContext.jsonData = jsonData
     matContext.binData = binData
     for oneMat in jsonData["materials"]:
         createMaterial(matContext, oneMat)
     
-    # override materials
+    #override materials
     if osgjsMatData is not None:
         loadOsgjsMaterialInfo(osgjsMatData)
     
-    # apply materials
     for matData in globalCache.materialList:
         if matData.baseColorTexture is not None:
             setupMaterialTexture(matData.baseColorTexture, matData.blenderMatObj, "Base Color", matData.baseColorFactor)
@@ -963,7 +961,7 @@ def setupMaterialTexture(textureData, matObj, socketName, socketScale):
 ###################################################################################
 
 glbMeshPath = r"D:\Temp\55a55b189204298225b056beb61e4efc117014a9c63036a6be4d6db6af7c0610.glb"
-#glbMeshPath = r"D:\0cb0efd8bd8a405f89ce5f757ecf6e8d\0cb0efd8bd8a405f89ce5f757ecf6e8d.glb"
+glbMeshPath = r"D:\0cb0efd8bd8a405f89ce5f757ecf6e8d\0cb0efd8bd8a405f89ce5f757ecf6e8d.glb"
 glbMeshRoot = os.path.dirname(glbMeshPath)
 if not os.path.exists(glbMeshPath):
     print("glb does not exist!")
