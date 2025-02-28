@@ -7,9 +7,14 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "HexTerrainGenerator.generated.h"
 
+struct FCachedChunkData;
 struct FCachedSectionData;
 struct FHexCellConfigData;
 enum class EImageFormat : int8;
+
+#define	CORNER_NUM 6
+#define	CORNER_UNUM 6u
+#define	CORNER_HALF_UNUM 3u
 
 UENUM()
 enum class EHexDirection : uint8
@@ -25,7 +30,7 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, MAX
+	None, Ice, Water, Grass, Sand, Road, MAX
 };
 
 enum class EHexRiverState : uint8
@@ -72,6 +77,45 @@ struct FHexCellRiver
 	{}
 };
 
+struct FHexCellRoad
+{
+	bool RoadState[CORNER_NUM]; // E, SE, SW, W, NW, NE
+	uint32 PackedState;
+
+	FHexCellRoad()
+		: PackedState(0u)
+	{
+		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
+			RoadState[Index] = false;
+	}
+
+	void InitStateFromUint32(uint32 InValue)
+	{
+		PackedState = InValue;
+		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
+		{
+			RoadState[Index] = (InValue & (1u << Index)) != 0u;
+		}
+	}
+
+	uint32 StateToUint32() const
+	{
+		uint32 OutValue = 0u;
+		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
+		{
+			if (RoadState[Index])
+				OutValue |= (1u << Index);
+		}
+		return OutValue;
+	}
+
+	void LinkRoad(EHexDirection LinkDirection)
+	{
+		uint8 LinkId = static_cast<uint8>(LinkDirection);
+		RoadState[LinkId] = true;
+	}
+};
+
 struct FHexCellData
 {
 	static FIntPoint ChunkSize;
@@ -91,21 +135,27 @@ struct FHexCellData
 	int32 Elevation;
 
 	// Borders
-	FHexCellBorder HexNeighbors[6]; // E, SE, SW, W, NW, NE
+	FHexCellBorder HexNeighbors[CORNER_NUM]; // E, SE, SW, W, NW, NE
 	FHexCellCorner HexCorners[2]; // NW, N
 
 	// River
 	FHexCellRiver HexRiver;
+	// Road
+	FHexCellRoad HexRoad;
 
 	FHexCellData(const FIntPoint& InIndex);
 	void LinkBorder(FHexCellData& OtherCell, EHexDirection LinkDirection);
 	void LinkCorner(FHexCellData& Cell1, FHexCellData& Cell2, EHexDirection LinkDirection);
+	void LinkRoad(EHexDirection LinkDirection);
 	bool operator<(const FHexCellData& Other) const;
 
 	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
 	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
 	static EHexDirection CalcPreviousDirection(EHexDirection InDirection);
 	static EHexDirection CalcNextDirection(EHexDirection InDirection);
+	static uint8 CalcOppositeDirection(uint8 InDirection);
+	static uint8 CalcPreviousDirection(uint8 InDirection);
+	static uint8 CalcNextDirection(uint8 InDirection);
 	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord);
 	static EHexBorderState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
 	static uint8 GetVertIdFromDirection(EHexDirection InDirection, bool bSubVert = true, uint8 InState = 1u); // state: 0-start 1-mid 2-end
@@ -183,7 +233,26 @@ struct FHexVertexData
 
 	static FHexVertexData LerpVertex(const FHexVertexData& FromV, const FHexVertexData& ToV, FVector PosRatio, float AttrRatio);
 
-	void SetUV0(const FVector2D& InUV0);
+	FHexVertexData ApplyOverride(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr) const;
+	void ApplyOverrideInline(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr);
+
+	void SetUV0(const FVector2D& InUV0)
+	{
+		UV0 = InUV0;
+		bHasUV0 = true;
+	}
+
+	void SetVertexColor(const FColor& InColor)
+	{
+		VertexColor = InColor;
+		bHasVertexColor = true;
+	}
+
+	void SetNormal(const FVector& InNormal)
+	{
+		Normal = InNormal;
+		bHasNormal = true;
+	}
 
 	FVector Position;
 	FVector Normal;
@@ -193,12 +262,14 @@ struct FHexVertexData
 	uint32 bHasNormal : 1;
 	uint32 bHasUV0 : 1;
 	uint32 bHasVertexColor : 1;
+	
+	uint8 VertexState; //0-Ground 1-Water 2-Road
 };
 
-struct FHexRiverConfigData
+struct FHexRiverRoadConfigData
 {
-	FIntPoint RiverStartPoint;
-	TArray<EHexDirection> RiverFlowDirections;
+	FIntPoint StartPoint;
+	TArray<EHexDirection> ExtensionDirections;
 };
 
 struct FHexCellConfigData
@@ -209,7 +280,8 @@ struct FHexCellConfigData
 	bool bConfigValid;
 	TArray<TArray<int32>> ElevationsList;
 	TArray<TArray<EHexTerrainType>> TerrainTypesList;
-	TArray<FHexRiverConfigData> RiversList;
+	TArray<FHexRiverRoadConfigData> RiversList;
+	TArray<FHexRiverRoadConfigData> RoadsList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
 
 	FHexCellConfigData()
@@ -249,6 +321,8 @@ struct FHexCellConfigData
 			return TEXT("Grass");
 		case EHexTerrainType::Sand:
 			return TEXT("Sand");
+		case EHexTerrainType::Road:
+			return TEXT("Road");
 		default:
 			return TEXT("");
 		}
@@ -259,9 +333,6 @@ UCLASS()
 class HEXTERRAIN_API AHexTerrainGenerator : public AActor
 {
 	GENERATED_BODY()
-	
-public:
-	friend class B;
 
 public:	
 	// Sets default values for this actor's properties
@@ -288,13 +359,7 @@ protected:
 	TObjectPtr<UInstancedStaticMeshComponent> CoordTextComponent;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	TObjectPtr<UMaterialInterface> HexTerrainMaterial;
-
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	TObjectPtr<UMaterialInterface> RiverMaterial;
-
-	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	TObjectPtr<UMaterialInterface> TextMaterial;
+	TMap<FString, TObjectPtr<UMaterialInterface>> HexTerrainMaterials;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	FString NoiseTexturePath;
@@ -324,7 +389,7 @@ protected:
 	int32 RiverElevationOffset;
 
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
-	uint8 RiverSubdivision;
+	uint8 RiverRoadSubdivision;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
@@ -369,29 +434,30 @@ protected:
 	void SaveHexTerrainConfig();
 	void UpdateHexGridsData();
 
-	void GenerateHexCell(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh, FCachedSectionData& OutCollisionMesh);
-	void GenerateHexCenter(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
-	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
-	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedSectionData& OutTerrainMesh);
+	void GenerateHexCell(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	void GenerateHexCenter(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	void GenerateHexBorder(const FHexCellData& InCellData, EHexDirection BorderDirection, FCachedChunkData& OutTerrainMesh);
+	void GenerateHexCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedChunkData& OutTerrainMesh);
 	
-	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh);
-	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
-	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedSectionData& OutTerrainMesh, FCachedSectionData& OutRiverMesh);
+	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	void GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
 
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
-		const FHexCellCorner& CornerData, FCachedSectionData& OutTerrainMesh);
+		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
-		const FHexCellCorner& CornerData, FCachedSectionData& OutTerrainMesh);
+		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
 	
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
-	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert) const;
-	FVector CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool &bOutRiverVert) const;
+	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool bFillDefaultNormal = false) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
+	
 	FVector CalcRiverVertOffset(bool bWater = false) const 
 	{
 		double RiverElevOffset = static_cast<double>(RiverElevationOffset);
 		if (bWater)
-			RiverElevOffset += 0.5;
+			RiverElevOffset *= 0.5;
 
 		return FVector::UpVector * RiverElevOffset * HexElevationStep;
 	}
@@ -407,6 +473,11 @@ protected:
 		{
 			return FMath::RoundToFloat(0.4330127f * HexCellRadius / HexCellBorderWidth);
 		}
+	}
+
+	FVector CalcRoadVertOffset() const
+	{
+		return FVector::UpVector * 2.0;
 	}
 
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
