@@ -264,6 +264,7 @@ struct FHexVertexData
 	uint32 bHasVertexColor : 1;
 	
 	uint8 VertexState; //0-Ground 1-Water 2-Road
+	int32 VertexIndex;
 };
 
 struct FHexRiverRoadConfigData
@@ -376,7 +377,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	float HexCellBorderWidth;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	uint8 HexCellSubdivision;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
@@ -385,11 +386,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	int32 MaxElevationForTerrace;
 
-	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	int32 RiverElevationOffset;
 
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
-	uint8 RiverRoadSubdivision;
+	uint8 RiverSubdivision;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	float RoadElevationOffset;
+
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	float RoadWidthRatio;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
@@ -442,7 +449,8 @@ protected:
 	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
-	void GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
+	bool GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
+	void GenerateRoadCenterWithRiver(const FHexCellData& InCellData, const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
 
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
 		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
@@ -452,7 +460,9 @@ protected:
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
 	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, bool bFillDefaultNormal = false) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos);
-	
+	int32 CalcDiffToRoadVert(const TArray<int32>& RoadVertIndices, int32 CurIndex);
+	float CalcRoadWidthScale(int32 DiffToRoad);
+
 	FVector CalcRiverVertOffset(bool bWater = false) const 
 	{
 		double RiverElevOffset = static_cast<double>(RiverElevationOffset);
@@ -477,7 +487,7 @@ protected:
 
 	FVector CalcRoadVertOffset() const
 	{
-		return FVector::UpVector * 2.0;
+		return FVector::UpVector * RoadElevationOffset;
 	}
 
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
