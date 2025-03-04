@@ -872,14 +872,36 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 		StartPoint.Add(MakeShared<FJsonValueNumber>(RiverConfig.StartPoint.Y));
 		RiverData->SetArrayField(TEXT("StartPoint"), StartPoint);
 		
-		TArray<TSharedPtr<FJsonValue>> FlowDirections;
+		TArray<TSharedPtr<FJsonValue>> Directions;
 		for (EHexDirection Direction : RiverConfig.ExtensionDirections)
 		{
-			FlowDirections.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
+			Directions.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
 		}
-		RiverData->SetArrayField(TEXT("FlowDirections"), FlowDirections);
+		RiverData->SetArrayField(TEXT("Directions"), Directions);
 
 		RiversList.Add(MakeShared<FJsonValueObject>(RiverData));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> RoadsList;
+	int32 NumOfRoads = ConfigData.RoadsList.Num();
+	for (int32 Index = 0; Index < NumOfRoads; ++Index)
+	{
+		FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[Index];
+		TSharedRef<FJsonObject> RoadData = MakeShareable(new FJsonObject());
+
+		TArray<TSharedPtr<FJsonValue>> StartPoint;
+		StartPoint.Add(MakeShared<FJsonValueNumber>(RoadConfig.StartPoint.X));
+		StartPoint.Add(MakeShared<FJsonValueNumber>(RoadConfig.StartPoint.Y));
+		RoadData->SetArrayField(TEXT("StartPoint"), StartPoint);
+
+		TArray<TSharedPtr<FJsonValue>> Directions;
+		for (EHexDirection Direction : RoadConfig.ExtensionDirections)
+		{
+			Directions.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
+		}
+		RoadData->SetArrayField(TEXT("Directions"), Directions);
+
+		RoadsList.Add(MakeShared<FJsonValueObject>(RoadData));
 	}
 
 	JsonObject->SetArrayField(TEXT("ChunkSize"), ChunkSizeData);
@@ -887,6 +909,7 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
 	JsonObject->SetArrayField(TEXT("HexTypes"), TypesList);
 	JsonObject->SetArrayField(TEXT("Rivers"), RiversList);
+	JsonObject->SetArrayField(TEXT("Roads"), RoadsList);
 
 	TSharedRef<TJsonWriter<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>> JsonWriter = TJsonWriterFactory<TCHAR, TCondensedJsonPrintPolicy<TCHAR>>::Create(&StructuredJson, /*Indent=*/0);
 
@@ -963,8 +986,7 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 		FHexCellData& FirstRiverNode = HexGrids[FirstIndex];
 		FirstRiverNode.HexRiver.RiverIndex = Index;
 		FirstRiverNode.HexRiver.RiverState = EHexRiverState::StartPoint;
-		//FirstRiverNode.HexRiver.RiverColor = (Index == HexEditRiverId ? FColor{ 55u, 110u, 225u, 255u } : FColor{ 0u, 55u, 225u, 255u });
-
+		
 		FHexCellData* LastRiverNode = &FirstRiverNode;
 		for (int32 Step = 0; Step < LenOfRiver; ++Step)
 		{
@@ -978,6 +1000,12 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 			}
 
 			FHexCellData& CurRiverNode = HexGrids[CurGridIndex];
+			if (CurRiverNode.Elevation > LastRiverNode->Elevation)
+			{
+				LastRiverNode->HexRiver.RiverState = EHexRiverState::EndPoint;
+				break;
+			}
+
 			CurRiverNode.HexRiver.RiverIndex = Index;
 			CurRiverNode.HexRiver.RiverState = (Step == LenOfRiver - 1) ? EHexRiverState::EndPoint : EHexRiverState::PassThrough;
 
@@ -998,24 +1026,26 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 		if (FirstIndex >= NumOfGrids)
 			continue;
 
-		FHexCellData& FirstRoadNode = HexGrids[FirstIndex];
-
-		FHexCellData* LastRoadNode = &FirstRoadNode;
-		for (int32 Step = 0; Step < LenOfRoad; ++Step)
+		FHexCellData& RoadStartNode = HexGrids[FirstIndex];
+		for (int32 RoadIndex = 0; RoadIndex < LenOfRoad; ++RoadIndex)
 		{
-			EHexDirection StepDirection = OneRoad.ExtensionDirections[Step];
+			EHexDirection RoadDirection = OneRoad.ExtensionDirections[RoadIndex];
 
-			int32 CurGridIndex = LastRoadNode->HexNeighbors[static_cast<uint8>(StepDirection)].LinkedCellIndex;
-			if (CurGridIndex < 0)
+			int32 EndGridIndex = RoadStartNode.HexNeighbors[static_cast<uint8>(RoadDirection)].LinkedCellIndex;
+			if (EndGridIndex < 0)
 			{
 				break;
 			}
 
-			FHexCellData& CurRoadNode = HexGrids[CurGridIndex];
-			CurRoadNode.LinkRoad(FHexCellData::CalcOppositeDirection(StepDirection));
-			LastRoadNode->LinkRoad(StepDirection);
-
-			LastRoadNode = &CurRoadNode;
+			FHexCellData& RoadEndNode = HexGrids[EndGridIndex];
+			int32 ElevationDiff = FMath::Abs(RoadEndNode.Elevation - RoadStartNode.Elevation);
+			if (ElevationDiff > MaxElevationForTerrace)
+			{
+				break;
+			}
+			
+			RoadEndNode.LinkRoad(FHexCellData::CalcOppositeDirection(RoadDirection));
+			RoadStartNode.LinkRoad(RoadDirection);
 		}
 	}
 }
