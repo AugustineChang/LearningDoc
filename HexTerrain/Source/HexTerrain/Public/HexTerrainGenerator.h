@@ -41,7 +41,7 @@ enum class EHexRiverState : uint8
 UENUM()
 enum class EHexEditMode : uint8
 {
-	Cell, River
+	Ground, River, Road
 };
 
 struct FHexCellBorder
@@ -79,6 +79,7 @@ struct FHexCellRiver
 
 struct FHexCellRoad
 {
+	int32 RoadIndex[CORNER_NUM];
 	bool RoadState[CORNER_NUM]; // E, SE, SW, W, NW, NE
 	uint32 PackedState;
 
@@ -86,7 +87,10 @@ struct FHexCellRoad
 		: PackedState(0u)
 	{
 		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
+		{
+			RoadIndex[Index] = -1;
 			RoadState[Index] = false;
+		}
 	}
 
 	void InitStateFromUint32(uint32 InValue)
@@ -109,10 +113,11 @@ struct FHexCellRoad
 		return OutValue;
 	}
 
-	void LinkRoad(EHexDirection LinkDirection)
+	void LinkRoad(int32 RoadId, EHexDirection LinkDirection)
 	{
 		uint8 LinkId = static_cast<uint8>(LinkDirection);
 		RoadState[LinkId] = true;
+		RoadIndex[LinkId] = RoadId;
 	}
 };
 
@@ -146,7 +151,7 @@ struct FHexCellData
 	FHexCellData(const FIntPoint& InIndex);
 	void LinkBorder(FHexCellData& OtherCell, EHexDirection LinkDirection);
 	void LinkCorner(FHexCellData& Cell1, FHexCellData& Cell2, EHexDirection LinkDirection);
-	void LinkRoad(EHexDirection LinkDirection);
+	void LinkRoad(int32 RoadIndex, EHexDirection LinkDirection);
 	bool operator<(const FHexCellData& Other) const;
 
 	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
@@ -433,6 +438,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
 	TArray<EHexDirection> HexEditRiverFlowDirections;
 
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Roads")
+	FIntPoint HexEditRoadFirstPoint;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -511,6 +519,9 @@ protected:
 	UFUNCTION()
 	void OnReleased(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
+	void HexEditGround(bool bHit, const FIntPoint& HitGridId);
+	void HexEditRiver(bool bHit, const FIntPoint& HitGridId);
+	void HexEditRoad(bool bHit, const FIntPoint& HitGridId);
 	void ClearEditParameters(EHexEditMode ModeToClear);
 
 public:
