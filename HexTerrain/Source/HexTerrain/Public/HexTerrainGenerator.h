@@ -174,6 +174,7 @@ struct FHexCellData
 	static int32 CalcGridIndexByCoord(const FIntVector& InGridCoord);
 	static EHexBorderState CalcLinkState(const FHexCellData& Cell1, const FHexCellData& Cell2);
 	static uint8 GetVertIdFromDirection(EHexDirection InDirection, bool bSubVert = true, uint8 InState = 1u); // state: 0-start 1-mid 2-end
+	static bool IsValidRiverDirection(const FHexCellData& FromCell, const FHexCellData& ToCell);
 };
 
 struct FHexVertexAttributeData
@@ -257,6 +258,12 @@ struct FHexVertexData
 		bHasUV0 = true;
 	}
 
+	void SetUV1(const FVector2D& InUV1)
+	{
+		UV1 = InUV1;
+		bHasUV1 = true;
+	}
+
 	void SetVertexColor(const FColor& InColor)
 	{
 		VertexColor = InColor;
@@ -272,10 +279,12 @@ struct FHexVertexData
 	FVector Position;
 	FVector Normal;
 	FVector2D UV0;
+	FVector2D UV1;
 	FColor VertexColor;
 
 	uint32 bHasNormal : 1;
 	uint32 bHasUV0 : 1;
+	uint32 bHasUV1 : 1;
 	uint32 bHasVertexColor : 1;
 	
 	uint8 VertexState; //0-Ground 1-Water 2-Road
