@@ -1262,20 +1262,23 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	
 	int32 NumOfVerts = FromVerts.Num();
 	int32 NumOfZSteps = FMath::Abs(OppositeCell.Elevation - InCellData.Elevation);
+	int32 NumOfSegments = NumOfVerts - 1;
+	int32 MidIndex = NumOfSegments / 2;
+	bool bLowToHigh = InCellData.Elevation <= OppositeCell.Elevation;
 	if (HexBorder.LinkState == EHexBorderState::Terrace)
 	{
-		int32 NumOfSegments = NumOfVerts - 1;
 		for (int32 Index = 0; Index < NumOfSegments; ++Index)
 		{
-			FillStrip(FromVerts[Index], FromVerts[Index + 1], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.GroundSection, NumOfZSteps, true);
+			bool bRotTriangle = bLowToHigh ? Index >= MidIndex : Index < MidIndex;
+			FillStrip(FromVerts[Index], FromVerts[Index + 1], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.GroundSection, NumOfZSteps, true, bRotTriangle);
 		}
 	}
 	else
 	{
-		int32 NumOfSegments = NumOfVerts - 1;
 		for (int32 Index = 0; Index < NumOfSegments; ++Index)
 		{
-			FillQuad(FromVerts[Index], FromVerts[Index + 1], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.GroundSection);
+			bool bRotTriangle = bLowToHigh ? Index >= MidIndex : Index < MidIndex;
+			FillQuad(FromVerts[Index], FromVerts[Index + 1], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.GroundSection, bRotTriangle);
 		}
 	}
 	
@@ -1529,9 +1532,10 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 
 	FColor WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
 	float MoveDist = HexCellRadius / float(HexCellSubdivision + 1);
+	FVector RiverOffset = InCellData.GetWaterDepth() > 0 ? FVector::ZeroVector : CalcRiverVertOffset();
 
 	FHexVertexData CenterL = FHexVertexData{ InCellData.CellCenter + LeftDir * MoveDist, InCellData.SRGBColor };
-	FHexVertexData Center = FHexVertexData{ InCellData.CellCenter + (LeftDir + RightDir) * 0.5 * MoveDist + CalcRiverVertOffset(), WaterColor };
+	FHexVertexData Center = FHexVertexData{ InCellData.CellCenter + (LeftDir + RightDir) * 0.5 * MoveDist + RiverOffset, WaterColor };
 	FHexVertexData CenterR = FHexVertexData{ InCellData.CellCenter + RightDir * MoveDist, InCellData.SRGBColor };
 	
 	auto GenerateFansWithoutRiver = [this](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
@@ -2236,15 +2240,14 @@ void AHexTerrainGenerator::GenerateHexWaterBorder(const FHexCellData& InCellData
 				FillQuad(FromVerts[MidIndex], FromVerts[MidIndex], ToVerts[MidIndex - 1], ToVerts[MidIndex + 1], OutTerrainMesh.EstuarySection);
 				for (int32 Index = MidIndex; Index < LastIndex - 1; ++Index)
 				{
-					FillQuad(FromVerts[Index + 1], ToVerts[Index + 2], FromVerts[Index], ToVerts[Index + 1], OutTerrainMesh.EstuarySection);
+					FillQuad(FromVerts[Index], FromVerts[Index + 1], ToVerts[Index + 1], ToVerts[Index + 2], OutTerrainMesh.EstuarySection, true);
 				}
 			}
 			else
 			{
 				for (int32 Index = 1; Index < MidIndex; ++Index)
 				{
-					//FillQuad(FromVerts[Index - 1], FromVerts[Index], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.EstuarySection);
-					FillQuad(FromVerts[Index], ToVerts[Index + 1], FromVerts[Index - 1], ToVerts[Index], OutTerrainMesh.EstuarySection);
+					FillQuad(FromVerts[Index - 1], FromVerts[Index], ToVerts[Index], ToVerts[Index + 1], OutTerrainMesh.EstuarySection, true);
 				}
 				FillQuad(FromVerts[MidIndex - 1], FromVerts[MidIndex + 1], ToVerts[MidIndex], ToVerts[MidIndex], OutTerrainMesh.EstuarySection);
 				for (int32 Index = MidIndex; Index < LastIndex - 1; ++Index)
@@ -2352,7 +2355,8 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 			if (RiverVerts.Contains(VertIndex))
 			{
 				OutVertex.VertexState = 1u;
-				OutVertex.ApplyOverrideInline(CalcRiverVertOffset(), &WaterColor);
+				if (InCellData.GetWaterDepth() <= 0)
+					OutVertex.ApplyOverrideInline(CalcRiverVertOffset(), &WaterColor);
 			}
 			else if (RoadVerts.Contains(VertIndex))
 			{
@@ -2471,7 +2475,7 @@ FVector AHexTerrainGenerator::CalcFaceNormal(const FVector& V0, const FVector& V
 }
 
 void AHexTerrainGenerator::FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
-	int32 NumOfSteps, bool bTerrace, bool bClosed)
+	int32 NumOfSteps, bool bTerrace, bool bClosed, bool bRotTriangle)
 {
 	check(FromV.Num() == ToV.Num());
 
@@ -2480,7 +2484,7 @@ void AHexTerrainGenerator::FillGrid(const TArray<FHexVertexData>& FromV, const T
 	{
 		FillStrip(
 			FromV[Index], FromV[Index + 1], ToV[Index], ToV[Index + 1],
-			OutTerrainMesh, NumOfSteps, bTerrace
+			OutTerrainMesh, NumOfSteps, bTerrace, bRotTriangle
 		);
 	}
 
@@ -2488,13 +2492,13 @@ void AHexTerrainGenerator::FillGrid(const TArray<FHexVertexData>& FromV, const T
 	{
 		FillStrip(
 			FromV[NumOfStrips], FromV[0], ToV[NumOfStrips], ToV[0],
-			OutTerrainMesh, NumOfSteps, bTerrace
+			OutTerrainMesh, NumOfSteps, bTerrace, bRotTriangle
 		);
 	}
 }
 
 void AHexTerrainGenerator::FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,
-	FCachedSectionData& OutTerrainMesh, int32 NumOfSteps, bool bTerrace)
+	FCachedSectionData& OutTerrainMesh, int32 NumOfSteps, bool bTerrace, bool bRotTriangle)
 {
 	FHexVertexData LastStepV0 = FromV0;
 	FHexVertexData LastStepV1 = FromV1;
@@ -2519,14 +2523,14 @@ void AHexTerrainGenerator::FillStrip(const FHexVertexData& FromV0, const FHexVer
 		FHexVertexData CurStepV0 = FHexVertexData::LerpVertex(FromV0, ToV0, FVector{ RatioXY ,RatioXY ,RatioZ }, RatioXY);
 		FHexVertexData CurStepV1 = FHexVertexData::LerpVertex(FromV1, ToV1, FVector{ RatioXY ,RatioXY ,RatioZ }, RatioXY);
 
-		FillQuad(LastStepV0, LastStepV1, CurStepV0, CurStepV1, OutTerrainMesh);
+		FillQuad(LastStepV0, LastStepV1, CurStepV0, CurStepV1, OutTerrainMesh, bRotTriangle);
 
 		LastStepV0 = CurStepV0;
 		LastStepV1 = CurStepV1;
 	}
 }
 
-void AHexTerrainGenerator::FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh)
+void AHexTerrainGenerator::FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh, bool bRotTriangle)
 {
 	FHexVertexData FromV0_C = PerturbingVertex(FromV0);
 	FHexVertexData FromV1_C = PerturbingVertex(FromV1);
@@ -2551,7 +2555,28 @@ void AHexTerrainGenerator::FillQuad(const FHexVertexData& FromV0, const FHexVert
 	}
 	else
 	{
-		OutTerrainMesh.AddQuad(ToV0_C, ToV1_C, FromV0_C, FromV1_C);
+		FVector TestNormal = CalcFaceNormal(FromV0_C.Position, FromV1_C.Position, ToV0_C.Position);
+		FVector TestVec = ToV1_C.Position - FromV0_C.Position;
+		if (FMath::IsNearlyZero(FVector::DotProduct(TestNormal, TestVec), 1e-4)) // coplane
+		{
+			if (bRotTriangle)
+				OutTerrainMesh.AddQuad(FromV0_C, ToV0_C, FromV1_C, ToV1_C);
+			else
+				OutTerrainMesh.AddQuad(ToV0_C, ToV1_C, FromV0_C, FromV1_C);
+		}
+		else
+		{
+			if (bRotTriangle)
+			{
+				OutTerrainMesh.AddTriangle(FromV0_C, FromV1_C, ToV0_C);
+				OutTerrainMesh.AddTriangle(ToV0_C, FromV1_C, ToV1_C);
+			}
+			else
+			{
+				OutTerrainMesh.AddTriangle(ToV0_C, FromV0_C, ToV1_C);
+				OutTerrainMesh.AddTriangle(ToV1_C, FromV0_C, FromV1_C);
+			}
+		}
 	}
 };
 

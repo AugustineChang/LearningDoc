@@ -547,10 +547,10 @@ protected:
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
 	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
-		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false);
+		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false, bool bRotTriangle = false);
 	void FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,
-		FCachedSectionData& OutTerrainMesh, int32 NumOfSteps, bool bTerrace = false);
-	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh);
+		FCachedSectionData& OutTerrainMesh, int32 NumOfSteps, bool bTerrace = false, bool bRotTriangle = false);
+	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh, bool bRotTriangle = false);
 	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutTerrainMesh, bool bClosed = false);
 
 	void PerturbingVertexInline(FVector& Vertex);
