@@ -41,7 +41,7 @@ enum class EHexRiverState : uint8
 UENUM()
 enum class EHexEditMode : uint8
 {
-	Ground, River, Road
+	Ground, Road, River
 };
 
 struct FHexCellBorder
@@ -83,6 +83,14 @@ struct FHexCellRiver
 	FHexCellRiver()
 		: RiverIndex(-1), RiverState(EHexRiverState::None), IncomingDirection(EHexDirection::E), OutgoingDirection(EHexDirection::E)
 	{}
+
+	void Clear()
+	{
+		RiverIndex = -1;
+		RiverState = EHexRiverState::None;
+		IncomingDirection = EHexDirection::E;
+		OutgoingDirection = EHexDirection::E;
+	}
 };
 
 struct FHexCellRoad
@@ -558,8 +566,9 @@ protected:
 	void OnReleased(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 
 	void HexEditGround(bool bHit, const FIntPoint& HitGridId);
-	void HexEditRiver(bool bHit, const FIntPoint& HitGridId);
 	void HexEditRoad(bool bHit, const FIntPoint& HitGridId);
+	void HexEditRiver(bool bHit, const FIntPoint& HitGridId);
+	void HexEditWater(TSet<FIntPoint>& ProcessedGrids, const FIntPoint& CurGridId, int32 NewWaterLevel);
 	void ClearEditParameters(EHexEditMode ModeToClear);
 
 public:

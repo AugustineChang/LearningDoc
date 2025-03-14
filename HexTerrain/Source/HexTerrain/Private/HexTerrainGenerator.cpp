@@ -1101,6 +1101,11 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 
 			LastRiverNode = &CurRiverNode;
 		}
+
+		if (FirstRiverNode.HexRiver.RiverState == EHexRiverState::EndPoint)
+		{
+			FirstRiverNode.HexRiver.Clear();
+		}
 	}
 
 	// Fill RoadData
@@ -2377,22 +2382,26 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 
 		bool bShore = WaterDepth <= 0;
 		bool bNearShore = bShore;
+		bool bFullNeighbor = true;
+		int32 NeighborWaterLevel = FHexCellConfigData::DefaultWaterLevel;
 		for (int32 OneDir : BorderDirections)
 		{
 			int32 NeighborId = InCellData.HexNeighbors[OneDir].LinkedCellIndex;
-			bNearShore = bNearShore || (NeighborId >= 0 && HexGrids[NeighborId].GetWaterDepth() <= 0);
+			if (NeighborId >= 0)
+			{
+				int32 NeighborWaterDepth = HexGrids[NeighborId].GetWaterDepth();
+				bNearShore = bNearShore || NeighborWaterDepth <= 0;
+				if (NeighborWaterDepth > 0)
+					NeighborWaterLevel = HexGrids[NeighborId].WaterLevel;
+			}
+			
+			bFullNeighbor = bFullNeighbor && NeighborId >= 0;
 		}
 
 		OutVertex.VertexState = 1u;
 		FVector2D WaterUV0{ bShore ? 1.0 : 0.0, bNearShore ? 0.0 : 1.0 };
-		OutVertex.ApplyOverrideInline(CalcWaterVertOffset(WaterDepth), &WaterColor, &WaterUV0);
-
-		bool bFullNeighbor = true;
-		for (int32 OneDir : BorderDirections)
-		{
-			int32 NeighborId = InCellData.HexNeighbors[OneDir].LinkedCellIndex;
-			bFullNeighbor = bFullNeighbor && NeighborId >= 0;
-		}
+		OutVertex.ApplyOverrideInline(CalcWaterVertOffset(bShore ? (NeighborWaterLevel - InCellData.Elevation) : WaterDepth), &WaterColor, &WaterUV0);
+		
 		WaterVertRadiusScale = (bFullNeighbor && WaterDepth > 0) ? 0.8 : 1.0;
 	}
 
@@ -2765,12 +2774,12 @@ void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey
 		HexEditGround(bHit, GridId);
 		break;
 
-	case EHexEditMode::River:
-		HexEditRiver(bHit, GridId);
-		break;
-
 	case EHexEditMode::Road:
 		HexEditRoad(bHit, GridId);
+		break;
+
+	case EHexEditMode::River:
+		HexEditRiver(bHit, GridId);
 		break;
 
 	default:
@@ -2815,14 +2824,23 @@ void AHexTerrainGenerator::PostEditChangeProperty(FPropertyChangedEvent& Propert
 	static FName Name_HexEditWaterLevel = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditWaterLevel);
 	static FName Name_HexEditTerrainType = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditTerrainType);
 	if (MemberPropertyName == Name_HexEditElevation || 
-		MemberPropertyName == Name_HexEditTerrainType || 
-		MemberPropertyName == Name_HexEditWaterLevel)
+		MemberPropertyName == Name_HexEditTerrainType)
 	{
 		if (HexEditGridId.X >= 0 && HexEditGridId.Y >= 0)
 		{
 			ConfigData.ElevationsList[HexEditGridId.Y][HexEditGridId.X] = HexEditElevation;
-			ConfigData.WaterLevelsList[HexEditGridId.Y][HexEditGridId.X] = HexEditWaterLevel;
 			ConfigData.TerrainTypesList[HexEditGridId.Y][HexEditGridId.X] = HexEditTerrainType;
+
+			UpdateHexGridsData();
+			GenerateTerrain();
+		}
+	}
+	else if (MemberPropertyName == Name_HexEditWaterLevel)
+	{
+		if (HexEditGridId.X >= 0 && HexEditGridId.Y >= 0)
+		{
+			TSet<FIntPoint> ProcessedGrids;
+			HexEditWater(ProcessedGrids, HexEditGridId, HexEditWaterLevel);
 
 			UpdateHexGridsData();
 			GenerateTerrain();
@@ -2858,6 +2876,103 @@ void AHexTerrainGenerator::HexEditGround(bool bHit, const FIntPoint& HitGridId)
 	}
 	else
 		ClearEditParameters(EHexEditMode::Ground);
+}
+
+void AHexTerrainGenerator::HexEditRoad(bool bHit, const FIntPoint& HitGridId)
+{
+	if (!bHit)
+		return;
+
+	if (HexEditRoadFirstPoint.X < 0 || HexEditRoadFirstPoint.Y < 0) // road's first node
+	{
+		HexEditRoadFirstPoint = HitGridId;
+	}
+	else
+	{
+		int32 FirstGridIndex = HexEditRoadFirstPoint.Y * HexChunkCount.X * HexChunkSize.X + HexEditRoadFirstPoint.X;
+		int32 SecondGridIndex = HitGridId.Y * HexChunkCount.X * HexChunkSize.X + HitGridId.X;
+		const FHexCellData& FirstGrid = HexGrids[FirstGridIndex];
+		const FHexCellData& SecondGrid = HexGrids[SecondGridIndex];
+
+		int32 RoadDirection = -1;
+		for (int32 Index = 0; Index < CORNER_NUM; ++Index)
+		{
+			EHexDirection EdgeDirection = static_cast<EHexDirection>(Index);
+
+			if (FirstGrid.HexRiver.RiverState == EHexRiverState::StartPoint &&
+				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection)
+				continue;
+			if (FirstGrid.HexRiver.RiverState == EHexRiverState::EndPoint &&
+				FirstGrid.HexRiver.IncomingDirection == EdgeDirection)
+				continue;
+			if (FirstGrid.HexRiver.RiverState == EHexRiverState::PassThrough &&
+				(FirstGrid.HexRiver.IncomingDirection == EdgeDirection ||
+				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection))
+				continue;
+
+			if (FirstGrid.HexNeighbors[Index].LinkedCellIndex == SecondGridIndex)
+			{
+				RoadDirection = Index;
+				break;
+			}
+		}
+
+		if (RoadDirection >= 0)
+		{
+			int32 OppoDirection = FHexCellData::CalcOppositeDirection(RoadDirection);
+			if (FirstGrid.HexRoad.RoadState[RoadDirection] || SecondGrid.HexRoad.RoadState[OppoDirection])
+			{
+				int32 RoadIndex = FirstGrid.HexRoad.RoadIndex[RoadDirection];
+				FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
+
+				if (RoadConfig.StartPoint == HexEditRoadFirstPoint)
+					RoadConfig.ExtensionDirections.Remove(static_cast<EHexDirection>(RoadDirection));
+				else
+					RoadConfig.ExtensionDirections.Remove(static_cast<EHexDirection>(OppoDirection));
+
+				if (RoadConfig.ExtensionDirections.IsEmpty())
+				{
+					ConfigData.RoadsList.RemoveAt(RoadIndex);
+				}
+			}
+			else
+			{
+				int32 RoadIndex = -1;
+				int32 NumOfRoads = ConfigData.RoadsList.Num();
+				for (int32 Index = 0; Index < NumOfRoads; ++Index)
+				{
+					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[Index];
+					if (RoadConfig.StartPoint == HexEditRoadFirstPoint ||
+						RoadConfig.StartPoint == HitGridId)
+					{
+						RoadIndex = Index;
+						break;
+					}
+				}
+
+				if (RoadIndex >= 0)
+				{
+					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
+					if (RoadConfig.StartPoint == HexEditRoadFirstPoint)
+						RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(RoadDirection));
+					else
+						RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(OppoDirection));
+				}
+				else
+				{
+					RoadIndex = ConfigData.RoadsList.AddDefaulted();
+					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
+					RoadConfig.StartPoint = HexEditRoadFirstPoint;
+					RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(RoadDirection));
+				}
+			}
+
+			UpdateHexGridsData();
+			GenerateTerrain();
+		}
+
+		ClearEditParameters(EHexEditMode::Road);
+	}
 }
 
 void AHexTerrainGenerator::HexEditRiver(bool bHit, const FIntPoint& HitGridId)
@@ -2933,11 +3048,11 @@ void AHexTerrainGenerator::HexEditRiver(bool bHit, const FIntPoint& HitGridId)
 			HexEditRiverPoints.Add(HexEditRiverStartPoint);
 
 			int32 FirstIndex = HexEditRiverStartPoint.Y * HexChunkCount.X * HexChunkSize.X + HexEditRiverStartPoint.X;
-			FHexCellData* LastRiverNode = &HexGrids[FirstIndex];
+			const FHexCellData* LastRiverNode = &HexGrids[FirstIndex];
 			for (EHexDirection FlowDir : HexEditRiverFlowDirections)
 			{
 				int32 CurGridIndex = LastRiverNode->HexNeighbors[static_cast<uint8>(FlowDir)].LinkedCellIndex;
-				FHexCellData& CurRiverNode = HexGrids[CurGridIndex];
+				const FHexCellData& CurRiverNode = HexGrids[CurGridIndex];
 				FIntPoint CurGridId{
 					CurRiverNode.GridId.X * HexChunkSize.X + CurRiverNode.GridId.Z,
 					CurRiverNode.GridId.Y * HexChunkSize.Y + CurRiverNode.GridId.W
@@ -2976,110 +3091,34 @@ void AHexTerrainGenerator::HexEditRiver(bool bHit, const FIntPoint& HitGridId)
 	}
 }
 
-void AHexTerrainGenerator::HexEditRoad(bool bHit, const FIntPoint& HitGridId)
+void AHexTerrainGenerator::HexEditWater(TSet<FIntPoint>& ProcessedGrids, const FIntPoint& CurGridId, int32 NewWaterLevel)
 {
-	if (!bHit)
+	if (ProcessedGrids.Contains(CurGridId))
 		return;
 
-	if (HexEditRoadFirstPoint.X < 0 || HexEditRoadFirstPoint.Y < 0) // road's first node
+	int32 GridIndex = CurGridId.Y * HexChunkCount.X * HexChunkSize.X + CurGridId.X;
+	const FHexCellData& CurGrid = HexGrids[GridIndex];
+	if (CurGrid.Elevation >= NewWaterLevel)
 	{
-		HexEditRoadFirstPoint = HitGridId;
+		ConfigData.WaterLevelsList[CurGridId.Y][CurGridId.X] = FHexCellConfigData::DefaultWaterLevel;
+		return;
 	}
-	else
+	
+	ConfigData.WaterLevelsList[CurGridId.Y][CurGridId.X] = NewWaterLevel;
+	ProcessedGrids.Add(CurGridId);
+	
+	for (int32 Index = 0; Index < CORNER_NUM; ++Index)
 	{
-		int32 FirstGridIndex = HexEditRoadFirstPoint.Y * HexChunkCount.X * HexChunkSize.X + HexEditRoadFirstPoint.X;
-		int32 SecondGridIndex = HitGridId.Y * HexChunkCount.X * HexChunkSize.X + HitGridId.X;
-		FHexCellData& FirstGrid = HexGrids[FirstGridIndex];
-		FHexCellData& SecondGrid = HexGrids[SecondGridIndex];
+		int32 NeighborGridIndex = CurGrid.HexNeighbors[Index].LinkedCellIndex;
+		if (NeighborGridIndex < 0)
+			continue;
 
-		int32 RoadDirection = -1;
-		for (int32 Index = 0; Index < CORNER_NUM; ++Index)
-		{
-			EHexDirection EdgeDirection = static_cast<EHexDirection>(Index);
-
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::StartPoint &&
-				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection)
-				continue;
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::EndPoint &&
-				FirstGrid.HexRiver.IncomingDirection == EdgeDirection)
-				continue;
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::PassThrough &&
-				(FirstGrid.HexRiver.IncomingDirection == EdgeDirection ||
-				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection))
-				continue;
-
-			if (FirstGrid.HexNeighbors[Index].LinkedCellIndex == SecondGridIndex)
-			{
-				RoadDirection = Index;
-				break;
-			}
-		}
-
-		if (RoadDirection >= 0)
-		{
-			int32 OppoDirection = FHexCellData::CalcOppositeDirection(RoadDirection);
-			if (FirstGrid.HexRoad.RoadState[RoadDirection] || SecondGrid.HexRoad.RoadState[OppoDirection])
-			{
-				int32 RoadIndex = FirstGrid.HexRoad.RoadIndex[RoadDirection];
-				FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
-
-				if (RoadConfig.StartPoint == HexEditRoadFirstPoint)
-					RoadConfig.ExtensionDirections.Remove(static_cast<EHexDirection>(RoadDirection));
-				else
-					RoadConfig.ExtensionDirections.Remove(static_cast<EHexDirection>(OppoDirection));
-
-				if (RoadConfig.ExtensionDirections.IsEmpty())
-				{
-					ConfigData.RoadsList.RemoveAt(RoadIndex);
-				}
-
-				FirstGrid.HexRoad.RoadState[RoadDirection] = false;
-				FirstGrid.HexRoad.RoadIndex[RoadDirection] = -1;
-				SecondGrid.HexRoad.RoadState[OppoDirection] = false;
-				SecondGrid.HexRoad.RoadIndex[OppoDirection] = -1;
-			}
-			else
-			{
-				int32 RoadIndex = -1;
-				int32 NumOfRoads = ConfigData.RoadsList.Num();
-				for (int32 Index = 0; Index < NumOfRoads; ++Index)
-				{
-					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[Index];
-					if (RoadConfig.StartPoint == HexEditRoadFirstPoint ||
-						RoadConfig.StartPoint == HitGridId)
-					{
-						RoadIndex = Index;
-						break;
-					}
-				}
-
-				if (RoadIndex >= 0)
-				{
-					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
-					if (RoadConfig.StartPoint == HexEditRoadFirstPoint)
-						RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(RoadDirection));
-					else
-						RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(OppoDirection));
-				}
-				else
-				{
-					RoadIndex = ConfigData.RoadsList.AddDefaulted();
-					FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[RoadIndex];
-					RoadConfig.StartPoint = HexEditRoadFirstPoint;
-					RoadConfig.ExtensionDirections.Add(static_cast<EHexDirection>(RoadDirection));
-				}
-
-				FirstGrid.HexRoad.RoadState[RoadDirection] = true;
-				FirstGrid.HexRoad.RoadIndex[RoadDirection] = RoadIndex;
-				SecondGrid.HexRoad.RoadState[OppoDirection] = true;
-				SecondGrid.HexRoad.RoadIndex[OppoDirection] = RoadIndex;
-			}
-
-			UpdateHexGridsData();
-			GenerateTerrain();
-		}
-
-		ClearEditParameters(EHexEditMode::Road);
+		const FHexCellData& NeighborGrid = HexGrids[NeighborGridIndex];
+		FIntPoint NeighborGridId{
+			NeighborGrid.GridId.X * HexChunkSize.X + NeighborGrid.GridId.Z,
+			NeighborGrid.GridId.Y * HexChunkSize.Y + NeighborGrid.GridId.W
+		};
+		HexEditWater(ProcessedGrids, NeighborGridId, NewWaterLevel);
 	}
 }
 
