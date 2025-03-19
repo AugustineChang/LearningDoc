@@ -524,13 +524,18 @@ public:
 
 struct FCachedChunkData
 {
+	// Terrain
 	FCachedSectionData GroundSection;
 	FCachedSectionData RoadSection;
+
 	FCachedSectionData WaterSection;
 	FCachedSectionData EstuarySection;
 	FCachedSectionData RiverSection;
 
 	FCachedSectionData CollisionSection;
+
+	//Features
+	TArray<FTransform> FeatureTransforms;
 };
 
 struct FCachedTerrainData 
@@ -576,15 +581,21 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 
 	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
 
-	ProceduralMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("TerrainMeshComponent"));
-	ProceduralMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	ProceduralMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
-	ProceduralMeshComponent->Mobility = EComponentMobility::Movable;
-	ProceduralMeshComponent->SetGenerateOverlapEvents(false);
-	ProceduralMeshComponent->SetRenderCustomDepth(true);
-	ProceduralMeshComponent->SetupAttachment(RootComponent);
-	ProceduralMeshComponent->OnClicked.AddDynamic(this, &AHexTerrainGenerator::OnClicked);
-	ProceduralMeshComponent->OnReleased.AddDynamic(this, &AHexTerrainGenerator::OnReleased);
+	TerrainMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("TerrainMeshComponent"));
+	TerrainMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	TerrainMeshComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);
+	TerrainMeshComponent->Mobility = EComponentMobility::Movable;
+	TerrainMeshComponent->SetGenerateOverlapEvents(false);
+	TerrainMeshComponent->SetRenderCustomDepth(true);
+	TerrainMeshComponent->SetupAttachment(RootComponent);
+	TerrainMeshComponent->OnClicked.AddDynamic(this, &AHexTerrainGenerator::OnClicked);
+	TerrainMeshComponent->OnReleased.AddDynamic(this, &AHexTerrainGenerator::OnReleased);
+
+	FeatureMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FeatureMeshComponent"));
+	FeatureMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FeatureMeshComponent->Mobility = EComponentMobility::Movable;
+	FeatureMeshComponent->SetGenerateOverlapEvents(false);
+	FeatureMeshComponent->SetupAttachment(RootComponent);
 
 	CoordTextComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GridCoordComponent"));
 	CoordTextComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -634,14 +645,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 	// Create HexCellMesh
 	FCachedTerrainData CachedTerrain;
 
-	TObjectPtr<UMaterialInterface> GroundMaterial = HexTerrainMaterials.FindOrAdd("Ground", nullptr);
-	TObjectPtr<UMaterialInterface> RoadMaterial = HexTerrainMaterials.FindOrAdd("Road", nullptr);
-	TObjectPtr<UMaterialInterface> WaterMaterial = HexTerrainMaterials.FindOrAdd("Water", nullptr);
-	TObjectPtr<UMaterialInterface> EstuaryMaterial = HexTerrainMaterials.FindOrAdd("Estuary", nullptr);
-	TObjectPtr<UMaterialInterface> RiverMaterial = HexTerrainMaterials.FindOrAdd("River", nullptr);
-	TObjectPtr<UMaterialInterface> TextMaterial = HexTerrainMaterials.FindOrAdd("Text", nullptr);
+	TObjectPtr<UMaterialInterface> GroundMaterial = MaterialsLibrary.FindOrAdd("Ground", nullptr);
+	TObjectPtr<UMaterialInterface> RoadMaterial = MaterialsLibrary.FindOrAdd("Road", nullptr);
+	TObjectPtr<UMaterialInterface> WaterMaterial = MaterialsLibrary.FindOrAdd("Water", nullptr);
+	TObjectPtr<UMaterialInterface> EstuaryMaterial = MaterialsLibrary.FindOrAdd("Estuary", nullptr);
+	TObjectPtr<UMaterialInterface> RiverMaterial = MaterialsLibrary.FindOrAdd("River", nullptr);
 
-	ProceduralMeshComponent->ClearAllMeshSections();
+	TerrainMeshComponent->ClearAllMeshSections();
 	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
 	{
 		for (int32 CX = 0; CX < HexChunkCount.X; ++CX)
@@ -664,13 +674,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 			// Create Ground
 			{
 				FCachedSectionData& TerrainChunkSection = CurrentChunkSection.GroundSection;
-				ProceduralMeshComponent->CreateMeshSection(ChunkIndex, TerrainChunkSection.GetVertices(), TerrainChunkSection.GetTriangles(), TerrainChunkSection.GetNormals(),
+				TerrainMeshComponent->CreateMeshSection(ChunkIndex, TerrainChunkSection.GetVertices(), TerrainChunkSection.GetTriangles(), TerrainChunkSection.GetNormals(),
 					TerrainChunkSection.GetUV0s(), TerrainChunkSection.GetVertexColors(), TerrainChunkSection.GetTangents(), false);
 
 				// Set Material
 				if (!!GroundMaterial)
 				{
-					ProceduralMeshComponent->SetMaterial(ChunkIndex, GroundMaterial);
+					TerrainMeshComponent->SetMaterial(ChunkIndex, GroundMaterial);
 				}
 			}
 
@@ -678,13 +688,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 			if (!CurrentChunkSection.RoadSection.IsEmpty())
 			{
 				FCachedSectionData& RoadSection = CurrentChunkSection.RoadSection;
-				int32 RoadSectionId = ProceduralMeshComponent->GetNumSections();
-				ProceduralMeshComponent->CreateMeshSection(RoadSectionId, RoadSection.GetVertices(), RoadSection.GetTriangles(),
+				int32 RoadSectionId = TerrainMeshComponent->GetNumSections();
+				TerrainMeshComponent->CreateMeshSection(RoadSectionId, RoadSection.GetVertices(), RoadSection.GetTriangles(),
 					RoadSection.GetNormals(), RoadSection.GetUV0s(), RoadSection.GetVertexColors(), RoadSection.GetTangents(), false);
 				
 				if (!!RoadMaterial)
 				{
-					ProceduralMeshComponent->SetMaterial(RoadSectionId, RoadMaterial);
+					TerrainMeshComponent->SetMaterial(RoadSectionId, RoadMaterial);
 				}
 			}
 
@@ -692,27 +702,27 @@ void AHexTerrainGenerator::GenerateTerrain()
 			if (!CurrentChunkSection.WaterSection.IsEmpty())
 			{
 				FCachedSectionData& WaterSection = CurrentChunkSection.WaterSection;
-				int32 WaterSectionId = ProceduralMeshComponent->GetNumSections();
-				ProceduralMeshComponent->CreateMeshSection(WaterSectionId, WaterSection.GetVertices(), WaterSection.GetTriangles(),
+				int32 WaterSectionId = TerrainMeshComponent->GetNumSections();
+				TerrainMeshComponent->CreateMeshSection(WaterSectionId, WaterSection.GetVertices(), WaterSection.GetTriangles(),
 					WaterSection.GetNormals(), WaterSection.GetUV0s(), WaterSection.GetVertexColors(), WaterSection.GetTangents(), false);
 
 				if (!!WaterMaterial)
 				{
-					ProceduralMeshComponent->SetMaterial(WaterSectionId, WaterMaterial);
+					TerrainMeshComponent->SetMaterial(WaterSectionId, WaterMaterial);
 				}
 			}
 			if (!CurrentChunkSection.EstuarySection.IsEmpty())
 			{
 				TArray<FVector2D> EmptyUV;
 				FCachedSectionData& EstuarySection = CurrentChunkSection.EstuarySection;
-				int32 EstuarySectionId = ProceduralMeshComponent->GetNumSections();
-				ProceduralMeshComponent->CreateMeshSection(EstuarySectionId, EstuarySection.GetVertices(), EstuarySection.GetTriangles(),
+				int32 EstuarySectionId = TerrainMeshComponent->GetNumSections();
+				TerrainMeshComponent->CreateMeshSection(EstuarySectionId, EstuarySection.GetVertices(), EstuarySection.GetTriangles(),
 					EstuarySection.GetNormals(), EstuarySection.GetUV0s(), EstuarySection.GetUV1s(), EmptyUV, EmptyUV, 
 					EstuarySection.GetVertexColors(), EstuarySection.GetTangents(), false);
 
 				if (!!EstuaryMaterial)
 				{
-					ProceduralMeshComponent->SetMaterial(EstuarySectionId, EstuaryMaterial);
+					TerrainMeshComponent->SetMaterial(EstuarySectionId, EstuaryMaterial);
 				}
 			}
 
@@ -720,13 +730,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 			if (!CurrentChunkSection.RiverSection.IsEmpty())
 			{
 				FCachedSectionData& RiverSection = CurrentChunkSection.RiverSection;
-				int32 RiverSectionId = ProceduralMeshComponent->GetNumSections();
-				ProceduralMeshComponent->CreateMeshSection(RiverSectionId, RiverSection.GetVertices(), RiverSection.GetTriangles(),
+				int32 RiverSectionId = TerrainMeshComponent->GetNumSections();
+				TerrainMeshComponent->CreateMeshSection(RiverSectionId, RiverSection.GetVertices(), RiverSection.GetTriangles(),
 					RiverSection.GetNormals(), RiverSection.GetUV0s(), RiverSection.GetVertexColors(), RiverSection.GetTangents(), false);
 
 				if (!!RiverMaterial)
 				{
-					ProceduralMeshComponent->SetMaterial(RiverSectionId, RiverMaterial);
+					TerrainMeshComponent->SetMaterial(RiverSectionId, RiverMaterial);
 				}
 			}
 
@@ -734,19 +744,57 @@ void AHexTerrainGenerator::GenerateTerrain()
 			if (!CurrentChunkSection.CollisionSection.IsEmpty())
 			{
 				FCachedSectionData& CollisionSection = CurrentChunkSection.CollisionSection;
-				int32 CollisionSectionId = ProceduralMeshComponent->GetNumSections();
-				ProceduralMeshComponent->CreateMeshSection(CollisionSectionId, CollisionSection.GetVertices(), CollisionSection.GetTriangles(),
+				int32 CollisionSectionId = TerrainMeshComponent->GetNumSections();
+				TerrainMeshComponent->CreateMeshSection(CollisionSectionId, CollisionSection.GetVertices(), CollisionSection.GetTriangles(),
 					CollisionSection.GetNormals(), CollisionSection.GetUV0s(), CollisionSection.GetVertexColors(), CollisionSection.GetTangents(), true);
-				ProceduralMeshComponent->SetMeshSectionVisible(CollisionSectionId, false);
+				TerrainMeshComponent->SetMeshSectionVisible(CollisionSectionId, false);
 			}
 		}
 	}
 
+	// Features
+	AddTerrainFeatures(CachedTerrain);
+
 	// Grid Coordinates
+	AddGridCoordinates(HexGridSizeX, HexGridSizeY);
+}
+
+void AHexTerrainGenerator::AddTerrainFeatures(const FCachedTerrainData& CachedTerrain)
+{
+	TObjectPtr<UStaticMesh> FeatureModel = ModelsLibrary.FindOrAdd("Feature", nullptr);
+	TObjectPtr<UMaterialInterface> FeatureMaterial = MaterialsLibrary.FindOrAdd("Feature", nullptr);
+	if (!FeatureMeshComponent->GetStaticMesh() && !!FeatureModel)
+	{
+		FeatureMeshComponent->SetStaticMesh(FeatureModel.Get());
+	}
+	if (!!FeatureMaterial)
+	{
+		FeatureMeshComponent->SetMaterial(0, FeatureMaterial);
+	}
+
+	FeatureMeshComponent->ClearInstances();
+	int32 NumOfChunks = CachedTerrain.TerrainChunksSection.Num();
+	for (int32 ChunkId = 0; ChunkId < NumOfChunks; ++ChunkId)
+	{
+		const FCachedChunkData& ChunkData = CachedTerrain.TerrainChunksSection[ChunkId];
+		int32 NumOfFeaturesPerChunk = ChunkData.FeatureTransforms.Num();
+		
+		for (int32 FeatureId = 0; FeatureId < NumOfFeaturesPerChunk; ++FeatureId)
+		{
+			FeatureMeshComponent->AddInstance(ChunkData.FeatureTransforms[FeatureId], false);
+		}
+	}
+	//FeatureMeshComponent->MarkRenderStateDirty();
+}
+
+void AHexTerrainGenerator::AddGridCoordinates(int32 HexGridSizeX, int32 HexGridSizeY)
+{
+	TObjectPtr<UMaterialInterface> TextMaterial = MaterialsLibrary.FindOrAdd("Text", nullptr);
 	if (!!TextMaterial)
 	{
 		CoordTextComponent->SetMaterial(0, TextMaterial);
 	}
+
 	CoordTextComponent->ClearInstances();
 	CoordTextComponent->SetNumCustomDataFloats(2);
 	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
@@ -754,7 +802,6 @@ void AHexTerrainGenerator::GenerateTerrain()
 		for (int32 X = 0; X < HexGridSizeX; ++X)
 		{
 			int32 GridIndex = Y * HexGridSizeX + X;
-			
 			const FHexCellData& CellData = HexGrids[GridIndex];
 
 			FTransform Instance{ CellData.CellCenter };
@@ -1371,13 +1418,13 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 
 		if (HexBorder.LinkState == EHexBorderState::Terrace)
 		{
-			FillStrip(RoadFromEdgeL, RoadFromEdgeM, RoadToEdgeL, RoadToEdgeM, OutTerrainMesh.RoadSection, NumOfZSteps, true);
-			FillStrip(RoadFromEdgeM, RoadFromEdgeR, RoadToEdgeM, RoadToEdgeR, OutTerrainMesh.RoadSection, NumOfZSteps, true);
+			FillStrip(RoadFromEdgeL, RoadFromEdgeM, RoadToEdgeL, RoadToEdgeM, OutTerrainMesh.RoadSection, NumOfZSteps, true, !bLowToHigh);
+			FillStrip(RoadFromEdgeM, RoadFromEdgeR, RoadToEdgeM, RoadToEdgeR, OutTerrainMesh.RoadSection, NumOfZSteps, true, bLowToHigh);
 		}
 		else
 		{
-			FillQuad(RoadFromEdgeL, RoadFromEdgeM, RoadToEdgeL, RoadToEdgeM, OutTerrainMesh.RoadSection);
-			FillQuad(RoadFromEdgeM, RoadFromEdgeR, RoadToEdgeM, RoadToEdgeR, OutTerrainMesh.RoadSection);
+			FillQuad(RoadFromEdgeL, RoadFromEdgeM, RoadToEdgeL, RoadToEdgeM, OutTerrainMesh.RoadSection, !bLowToHigh);
+			FillQuad(RoadFromEdgeM, RoadFromEdgeR, RoadToEdgeM, RoadToEdgeR, OutTerrainMesh.RoadSection, bLowToHigh);
 		}
 	}
 }
@@ -1426,6 +1473,13 @@ void AHexTerrainGenerator::GenerateNoRiverCenter(const FHexCellData& InCellData,
 
 	// Road
 	GenerateRoadCenter(CenterV, EdgesV, OutTerrainMesh);
+
+	// Features
+	for (int32 EdgeIndex = 0; EdgeIndex < CORNER_NUM; ++EdgeIndex)
+	{
+		CalcFeatureTransform(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.FeatureTransforms);
+	}
+	CalcFeatureTransform(InCellData, InCellData.CellCenter, -1, OutTerrainMesh.FeatureTransforms);
 }
 
 void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh)
@@ -1497,6 +1551,12 @@ void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCell
 		GenerateRoadCenterWithRiver(InCellData, CenterV, EdgesLV, OutTerrainMesh);
 		GenerateRoadCenterWithRiver(InCellData, CenterV, EdgesRV, OutTerrainMesh);
 	}
+
+	// Features
+	for (int32 EdgeIndex = 0; EdgeIndex < CORNER_NUM; ++EdgeIndex)
+	{
+		CalcFeatureTransform(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.FeatureTransforms);
+	}
 }
 
 void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh)
@@ -1566,9 +1626,20 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			CentersV.Init(InCenter, EdgesV.Num());
 
 			FillGrid(CentersV, EdgesV, OutTerrainMesh.GroundSection, RiverSubdivision, false, false);
-
+			
 			// Road
-			return GenerateRoadCenter(InCenter, EdgesV, OutTerrainMesh);
+			bool bHasRoadVert = GenerateRoadCenter(InCenter, EdgesV, OutTerrainMesh);
+
+			// Features
+			CurDirection = FHexCellData::CalcNextDirection(FromDirection);
+			while (CurDirection != ToDirection)
+			{
+				CalcFeatureTransform(InCellData, InCenter.Position, static_cast<uint8>(CurDirection), OutTerrainMesh.FeatureTransforms);
+
+				CurDirection = FHexCellData::CalcNextDirection(CurDirection);
+			}
+
+			return bHasRoadVert;
 		};
 
 	bool bHasRoadVertL = GenerateFansWithoutRiver(InCellData, OutTerrainMesh, OutDirection, InDirection, CenterR);
@@ -1886,9 +1957,9 @@ void AHexTerrainGenerator::GenerateNoTerraceCorner(const FHexCellData& Cell1, co
 	FHexVertexData V1 = CalcHexCellVertex(Cell2, CornerData.VertsId.Y, false);
 	FHexVertexData V2 = CalcHexCellVertex(Cell3, CornerData.VertsId.Z, false);
 
-	PerturbingVertexInline(V0.Position);
-	PerturbingVertexInline(V1.Position);
-	PerturbingVertexInline(V2.Position);
+	PerturbingVertexInline(V0);
+	PerturbingVertexInline(V1);
+	PerturbingVertexInline(V2);
 
 	OutTerrainMesh.GroundSection.AddTriangle(V0, V1, V2);
 }
@@ -2286,9 +2357,9 @@ void AHexTerrainGenerator::GenerateHexWaterCorner(const FHexCellData& InCellData
 		FHexVertexData V1 = CalcHexCellVertex(Cell2, CornerData.VertsId.Y, false, 1u, true);
 		FHexVertexData V2 = CalcHexCellVertex(Cell3, CornerData.VertsId.Z, false, 1u, true);
 
-		PerturbingVertexInline(V0.Position);
-		PerturbingVertexInline(V1.Position);
-		PerturbingVertexInline(V2.Position);
+		PerturbingVertexInline(V0);
+		PerturbingVertexInline(V1);
+		PerturbingVertexInline(V2);
 
 		OutTerrainMesh.WaterSection.AddTriangle(V0, V1, V2);
 	}
@@ -2466,6 +2537,44 @@ float AHexTerrainGenerator::CalcRoadWidthScale(int32 DiffToRoad) const
 	return DiffToScale[DiffToRoad];
 }
 
+void AHexTerrainGenerator::CalcFeatureTransform(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FTransform>& OutFeatureLocations)
+{
+	if (InCellData.GetWaterDepth() > 0)
+		return;
+
+	const FHexCellRiver& RiverData = InCellData.HexRiver;
+	const FHexCellRoad& RoadData = InCellData.HexRoad;
+	FVector FeatureLocation;
+	if (LocDirectionId >= 0)
+	{
+		EHexDirection LocDirection = static_cast<EHexDirection>(LocDirectionId);
+		if (RiverData.CheckRiver(LocDirection) || RoadData.RoadState[LocDirectionId])
+			return;
+
+		int32 SubVertIndex = FHexCellData::GetVertIdFromDirection(LocDirection, true);
+		FVector HexEdgeCenter = InCellData.CellCenter + FHexCellData::HexSubVertices[SubVertIndex];
+		FeatureLocation = FMath::Lerp(InCenter, HexEdgeCenter, 0.4);
+	}
+	else
+	{
+		if (RiverData.RiverState != EHexRiverState::None || RoadData.GetPackedState() > 0u)
+			return;
+
+		FeatureLocation = InCellData.CellCenter;
+	}
+	
+	FVector2D FeatureRandom = GetRandomValueByPosition(FeatureLocation);
+	if (FeatureRandom.Y < 0.5)
+		return;
+
+	PerturbingVertexInline(FeatureLocation, PerturbingStrengthHV, true);
+	
+	FQuat RandRot{ FVector::UpVector, FeatureRandom.X * UE_TWO_PI };
+	FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{20.0, 20.0, 10.0} };
+
+	OutFeatureLocations.Add(FeatureTransform);
+}
+
 FVector AHexTerrainGenerator::CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2)
 {
 	FVector Edge1 = (V1 - V0);
@@ -2640,7 +2749,7 @@ void AHexTerrainGenerator::FillFan(const FHexVertexData& CenterV, const TArray<F
 	}
 }
 
-void AHexTerrainGenerator::PerturbingVertexInline(FVector& Vertex)
+void AHexTerrainGenerator::PerturbingVertexInline(FVector& Vertex, const FVector2D& Strength, bool bPerturbZ)
 {
 	if (NoiseTexture.IsEmpty())
 		return;
@@ -2659,34 +2768,62 @@ void AHexTerrainGenerator::PerturbingVertexInline(FVector& Vertex)
 	Vertex.Y += VertAttribute.NoiseVector.Y * PerturbingStrength;*/
 
 	FLinearColor NoiseVector = SampleTextureBilinear(NoiseTexture, Vertex * PerturbingScalingHV.X);
-	Vertex.X += (NoiseVector.R * 2.0f - 1.0f) * PerturbingStrengthHV.X;
-	Vertex.Y += (NoiseVector.G * 2.0f - 1.0f) * PerturbingStrengthHV.X;
+	Vertex.X += (NoiseVector.R * 2.0f - 1.0f) * Strength.X;
+	Vertex.Y += (NoiseVector.G * 2.0f - 1.0f) * Strength.X;
 	
-	int32 Elevation = FMath::RoundToInt(Vertex.Z / HexElevationStep);
-	if (!CachedNoiseZ.Contains(Elevation))
+	if (bPerturbZ)
 	{
-		FLinearColor NoiseVectorZ = SampleTextureBilinear(NoiseTexture, FMath::RoundToInt(Elevation * PerturbingScalingHV.Y), 0);
-		CachedNoiseZ.Add(Elevation, NoiseVectorZ.B * 2.0f - 1.0f);
-	}
+		int32 Elevation = FMath::RoundToInt(Vertex.Z / HexElevationStep);
+		if (!CachedNoiseZ.Contains(Elevation))
+		{
+			FLinearColor NoiseVectorZ = SampleTextureBilinear(NoiseTexture, FMath::RoundToInt(Elevation * PerturbingScalingHV.Y), 0);
+			CachedNoiseZ.Add(Elevation, NoiseVectorZ.B * 2.0f - 1.0f);
+		}
 
-	Vertex.Z += CachedNoiseZ[Elevation] * PerturbingStrengthHV.Y;
+		Vertex.Z += CachedNoiseZ[Elevation] * Strength.Y;
+	}
+}
+
+FVector AHexTerrainGenerator::PerturbingVertex(const FVector& Vertex, const FVector2D& Strength, bool bPerturbZ)
+{
+	FVector NewVec = Vertex;
+	PerturbingVertexInline(NewVec, Strength, bPerturbZ);
+	return NewVec;
+}
+
+void AHexTerrainGenerator::PerturbingVertexInline(FHexVertexData& Vertex)
+{
+	PerturbingVertexInline(Vertex.Position, PerturbingStrengthHV, true);
 }
 
 FHexVertexData AHexTerrainGenerator::PerturbingVertex(const FHexVertexData& Vertex)
 {
 	FHexVertexData NewVert = Vertex;
-	PerturbingVertexInline(NewVert.Position);
+	PerturbingVertexInline(NewVert.Position, PerturbingStrengthHV, true);
 	return NewVert;
 }
 
-FVector AHexTerrainGenerator::PerturbingVertex(const FVector& Vertex)
+FVector2D AHexTerrainGenerator::GetRandomValueByPosition(const FVector& InVertex) const
 {
-	FVector NewVec = Vertex;
-	PerturbingVertexInline(NewVec);
-	return NewVec;
+	if (RandomCache.IsEmpty())
+		return FVector2D::ZeroVector;
+
+	int32 X = FMath::RoundToInt(InVertex.X * 0.1);
+	int32 Y = FMath::RoundToInt(InVertex.Y * 0.1);
+
+	int32 CacheSizeX = RandomCache[0].Num();
+	int32 CacheSizeY = RandomCache.Num();
+
+	int32 CacheTillingStartX = FMath::FloorToInt(float(X) / CacheSizeX) * CacheSizeX;
+	int32 CacheTillingStartY = FMath::FloorToInt(float(Y) / CacheSizeY) * CacheSizeY;
+
+	X = X - CacheTillingStartX;
+	Y = Y - CacheTillingStartY;
+	
+	return RandomCache[Y][X];
 }
 
-FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos)
+FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos) const
 {
 	int32 SizeY = InTexture.Num();
 	int32 SizeX = InTexture[0].Num();
@@ -2711,13 +2848,13 @@ FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FCo
 	const FColor& LDColor = InTexture[NextSampleY][SampleX];
 	const FColor& RDColor = InTexture[NextSampleY][NextSampleX];
 
-	FLinearColor TColor = FMath::Lerp(FLinearColor::FromSRGBColor(LTColor), FLinearColor::FromSRGBColor(RTColor), RatioX);
-	FLinearColor DColor = FMath::Lerp(FLinearColor::FromSRGBColor(LDColor), FLinearColor::FromSRGBColor(RDColor), RatioX);
+	FLinearColor TColor = FMath::Lerp(LTColor.ReinterpretAsLinear(), RTColor.ReinterpretAsLinear(), RatioX);
+	FLinearColor DColor = FMath::Lerp(LDColor.ReinterpretAsLinear(), RDColor.ReinterpretAsLinear(), RatioX);
 
 	return FMath::Lerp(TColor, DColor, RatioY);
 }
 
-FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SampleX, int32 SampleY)
+FLinearColor AHexTerrainGenerator::SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SampleX, int32 SampleY) const
 {
 	int32 SizeY = InTexture.Num();
 	int32 SizeX = InTexture[0].Num();
@@ -2825,6 +2962,19 @@ void AHexTerrainGenerator::PostLoad()
 	FFileHelper::LoadFileToArray(TextureBinData, *(FPaths::ProjectDir() / NoiseTexturePath));
 	CreateTextureFromData(NoiseTexture, TextureBinData, EImageFormat::PNG);
 
+	static int32 RandomCacheSize = 512;
+	RandomCache.Empty(RandomCacheSize);
+	RandomCache.AddDefaulted(RandomCacheSize);
+	for (int32 Y = 0; Y < RandomCacheSize; ++Y)
+	{
+		RandomCache[Y].AddDefaulted(RandomCacheSize);
+		for (int32 X = 0; X < RandomCacheSize; ++X)
+		{
+			RandomCache[Y][X].X = FMath::FRand();
+			RandomCache[Y][X].Y = FMath::FRand();
+		}
+	}
+
 	LoadTerrain();
 }
 
@@ -2924,15 +3074,7 @@ void AHexTerrainGenerator::HexEditRoad(bool bHit, const FIntPoint& HitGridId)
 		{
 			EHexDirection EdgeDirection = static_cast<EHexDirection>(Index);
 
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::StartPoint &&
-				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection)
-				continue;
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::EndPoint &&
-				FirstGrid.HexRiver.IncomingDirection == EdgeDirection)
-				continue;
-			if (FirstGrid.HexRiver.RiverState == EHexRiverState::PassThrough &&
-				(FirstGrid.HexRiver.IncomingDirection == EdgeDirection ||
-				FirstGrid.HexRiver.OutgoingDirection == EdgeDirection))
+			if (FirstGrid.HexRiver.CheckRiver(EdgeDirection))
 				continue;
 
 			if (FirstGrid.HexNeighbors[Index].LinkedCellIndex == SecondGridIndex)

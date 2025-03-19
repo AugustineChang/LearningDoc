@@ -9,6 +9,7 @@
 
 struct FCachedChunkData;
 struct FCachedSectionData;
+struct FCachedTerrainData;
 struct FHexCellConfigData;
 enum class EImageFormat : int8;
 
@@ -30,7 +31,7 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, Road, MAX
+	None, Ice, Water, Grass, Sand, Stone, Road, MAX
 };
 
 enum class EHexRiverState : uint8
@@ -84,6 +85,26 @@ struct FHexCellRiver
 		: RiverIndex(-1), RiverState(EHexRiverState::None), IncomingDirection(EHexDirection::E), OutgoingDirection(EHexDirection::E)
 	{}
 
+	bool CheckRiver(EHexDirection InDirection) const
+	{
+		bool bHasRiverInDirection = false;
+		switch (RiverState)
+		{
+		case EHexRiverState::StartPoint:
+			bHasRiverInDirection = InDirection == OutgoingDirection;
+			break;
+
+		case EHexRiverState::EndPoint:
+			bHasRiverInDirection = InDirection == IncomingDirection;
+			break;
+
+		case EHexRiverState::PassThrough:
+			bHasRiverInDirection = (InDirection == OutgoingDirection || InDirection == IncomingDirection);
+			break;
+		}
+		return bHasRiverInDirection;
+	}
+
 	void Clear()
 	{
 		RiverIndex = -1;
@@ -97,10 +118,8 @@ struct FHexCellRoad
 {
 	int32 RoadIndex[CORNER_NUM];
 	bool RoadState[CORNER_NUM]; // E, SE, SW, W, NW, NE
-	uint32 PackedState;
 
 	FHexCellRoad()
-		: PackedState(0u)
 	{
 		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
 		{
@@ -109,16 +128,7 @@ struct FHexCellRoad
 		}
 	}
 
-	void InitStateFromUint32(uint32 InValue)
-	{
-		PackedState = InValue;
-		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
-		{
-			RoadState[Index] = (InValue & (1u << Index)) != 0u;
-		}
-	}
-
-	uint32 StateToUint32() const
+	uint32 GetPackedState() const
 	{
 		uint32 OutValue = 0u;
 		for (uint32 Index = 0u; Index < CORNER_NUM; ++Index)
@@ -341,6 +351,10 @@ struct FHexCellConfigData
 			return EHexTerrainType::Grass;
 		else if (InTypeStr.Equals(TEXT("Sand")))
 			return EHexTerrainType::Sand;
+		else if (InTypeStr.Equals(TEXT("Stone")))
+			return EHexTerrainType::Stone;
+		else if (InTypeStr.Equals(TEXT("Road")))
+			return EHexTerrainType::Road;
 		else
 			return EHexTerrainType::None;
 	}
@@ -357,6 +371,8 @@ struct FHexCellConfigData
 			return TEXT("Grass");
 		case EHexTerrainType::Sand:
 			return TEXT("Sand");
+		case EHexTerrainType::Stone:
+			return TEXT("Stone");	
 		case EHexTerrainType::Road:
 			return TEXT("Road");
 		default:
@@ -389,16 +405,19 @@ public:
 protected:
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
-	TObjectPtr<UProceduralMeshComponent> ProceduralMeshComponent;
+	TObjectPtr<UProceduralMeshComponent> TerrainMeshComponent;
+
+	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
+	TObjectPtr<UInstancedStaticMeshComponent> FeatureMeshComponent;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CoordTextComponent;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	TMap<FString, TObjectPtr<UMaterialInterface>> HexTerrainMaterials;
+	TMap<FString, TObjectPtr<UMaterialInterface>> MaterialsLibrary;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
-	FString NoiseTexturePath;
+	TMap<FString, TObjectPtr<UStaticMesh>> ModelsLibrary;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
 	FString ConfigFileName;
@@ -437,10 +456,16 @@ protected:
 	float RoadWidthRatio;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	FString NoiseTexturePath;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingStrengthHV;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingScalingHV;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
+	FVector2D PerturbingTest;
 
 protected:
 	
@@ -481,6 +506,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	void AddTerrainFeatures(const FCachedTerrainData& CachedTerrain);
+	void AddGridCoordinates(int32 HexGridSizeX, int32 HexGridSizeY);
+
 	bool LoadHexTerrainConfig();
 	void SaveHexTerrainConfig();
 	void UpdateHexGridsData();
@@ -510,7 +538,8 @@ protected:
 	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertState = 0u, bool bFillDefaultNormal = false) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
 	int32 CalcDiffToRoadVert(const TArray<int32>& RoadVertIndices, int32 CurIndex) const;
-	float CalcRoadWidthScale(int32 DiffToRoad) const ;
+	float CalcRoadWidthScale(int32 DiffToRoad) const;
+	void CalcFeatureTransform(const FHexCellData& InCellDatac, const FVector& InCenter, int32 LocDirectionId, TArray<FTransform>& OutFeatureLocations);
 
 	FVector CalcRiverVertOffset() const 
 	{
@@ -553,11 +582,14 @@ protected:
 	void FillQuad(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1, FCachedSectionData& OutTerrainMesh, bool bRotTriangle = false);
 	void FillFan(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, const TArray<bool>& bRecalcNormal, FCachedSectionData& OutTerrainMesh, bool bClosed = false);
 
-	void PerturbingVertexInline(FVector& Vertex);
+	void PerturbingVertexInline(FVector& Vertex, const FVector2D& Strength, bool bPerturbZ);
+	FVector PerturbingVertex(const FVector& Vertex, const FVector2D& Strength, bool bPerturbZ);
+	void PerturbingVertexInline(FHexVertexData& Vertex);
 	FHexVertexData PerturbingVertex(const FHexVertexData& Vertex);
-	FVector PerturbingVertex(const FVector& Vertex);
-	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos);
-	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY);
+	
+	FVector2D GetRandomValueByPosition(const FVector& InVertex) const;
+	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos) const;
+	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY) const;
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
 
 	UFUNCTION()
@@ -581,7 +613,8 @@ protected:
 
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
-	//FUniqueVertexArray CacehdVertexData;
+
+	TArray<TArray<FVector2D>> RandomCache;
 	TMap<int32, double> CachedNoiseZ;
 	FHexCellConfigData ConfigData;
 	TObjectPtr<APlayerController> PlayerController;
