@@ -8,6 +8,72 @@
 //#pragma optimize("", off)
 
 //////////////////////////////////////////////////////////////////////////
+int32 FHexCellFeature::MaxUrbanLevel = 10;
+void FHexCellFeature::SetupFeature(int32 InUrbanLevel)
+{
+	if (InUrbanLevel < 0 || UrbanLevel == InUrbanLevel)
+		return;
+	
+	UrbanLevel = InUrbanLevel;
+	switch (InUrbanLevel)
+	{
+	case 0:
+		FeatureTypes.Empty();
+		ProbabilityValues.Empty();
+		break;
+	
+	case 1:
+		FeatureTypes = { EHexFeatureType::Tree };
+		ProbabilityValues = { 0.6f };
+		break;
+
+	case 2:
+		FeatureTypes = { EHexFeatureType::Tree, EHexFeatureType::Farm };
+		ProbabilityValues = { 0.4f, 0.6f };
+		break;
+
+	case 3:
+		FeatureTypes = { EHexFeatureType::Tree, EHexFeatureType::Farm, EHexFeatureType::Hovel };
+		ProbabilityValues = { 0.3f, 0.5f, 0.6f };
+		break;
+
+	case 4:
+		FeatureTypes = { EHexFeatureType::Tree, EHexFeatureType::Farm, EHexFeatureType::Hovel };
+		ProbabilityValues = { 0.2f, 0.4f, 0.6f };
+		break;
+
+	case 5:
+		FeatureTypes = { EHexFeatureType::Tree, EHexFeatureType::Hovel };
+		ProbabilityValues = { 0.2f, 0.6f };
+		break;
+
+	case 6:
+		FeatureTypes = { EHexFeatureType::Hovel, EHexFeatureType::LowRise };
+		ProbabilityValues = { 0.4f , 0.6f };
+		break;
+
+	case 7:
+		FeatureTypes = { EHexFeatureType::Hovel, EHexFeatureType::LowRise };
+		ProbabilityValues = { 0.3f , 0.65f };
+		break;
+
+	case 8:
+		FeatureTypes = { EHexFeatureType::Hovel, EHexFeatureType::LowRise, EHexFeatureType::HighRise };
+		ProbabilityValues = { 0.2f , 0.5f, 0.7f };
+		break;
+
+	case 9:
+		FeatureTypes = { EHexFeatureType::Hovel, EHexFeatureType::LowRise, EHexFeatureType::HighRise };
+		ProbabilityValues = { 0.1f, 0.35f, 0.75f };
+		break;
+
+	case 10:
+		FeatureTypes = { EHexFeatureType::LowRise, EHexFeatureType::HighRise, EHexFeatureType::Tower };
+		ProbabilityValues = { 0.2f, 0.6f, 0.8f };
+		break;
+	}
+}
+
 FIntPoint FHexCellData::ChunkSize{ 0, 0 };
 int32 FHexCellData::ChunkCountX = 0;
 uint8 FHexCellData::CellSubdivision = 0u;
@@ -20,6 +86,7 @@ FHexCellData::FHexCellData(const FIntPoint& InIndex)
 	, GridCoord(CalcGridCoordinate(InIndex))
 	, CellCenter(EForceInit::ForceInitToZero)
 	, SRGBColor(0xffffffff), Elevation(0), WaterLevel(0)
+	, HexRiver() , HexRoad(), HexFeature()
 {
 	GridId.X = InIndex.X / ChunkSize.X;
 	GridId.Y = InIndex.Y / ChunkSize.Y;
@@ -346,6 +413,17 @@ protected:
 	//FBox BoundingBox;
 	
 public:
+	void CreateMesh(TObjectPtr<UProceduralMeshComponent> TerrainMeshComponent, TObjectPtr<UMaterialInterface> SectionMaterial, bool bCreateCollision = false)
+	{
+		int32 SectionId = TerrainMeshComponent->GetNumSections();
+		TerrainMeshComponent->CreateMeshSection(SectionId, GetVertices(), GetTriangles(), GetNormals(), GetUV0s(), GetVertexColors(), GetTangents(), bCreateCollision);
+		if (!!SectionMaterial)
+		{
+			TerrainMeshComponent->SetMaterial(SectionId, SectionMaterial);
+		}
+		TerrainMeshComponent->SetMeshSectionVisible(SectionId, !!SectionMaterial);
+	}
+
 	void MeshSection(const FCachedSectionData &Other)
 	{
 		if (Other.IsEmpty())
@@ -522,6 +600,16 @@ public:
 	bool IsEmpty() const { return Vertices.IsEmpty(); }
 };
 
+struct FCachedFeatureData 
+{
+	EHexFeatureType FeatureType;
+	FTransform FeatureTransform;
+
+	FCachedFeatureData(EHexFeatureType InType, const FTransform& InTransform)
+		: FeatureType(InType), FeatureTransform(InTransform)
+	{}
+};
+
 struct FCachedChunkData
 {
 	// Terrain
@@ -535,7 +623,7 @@ struct FCachedChunkData
 	FCachedSectionData CollisionSection;
 
 	//Features
-	TArray<FTransform> FeatureTransforms;
+	TArray<FCachedFeatureData> Features;
 };
 
 struct FCachedTerrainData 
@@ -546,13 +634,13 @@ struct FCachedTerrainData
 int32 FHexCellConfigData::DefaultElevation = 0;
 int32 FHexCellConfigData::DefaultWaterLevel = 0;
 EHexTerrainType FHexCellConfigData::DefaultTerrainType = EHexTerrainType::Water;
+int32 FHexCellConfigData::DefaultUrbanLevel = 0;
 
 //////////////////////////////////////////////////////////////////////////
 
 // Sets default values
 AHexTerrainGenerator::AHexTerrainGenerator()
-	: NoiseTexturePath(TEXT("Content/Noise.png"))
-	, ConfigFileName(TEXT("HexTerrainConfig.json"))
+	: ConfigFileName(TEXT("HexTerrainConfig.json"))
 	, HexChunkCount(4, 3)
 	, HexChunkSize(5, 5)
 	, HexCellRadius(100.0f)
@@ -564,6 +652,7 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	, RiverSubdivision(2u)
 	, RoadElevationOffset(0.5f)
 	, RoadWidthRatio(0.5f)
+	, NoiseTexturePath(TEXT("Content/Noise.png"))
 	, PerturbingStrengthHV(1.0f, 1.0f)
 	, PerturbingScalingHV(0.25f, 1.0f)
 
@@ -572,6 +661,7 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	, HexEditElevation(0)
 	, HexEditWaterLevel(0)
 	, HexEditTerrainType(EHexTerrainType::None)
+	, HexEditUrbanLevel(0)
 	, HexEditRiverId(-1)
 	, HexEditRiverStartPoint(-1, -1)
 	, HexEditRiverLastPoint(-1, -1)
@@ -591,11 +681,23 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	TerrainMeshComponent->OnClicked.AddDynamic(this, &AHexTerrainGenerator::OnClicked);
 	TerrainMeshComponent->OnReleased.AddDynamic(this, &AHexTerrainGenerator::OnReleased);
 
-	FeatureMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FeatureMeshComponent"));
-	FeatureMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	FeatureMeshComponent->Mobility = EComponentMobility::Movable;
-	FeatureMeshComponent->SetGenerateOverlapEvents(false);
-	FeatureMeshComponent->SetupAttachment(RootComponent);
+	TArray<UInstancedStaticMeshComponent*> FeatureComponentsList;
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		FString FeatureCompNameStr = FString::Printf(TEXT("Feature%dMeshComponent"), Index);
+		UInstancedStaticMeshComponent* FeatureMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(FName{ *FeatureCompNameStr });
+		FeatureMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		FeatureMeshComponent->Mobility = EComponentMobility::Movable;
+		FeatureMeshComponent->SetGenerateOverlapEvents(false);
+		FeatureMeshComponent->SetupAttachment(RootComponent);
+		FeatureComponentsList.Add(FeatureMeshComponent);
+	}
+	FeatureMeshComponents.Add(EHexFeatureType::Tree, FeatureComponentsList[0]);
+	FeatureMeshComponents.Add(EHexFeatureType::Farm, FeatureComponentsList[1]);
+	FeatureMeshComponents.Add(EHexFeatureType::Hovel, FeatureComponentsList[2]);
+	FeatureMeshComponents.Add(EHexFeatureType::LowRise, FeatureComponentsList[2]);
+	FeatureMeshComponents.Add(EHexFeatureType::HighRise, FeatureComponentsList[2]);
+	FeatureMeshComponents.Add(EHexFeatureType::Tower, FeatureComponentsList[3]);
 
 	CoordTextComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GridCoordComponent"));
 	CoordTextComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -645,18 +747,17 @@ void AHexTerrainGenerator::GenerateTerrain()
 	// Create HexCellMesh
 	FCachedTerrainData CachedTerrain;
 
-	TObjectPtr<UMaterialInterface> GroundMaterial = MaterialsLibrary.FindOrAdd("Ground", nullptr);
-	TObjectPtr<UMaterialInterface> RoadMaterial = MaterialsLibrary.FindOrAdd("Road", nullptr);
-	TObjectPtr<UMaterialInterface> WaterMaterial = MaterialsLibrary.FindOrAdd("Water", nullptr);
-	TObjectPtr<UMaterialInterface> EstuaryMaterial = MaterialsLibrary.FindOrAdd("Estuary", nullptr);
-	TObjectPtr<UMaterialInterface> RiverMaterial = MaterialsLibrary.FindOrAdd("River", nullptr);
+	TObjectPtr<UMaterialInterface> GroundMaterial = MaterialsLibrary.FindOrAdd(TEXT("Ground"), nullptr);
+	TObjectPtr<UMaterialInterface> RoadMaterial = MaterialsLibrary.FindOrAdd(TEXT("Road"), nullptr);
+	TObjectPtr<UMaterialInterface> WaterMaterial = MaterialsLibrary.FindOrAdd(TEXT("Water"), nullptr);
+	TObjectPtr<UMaterialInterface> EstuaryMaterial = MaterialsLibrary.FindOrAdd(TEXT("Estuary"), nullptr);
+	TObjectPtr<UMaterialInterface> RiverMaterial = MaterialsLibrary.FindOrAdd(TEXT("River"), nullptr);
 
 	TerrainMeshComponent->ClearAllMeshSections();
 	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
 	{
 		for (int32 CX = 0; CX < HexChunkCount.X; ++CX)
 		{
-			int32 ChunkIndex = CY * HexChunkCount.X + CX;
 			FCachedChunkData& CurrentChunkSection = CachedTerrain.TerrainChunksSection.AddDefaulted_GetRef();
 
 			for (int32 GY = 0; GY < HexChunkSize.Y; ++GY)
@@ -671,84 +772,13 @@ void AHexTerrainGenerator::GenerateTerrain()
 				}
 			}
 
-			// Create Ground
-			{
-				FCachedSectionData& TerrainChunkSection = CurrentChunkSection.GroundSection;
-				TerrainMeshComponent->CreateMeshSection(ChunkIndex, TerrainChunkSection.GetVertices(), TerrainChunkSection.GetTriangles(), TerrainChunkSection.GetNormals(),
-					TerrainChunkSection.GetUV0s(), TerrainChunkSection.GetVertexColors(), TerrainChunkSection.GetTangents(), false);
-
-				// Set Material
-				if (!!GroundMaterial)
-				{
-					TerrainMeshComponent->SetMaterial(ChunkIndex, GroundMaterial);
-				}
-			}
-
-			// Create Road
-			if (!CurrentChunkSection.RoadSection.IsEmpty())
-			{
-				FCachedSectionData& RoadSection = CurrentChunkSection.RoadSection;
-				int32 RoadSectionId = TerrainMeshComponent->GetNumSections();
-				TerrainMeshComponent->CreateMeshSection(RoadSectionId, RoadSection.GetVertices(), RoadSection.GetTriangles(),
-					RoadSection.GetNormals(), RoadSection.GetUV0s(), RoadSection.GetVertexColors(), RoadSection.GetTangents(), false);
-				
-				if (!!RoadMaterial)
-				{
-					TerrainMeshComponent->SetMaterial(RoadSectionId, RoadMaterial);
-				}
-			}
-
-			// Create Water
-			if (!CurrentChunkSection.WaterSection.IsEmpty())
-			{
-				FCachedSectionData& WaterSection = CurrentChunkSection.WaterSection;
-				int32 WaterSectionId = TerrainMeshComponent->GetNumSections();
-				TerrainMeshComponent->CreateMeshSection(WaterSectionId, WaterSection.GetVertices(), WaterSection.GetTriangles(),
-					WaterSection.GetNormals(), WaterSection.GetUV0s(), WaterSection.GetVertexColors(), WaterSection.GetTangents(), false);
-
-				if (!!WaterMaterial)
-				{
-					TerrainMeshComponent->SetMaterial(WaterSectionId, WaterMaterial);
-				}
-			}
-			if (!CurrentChunkSection.EstuarySection.IsEmpty())
-			{
-				TArray<FVector2D> EmptyUV;
-				FCachedSectionData& EstuarySection = CurrentChunkSection.EstuarySection;
-				int32 EstuarySectionId = TerrainMeshComponent->GetNumSections();
-				TerrainMeshComponent->CreateMeshSection(EstuarySectionId, EstuarySection.GetVertices(), EstuarySection.GetTriangles(),
-					EstuarySection.GetNormals(), EstuarySection.GetUV0s(), EstuarySection.GetUV1s(), EmptyUV, EmptyUV, 
-					EstuarySection.GetVertexColors(), EstuarySection.GetTangents(), false);
-
-				if (!!EstuaryMaterial)
-				{
-					TerrainMeshComponent->SetMaterial(EstuarySectionId, EstuaryMaterial);
-				}
-			}
-
-			// Create River
-			if (!CurrentChunkSection.RiverSection.IsEmpty())
-			{
-				FCachedSectionData& RiverSection = CurrentChunkSection.RiverSection;
-				int32 RiverSectionId = TerrainMeshComponent->GetNumSections();
-				TerrainMeshComponent->CreateMeshSection(RiverSectionId, RiverSection.GetVertices(), RiverSection.GetTriangles(),
-					RiverSection.GetNormals(), RiverSection.GetUV0s(), RiverSection.GetVertexColors(), RiverSection.GetTangents(), false);
-
-				if (!!RiverMaterial)
-				{
-					TerrainMeshComponent->SetMaterial(RiverSectionId, RiverMaterial);
-				}
-			}
-
-			// Create Collision
-			if (!CurrentChunkSection.CollisionSection.IsEmpty())
-			{
-				FCachedSectionData& CollisionSection = CurrentChunkSection.CollisionSection;
-				int32 CollisionSectionId = TerrainMeshComponent->GetNumSections();
-				TerrainMeshComponent->CreateMeshSection(CollisionSectionId, CollisionSection.GetVertices(), CollisionSection.GetTriangles(),
-					CollisionSection.GetNormals(), CollisionSection.GetUV0s(), CollisionSection.GetVertexColors(), CollisionSection.GetTangents(), true);
-				TerrainMeshComponent->SetMeshSectionVisible(CollisionSectionId, false);
-			}
+			// Create Sections
+			CurrentChunkSection.GroundSection.CreateMesh(TerrainMeshComponent, GroundMaterial);
+			CurrentChunkSection.RoadSection.CreateMesh(TerrainMeshComponent, RoadMaterial);
+			CurrentChunkSection.WaterSection.CreateMesh(TerrainMeshComponent, WaterMaterial);
+			CurrentChunkSection.EstuarySection.CreateMesh(TerrainMeshComponent, EstuaryMaterial);
+			CurrentChunkSection.RiverSection.CreateMesh(TerrainMeshComponent, RiverMaterial);
+			CurrentChunkSection.CollisionSection.CreateMesh(TerrainMeshComponent, nullptr, true);
 		}
 	}
 
@@ -761,27 +791,37 @@ void AHexTerrainGenerator::GenerateTerrain()
 
 void AHexTerrainGenerator::AddTerrainFeatures(const FCachedTerrainData& CachedTerrain)
 {
-	TObjectPtr<UStaticMesh> FeatureModel = ModelsLibrary.FindOrAdd("Feature", nullptr);
-	TObjectPtr<UMaterialInterface> FeatureMaterial = MaterialsLibrary.FindOrAdd("Feature", nullptr);
-	if (!FeatureMeshComponent->GetStaticMesh() && !!FeatureModel)
+	TObjectPtr<UMaterialInterface> FeatureMaterial = MaterialsLibrary.FindOrAdd(TEXT("Feature"), nullptr);
+	for (uint8 Index = 1u; Index < uint8(EHexFeatureType::MAX); ++Index)
 	{
-		FeatureMeshComponent->SetStaticMesh(FeatureModel.Get());
-	}
-	if (!!FeatureMaterial)
-	{
-		FeatureMeshComponent->SetMaterial(0, FeatureMaterial);
-	}
+		EHexFeatureType FeatureType = EHexFeatureType(Index);
+		TObjectPtr<UStaticMesh> FeatureModel = ModelsLibrary.FindOrAdd(FHexCellFeature::GetHexFeatureString(FeatureType), nullptr);
+		
+		TObjectPtr<UInstancedStaticMeshComponent> FeatureMeshComponent = FeatureMeshComponents[FeatureType];
+		if (!FeatureMeshComponent->GetStaticMesh() && !!FeatureModel)
+		{
+			FeatureMeshComponent->SetStaticMesh(FeatureModel.Get());
+		}
 
-	FeatureMeshComponent->ClearInstances();
+		if (!!FeatureMaterial)
+		{
+			FeatureMeshComponent->SetMaterial(0, FeatureMaterial);
+		}
+
+		if (FeatureMeshComponent->GetInstanceCount() > 0)
+			FeatureMeshComponent->ClearInstances();
+	}
+	
 	int32 NumOfChunks = CachedTerrain.TerrainChunksSection.Num();
 	for (int32 ChunkId = 0; ChunkId < NumOfChunks; ++ChunkId)
 	{
 		const FCachedChunkData& ChunkData = CachedTerrain.TerrainChunksSection[ChunkId];
-		int32 NumOfFeaturesPerChunk = ChunkData.FeatureTransforms.Num();
+		int32 NumOfFeaturesPerChunk = ChunkData.Features.Num();
 		
 		for (int32 FeatureId = 0; FeatureId < NumOfFeaturesPerChunk; ++FeatureId)
 		{
-			FeatureMeshComponent->AddInstance(ChunkData.FeatureTransforms[FeatureId], false);
+			const FCachedFeatureData& OneFeature = ChunkData.Features[FeatureId];
+			FeatureMeshComponents[OneFeature.FeatureType]->AddInstance(OneFeature.FeatureTransform, false);
 		}
 	}
 	//FeatureMeshComponent->MarkRenderStateDirty();
@@ -841,49 +881,42 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 
 	TArray<TSharedPtr<FJsonValue>> ElevationsList = JsonRoot->GetArrayField(TEXT("Elevations"));
 	TArray<TSharedPtr<FJsonValue>> WaterLevelsList = JsonRoot->GetArrayField(TEXT("WaterLevels"));
-	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
 	TArray<TSharedPtr<FJsonValue>> TypesList = JsonRoot->GetArrayField(TEXT("HexTypes"));
-	TArray<TSharedPtr<FJsonValue>> RiversList = JsonRoot->GetArrayField(TEXT("Rivers"));
-	TArray<TSharedPtr<FJsonValue>> RoadsList = JsonRoot->GetArrayField(TEXT("Roads"));
+	TArray<TSharedPtr<FJsonValue>> UrbanLevelsList = JsonRoot->GetArrayField(TEXT("UrbanLevels"));
 
 	int32 HexGridSizeX = HexChunkCount.X * HexChunkSize.X;
 	int32 HexGridSizeY = HexChunkCount.Y * HexChunkSize.Y;
-	ConfigData.ElevationsList.Empty(HexGridSizeY);
-	ConfigData.ElevationsList.AddDefaulted(HexGridSizeY);
-	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
-	{
-		ConfigData.ElevationsList[Y].Init(FHexCellConfigData::DefaultElevation, HexGridSizeX);
-		if (Y >= ElevationsList.Num())
-			continue;
-		
-		const TArray<TSharedPtr<FJsonValue>>& OneRow = ElevationsList[Y]->AsArray();
-		for (int32 X = 0; X < HexGridSizeX; ++X)
-		{
-			int32 TempVal = FHexCellConfigData::DefaultElevation;
-			if (X < OneRow.Num())
-				OneRow[X]->TryGetNumber(TempVal);
-			ConfigData.ElevationsList[Y][X] = TempVal;
-		}
-	}
 	
-	ConfigData.WaterLevelsList.Empty(HexGridSizeY);
-	ConfigData.WaterLevelsList.AddDefaulted(HexGridSizeY);
-	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
-	{
-		ConfigData.WaterLevelsList[Y].Init(FHexCellConfigData::DefaultWaterLevel, HexGridSizeX);
-		if (Y >= ElevationsList.Num())
-			continue;
-
-		const TArray<TSharedPtr<FJsonValue>>& OneRow = WaterLevelsList[Y]->AsArray();
-		for (int32 X = 0; X < HexGridSizeX; ++X)
+	auto LoadGridProperty = [HexGridSizeX, HexGridSizeY]<typename T>(const TArray<TSharedPtr<FJsonValue>>& InConfigList, T DefaultVal, T MinVal, T MaxVal, TArray<TArray<T>>& OutDataList)
 		{
-			int32 TempVal = FHexCellConfigData::DefaultWaterLevel;
-			if (X < OneRow.Num())
-				OneRow[X]->TryGetNumber(TempVal);
-			ConfigData.WaterLevelsList[Y][X] = TempVal;
-		}
-	}
+			OutDataList.Empty(HexGridSizeY);
+			OutDataList.AddDefaulted(HexGridSizeY);
+			for (int32 Y = 0; Y < HexGridSizeY; ++Y)
+			{
+				OutDataList[Y].Init(DefaultVal, HexGridSizeX);
+				if (Y >= InConfigList.Num())
+					continue;
 
+				const TArray<TSharedPtr<FJsonValue>>& OneRow = InConfigList[Y]->AsArray();
+				for (int32 X = 0; X < HexGridSizeX; ++X)
+				{
+					int32 TempVal = static_cast<int32>(DefaultVal);
+					if (X < OneRow.Num())
+					{
+						OneRow[X]->TryGetNumber(TempVal);
+						TempVal = FMath::Clamp(TempVal, static_cast<int32>(MinVal), static_cast<int32>(MaxVal));
+					}
+					OutDataList[Y][X] = static_cast<T>(TempVal);
+				}
+			}
+		};
+	
+	LoadGridProperty(ElevationsList, FHexCellConfigData::DefaultElevation, -100, 100, ConfigData.ElevationsList);
+	LoadGridProperty(WaterLevelsList, FHexCellConfigData::DefaultWaterLevel, -100, 100, ConfigData.WaterLevelsList);
+	LoadGridProperty(TypesList, FHexCellConfigData::DefaultTerrainType, EHexTerrainType::None, EHexTerrainType::MAX, ConfigData.TerrainTypesList);
+	LoadGridProperty(UrbanLevelsList, FHexCellConfigData::DefaultUrbanLevel, 0, FHexCellFeature::MaxUrbanLevel, ConfigData.UrbanLevelsList);
+
+	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
 	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
 	{
 		FString OutColorStr;
@@ -897,28 +930,7 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 		}
 	}
 	
-	ConfigData.TerrainTypesList.Empty(HexGridSizeY);
-	ConfigData.TerrainTypesList.AddDefaulted(HexGridSizeY);
-	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
-	{
-		ConfigData.TerrainTypesList[Y].Init(FHexCellConfigData::DefaultTerrainType, HexGridSizeX);
-		if (Y >= TypesList.Num())
-			continue;
-
-		const TArray<TSharedPtr<FJsonValue>>& OneRow = TypesList[Y]->AsArray();
-		for (int32 X = 0; X < HexGridSizeX; ++X)
-		{
-			uint8 TempVal = uint8(FHexCellConfigData::DefaultTerrainType);
-			if (X < OneRow.Num())
-			{
-				OneRow[X]->TryGetNumber(TempVal);
-				TempVal = FMath::Clamp(TempVal, 0u, uint8(EHexTerrainType::MAX));
-			}
-			ConfigData.TerrainTypesList[Y][X] = static_cast<EHexTerrainType>(TempVal);
-		}
-	}
-	
-	auto ProcessRiverRoadConfig = [](const TArray<TSharedPtr<FJsonValue>>& InConfigList, TArray<FHexRiverRoadConfigData>& OutDataList)
+	auto LoadRiverRoadConfig = [](const TArray<TSharedPtr<FJsonValue>>& InConfigList, TArray<FHexRiverRoadConfigData>& OutDataList)
 		{
 			int32 NumOfRivers = InConfigList.Num();
 			OutDataList.Empty(NumOfRivers);
@@ -942,8 +954,10 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 			}
 		};
 
-	ProcessRiverRoadConfig(RiversList, ConfigData.RiversList);
-	ProcessRiverRoadConfig(RoadsList, ConfigData.RoadsList);
+	TArray<TSharedPtr<FJsonValue>> RiversList = JsonRoot->GetArrayField(TEXT("Rivers"));
+	TArray<TSharedPtr<FJsonValue>> RoadsList = JsonRoot->GetArrayField(TEXT("Roads"));
+	LoadRiverRoadConfig(RiversList, ConfigData.RiversList);
+	LoadRiverRoadConfig(RoadsList, ConfigData.RoadsList);
 
 	return true;
 }
@@ -965,23 +979,27 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 	TArray<TSharedPtr<FJsonValue>> ElevationsList;
 	TArray<TSharedPtr<FJsonValue>> WaterLevelsList;
 	TArray<TSharedPtr<FJsonValue>> TypesList;
+	TArray<TSharedPtr<FJsonValue>> UrbanLevelsList;
 
 	for (int32 Y = 0; Y < HexGridSizeY; ++Y)
 	{
 		TArray<TSharedPtr<FJsonValue>> ElevationRow;
 		TArray<TSharedPtr<FJsonValue>> WaterLevelRow;
 		TArray<TSharedPtr<FJsonValue>> TypeRow;
+		TArray<TSharedPtr<FJsonValue>> UrbanLevelRow;
 
 		for (int32 X = 0; X < HexGridSizeX; ++X)
 		{
 			ElevationRow.Add(MakeShared<FJsonValueNumber>(ConfigData.ElevationsList[Y][X]));
 			WaterLevelRow.Add(MakeShared<FJsonValueNumber>(ConfigData.WaterLevelsList[Y][X]));
 			TypeRow.Add(MakeShared<FJsonValueNumber>(uint8(ConfigData.TerrainTypesList[Y][X])));
+			UrbanLevelRow.Add(MakeShared<FJsonValueNumber>(ConfigData.UrbanLevelsList[Y][X]));
 		}
 
 		ElevationsList.Add(MakeShared<FJsonValueArray>(ElevationRow));
 		WaterLevelsList.Add(MakeShared<FJsonValueArray>(WaterLevelRow));
 		TypesList.Add(MakeShared<FJsonValueArray>(TypeRow));
+		UrbanLevelsList.Add(MakeShared<FJsonValueArray>(UrbanLevelRow));
 	}
 
 	TSharedPtr<FJsonObject> ColorsMap = MakeShareable(new FJsonObject());
@@ -996,55 +1014,41 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 		}
 	}
 	
+	auto SaveRiverRoadConfig = [](const TArray<FHexRiverRoadConfigData>& InDataList, TArray<TSharedPtr<FJsonValue>>& OutConfigList)
+		{
+			int32 NumOfData = InDataList.Num();
+			for (int32 Index = 0; Index < NumOfData; ++Index)
+			{
+				const FHexRiverRoadConfigData& ConfigData = InDataList[Index];
+				TSharedRef<FJsonObject> ConfigJson = MakeShareable(new FJsonObject());
+
+				TArray<TSharedPtr<FJsonValue>> StartPoint;
+				StartPoint.Add(MakeShared<FJsonValueNumber>(ConfigData.StartPoint.X));
+				StartPoint.Add(MakeShared<FJsonValueNumber>(ConfigData.StartPoint.Y));
+				ConfigJson->SetArrayField(TEXT("StartPoint"), StartPoint);
+
+				TArray<TSharedPtr<FJsonValue>> Directions;
+				for (EHexDirection Direction : ConfigData.ExtensionDirections)
+				{
+					Directions.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
+				}
+				ConfigJson->SetArrayField(TEXT("Directions"), Directions);
+
+				OutConfigList.Add(MakeShared<FJsonValueObject>(ConfigJson));
+			}
+		};
+	
 	TArray<TSharedPtr<FJsonValue>> RiversList;
-	int32 NumOfRivers = ConfigData.RiversList.Num();
-	for (int32 Index = 0; Index < NumOfRivers; ++Index)
-	{
-		FHexRiverRoadConfigData& RiverConfig = ConfigData.RiversList[Index];
-		TSharedRef<FJsonObject> RiverData = MakeShareable(new FJsonObject());
-		
-		TArray<TSharedPtr<FJsonValue>> StartPoint;
-		StartPoint.Add(MakeShared<FJsonValueNumber>(RiverConfig.StartPoint.X));
-		StartPoint.Add(MakeShared<FJsonValueNumber>(RiverConfig.StartPoint.Y));
-		RiverData->SetArrayField(TEXT("StartPoint"), StartPoint);
-		
-		TArray<TSharedPtr<FJsonValue>> Directions;
-		for (EHexDirection Direction : RiverConfig.ExtensionDirections)
-		{
-			Directions.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
-		}
-		RiverData->SetArrayField(TEXT("Directions"), Directions);
-
-		RiversList.Add(MakeShared<FJsonValueObject>(RiverData));
-	}
-
 	TArray<TSharedPtr<FJsonValue>> RoadsList;
-	int32 NumOfRoads = ConfigData.RoadsList.Num();
-	for (int32 Index = 0; Index < NumOfRoads; ++Index)
-	{
-		FHexRiverRoadConfigData& RoadConfig = ConfigData.RoadsList[Index];
-		TSharedRef<FJsonObject> RoadData = MakeShareable(new FJsonObject());
-
-		TArray<TSharedPtr<FJsonValue>> StartPoint;
-		StartPoint.Add(MakeShared<FJsonValueNumber>(RoadConfig.StartPoint.X));
-		StartPoint.Add(MakeShared<FJsonValueNumber>(RoadConfig.StartPoint.Y));
-		RoadData->SetArrayField(TEXT("StartPoint"), StartPoint);
-
-		TArray<TSharedPtr<FJsonValue>> Directions;
-		for (EHexDirection Direction : RoadConfig.ExtensionDirections)
-		{
-			Directions.Add(MakeShared<FJsonValueNumber>(static_cast<uint8>(Direction)));
-		}
-		RoadData->SetArrayField(TEXT("Directions"), Directions);
-
-		RoadsList.Add(MakeShared<FJsonValueObject>(RoadData));
-	}
+	SaveRiverRoadConfig(ConfigData.RiversList, RiversList);
+	SaveRiverRoadConfig(ConfigData.RoadsList, RoadsList);
 
 	JsonObject->SetArrayField(TEXT("ChunkSize"), ChunkSizeData);
 	JsonObject->SetArrayField(TEXT("Elevations"), ElevationsList);
 	JsonObject->SetArrayField(TEXT("WaterLevels"), WaterLevelsList);
-	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
 	JsonObject->SetArrayField(TEXT("HexTypes"), TypesList);
+	JsonObject->SetArrayField(TEXT("UrbanLevels"), UrbanLevelsList);
+	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
 	JsonObject->SetArrayField(TEXT("Rivers"), RiversList);
 	JsonObject->SetArrayField(TEXT("Roads"), RoadsList);
 
@@ -1086,7 +1090,7 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 
 			FHexCellData OneCell{ GridId };
 			ConfigData.GetHexCellTerrainData(GridId, OneCell);
-			OneCell.CellCenter = CalcHexCellCenter(GridId, OneCell.Elevation);
+			OneCell.CellCenter = CalcHexCellCenter(GridId, OneCell.Elevation); 
 
 			int32 WIndex = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X - 1, OneCell.GridCoord.Y + 1, OneCell.GridCoord.Z });
 			int32 NWIndex = FHexCellData::CalcGridIndexByCoord(FIntVector{ OneCell.GridCoord.X, OneCell.GridCoord.Y + 1, OneCell.GridCoord.Z - 1 });
@@ -1477,9 +1481,9 @@ void AHexTerrainGenerator::GenerateNoRiverCenter(const FHexCellData& InCellData,
 	// Features
 	for (int32 EdgeIndex = 0; EdgeIndex < CORNER_NUM; ++EdgeIndex)
 	{
-		CalcFeatureTransform(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.FeatureTransforms);
+		AddFeature(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.Features);
 	}
-	CalcFeatureTransform(InCellData, InCellData.CellCenter, -1, OutTerrainMesh.FeatureTransforms);
+	AddFeature(InCellData, InCellData.CellCenter, -1, OutTerrainMesh.Features);
 }
 
 void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh)
@@ -1555,7 +1559,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCell
 	// Features
 	for (int32 EdgeIndex = 0; EdgeIndex < CORNER_NUM; ++EdgeIndex)
 	{
-		CalcFeatureTransform(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.FeatureTransforms);
+		AddFeature(InCellData, InCellData.CellCenter, EdgeIndex, OutTerrainMesh.Features);
 	}
 }
 
@@ -1634,7 +1638,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			CurDirection = FHexCellData::CalcNextDirection(FromDirection);
 			while (CurDirection != ToDirection)
 			{
-				CalcFeatureTransform(InCellData, InCenter.Position, static_cast<uint8>(CurDirection), OutTerrainMesh.FeatureTransforms);
+				AddFeature(InCellData, InCenter.Position, static_cast<uint8>(CurDirection), OutTerrainMesh.Features);
 
 				CurDirection = FHexCellData::CalcNextDirection(CurDirection);
 			}
@@ -2537,9 +2541,19 @@ float AHexTerrainGenerator::CalcRoadWidthScale(int32 DiffToRoad) const
 	return DiffToScale[DiffToRoad];
 }
 
-void AHexTerrainGenerator::CalcFeatureTransform(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FTransform>& OutFeatureLocations)
+FVector AHexTerrainGenerator::CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2)
 {
-	if (InCellData.GetWaterDepth() > 0)
+	FVector Edge1 = (V1 - V0);
+	FVector Edge2 = (V2 - V0);
+	FVector NormalVector = FVector::CrossProduct(Edge1, Edge2);
+	return NormalVector.GetSafeNormal();
+}
+
+void AHexTerrainGenerator::AddFeature(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures)
+{
+	const FHexCellFeature& FeatureData = InCellData.HexFeature;
+	int32 NumOfFeatures = FeatureData.FeatureTypes.Num();
+	if (InCellData.GetWaterDepth() > 0 || FeatureData.UrbanLevel <= 0 || NumOfFeatures <= 0)
 		return;
 
 	const FHexCellRiver& RiverData = InCellData.HexRiver;
@@ -2563,24 +2577,88 @@ void AHexTerrainGenerator::CalcFeatureTransform(const FHexCellData& InCellData, 
 		FeatureLocation = InCellData.CellCenter;
 	}
 	
-	FVector2D FeatureRandom = GetRandomValueByPosition(FeatureLocation);
-	if (FeatureRandom.Y < 0.5)
+	FVector4 FeatureRandom = GetRandomValueByPosition(FeatureLocation);
+	EHexFeatureType FeatureType = EHexFeatureType::None;
+	for (int32 Index = 0; Index < NumOfFeatures; ++Index)
+	{
+		if (FeatureRandom.W <= FeatureData.ProbabilityValues[Index])
+		{
+			FeatureType = FeatureData.FeatureTypes[Index];
+			break;
+		}
+	}
+	if (FeatureType == EHexFeatureType::None)
 		return;
 
 	PerturbingVertexInline(FeatureLocation, PerturbingStrengthHV, true);
 	
-	FQuat RandRot{ FVector::UpVector, FeatureRandom.X * UE_TWO_PI };
-	FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{20.0, 20.0, 10.0} };
+	FQuat RandRot{ FVector::UpVector, FeatureRandom.Z * UE_TWO_PI };
+	double RandWidth = FeatureRandom.X * 2.0 - 1.0;
 
-	OutFeatureLocations.Add(FeatureTransform);
-}
+	switch (FeatureType)
+	{
+	case EHexFeatureType::Tree:
+	{
+		double WidthXY = 0.4 + RandWidth * 0.1;
+		double Height = 0.4 + (FeatureRandom.X * 2.0 - 1.0) * 0.1;
+		FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{WidthXY, WidthXY, Height} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::Tree, FeatureTransform });
+		break;
+	}
 
-FVector AHexTerrainGenerator::CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2)
-{
-	FVector Edge1 = (V1 - V0);
-	FVector Edge2 = (V2 - V0);
-	FVector NormalVector = FVector::CrossProduct(Edge1, Edge2);
-	return NormalVector.GetSafeNormal();
+	case EHexFeatureType::Farm:
+	{
+		double WidthX = 0.25 + RandWidth * 0.1;
+		double WidthY = 0.25 - RandWidth * 0.1;
+		FTransform FeatureTransform{ FQuat::Identity, FeatureLocation, FVector{WidthX, WidthY, 0.1} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::Farm, FeatureTransform });
+		break;
+	}
+
+
+	case EHexFeatureType::Hovel:
+	{
+		double WidthX = 0.4 + RandWidth * 0.2;
+		double WidthY = 0.4 - RandWidth * 0.2;
+		double Height = 0.1 + (FeatureRandom.Y * 0.04 - 0.02);
+		FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{WidthX, WidthY, Height} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::Hovel, FeatureTransform });
+		break;
+	}
+		
+	case EHexFeatureType::LowRise:
+	{
+		double WidthX = 0.4 + RandWidth * 0.1;
+		double WidthY = 0.4 - RandWidth * 0.1;
+		double Height = (0.1 + (FeatureRandom.Y * 0.04 - 0.02)) * 3.0;
+		FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{WidthX, WidthY, Height} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::LowRise, FeatureTransform });
+		break;
+	}
+	
+	case EHexFeatureType::HighRise:
+	{
+		double WidthX = 0.4 + RandWidth * 0.05;
+		double WidthY = 0.4 - RandWidth * 0.05;
+		double Height = (0.1 + (FeatureRandom.Y * 0.04 - 0.02)) * 5.0;
+		FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{WidthX, WidthY, Height} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::HighRise, FeatureTransform });
+		break;
+	}
+
+	case EHexFeatureType::Tower:
+	{
+		double WidthX = 0.4 + RandWidth * 0.05;
+		double WidthY = 0.4 - RandWidth * 0.05;
+		double Height = (0.1 + (FeatureRandom.Y * 0.04 - 0.02)) * 7.0;
+		FTransform FeatureTransform{ RandRot, FeatureLocation, FVector{WidthX, WidthY, Height} };
+		OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::Tower, FeatureTransform });
+		break;
+	}
+
+	default:
+		break;
+	}
 }
 
 void AHexTerrainGenerator::FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
@@ -2803,10 +2881,10 @@ FHexVertexData AHexTerrainGenerator::PerturbingVertex(const FHexVertexData& Vert
 	return NewVert;
 }
 
-FVector2D AHexTerrainGenerator::GetRandomValueByPosition(const FVector& InVertex) const
+FVector4 AHexTerrainGenerator::GetRandomValueByPosition(const FVector& InVertex) const
 {
 	if (RandomCache.IsEmpty())
-		return FVector2D::ZeroVector;
+		return FVector::ZeroVector;
 
 	int32 X = FMath::RoundToInt(InVertex.X * 0.1);
 	int32 Y = FMath::RoundToInt(InVertex.Y * 0.1);
@@ -2927,7 +3005,8 @@ void AHexTerrainGenerator::OnClicked(UPrimitiveComponent* TouchedComponent, FKey
 	bool bHit = PlayerController->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 	if (bHit)
 	{
-		GridId = CalcHexCellGridId(HitResult.Location);
+		FVector LocationLS = RootComponent->GetComponentTransform().InverseTransformPosition(HitResult.Location);
+		GridId = CalcHexCellGridId(LocationLS);
 	}
 	
 	switch (HexEditMode)
@@ -2970,8 +3049,11 @@ void AHexTerrainGenerator::PostLoad()
 		RandomCache[Y].AddDefaulted(RandomCacheSize);
 		for (int32 X = 0; X < RandomCacheSize; ++X)
 		{
-			RandomCache[Y][X].X = FMath::FRand();
-			RandomCache[Y][X].Y = FMath::FRand();
+			FVector4& OneRand = RandomCache[Y][X];
+			OneRand.X = FMath::FRand();
+			OneRand.Y = FMath::FRand();
+			OneRand.Z = FMath::FRand();
+			OneRand.W = FMath::FRand();
 		}
 	}
 
@@ -2998,39 +3080,40 @@ void AHexTerrainGenerator::PostEditChangeProperty(FPropertyChangedEvent& Propert
 	static FName Name_HexEditElevation = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditElevation);
 	static FName Name_HexEditWaterLevel = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditWaterLevel);
 	static FName Name_HexEditTerrainType = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditTerrainType);
-	if (MemberPropertyName == Name_HexEditElevation || 
-		MemberPropertyName == Name_HexEditTerrainType)
-	{
-		if (HexEditGridId.X >= 0 && HexEditGridId.Y >= 0)
-		{
-			ConfigData.ElevationsList[HexEditGridId.Y][HexEditGridId.X] = HexEditElevation;
-			ConfigData.TerrainTypesList[HexEditGridId.Y][HexEditGridId.X] = HexEditTerrainType;
+	static FName Name_HexEditUrbanevel = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexEditUrbanLevel);
+	
+	static FName Name_ConfigFileName = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, ConfigFileName);
+	static FName Name_HexCellRadius = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexCellRadius);
+	static FName Name_HexCellBorderWidth = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexCellBorderWidth);
 
-			UpdateHexGridsData();
-			GenerateTerrain();
-		}
-	}
-	else if (MemberPropertyName == Name_HexEditWaterLevel)
+	if (MemberPropertyName == Name_HexEditElevation || 
+		MemberPropertyName == Name_HexEditTerrainType ||
+		MemberPropertyName == Name_HexEditUrbanevel ||
+		MemberPropertyName == Name_HexEditWaterLevel)
 	{
-		if (HexEditGridId.X >= 0 && HexEditGridId.Y >= 0)
+		if (HexEditGridId.X < 0 || HexEditGridId.Y < 0)
+			return;
+
+		if (MemberPropertyName == Name_HexEditElevation)
+			ConfigData.ElevationsList[HexEditGridId.Y][HexEditGridId.X] = HexEditElevation;
+		else if (MemberPropertyName == Name_HexEditTerrainType)
+			ConfigData.TerrainTypesList[HexEditGridId.Y][HexEditGridId.X] = HexEditTerrainType;
+		else if (MemberPropertyName == Name_HexEditUrbanevel)
+			ConfigData.UrbanLevelsList[HexEditGridId.Y][HexEditGridId.X] = HexEditUrbanLevel;
+		else if (MemberPropertyName == Name_HexEditWaterLevel)
 		{
 			TSet<FIntPoint> ProcessedGrids;
 			HexEditWater(ProcessedGrids, HexEditGridId, HexEditWaterLevel);
-
-			UpdateHexGridsData();
-			GenerateTerrain();
 		}
-	}
 
-	static FName Name_ConfigFileName = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, ConfigFileName);
-	if (MemberPropertyName == Name_ConfigFileName)
+		UpdateHexGridsData();
+		GenerateTerrain();
+	}	
+	else if (MemberPropertyName == Name_ConfigFileName)
 	{
 		LoadTerrain();
 	}
-
-	static FName Name_HexCellRadius = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexCellRadius);
-	static FName Name_HexCellBorderWidth = GET_MEMBER_NAME_CHECKED(AHexTerrainGenerator, HexCellBorderWidth);
-	if (MemberPropertyName == Name_HexCellRadius || MemberPropertyName == Name_HexCellBorderWidth)
+	else if (MemberPropertyName == Name_HexCellRadius || MemberPropertyName == Name_HexCellBorderWidth)
 	{
 		UpdateHexGridsData();
 	}
@@ -3048,6 +3131,7 @@ void AHexTerrainGenerator::HexEditGround(bool bHit, const FIntPoint& HitGridId)
 		HexEditElevation = ConfigData.ElevationsList[HitGridId.Y][HitGridId.X];
 		HexEditWaterLevel = ConfigData.WaterLevelsList[HitGridId.Y][HitGridId.X];
 		HexEditTerrainType = ConfigData.TerrainTypesList[HitGridId.Y][HitGridId.X];
+		HexEditUrbanLevel = ConfigData.UrbanLevelsList[HitGridId.Y][HitGridId.X];
 	}
 	else
 		ClearEditParameters(EHexEditMode::Ground);

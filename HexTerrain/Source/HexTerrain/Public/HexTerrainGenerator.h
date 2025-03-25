@@ -7,8 +7,9 @@
 #include "Components/InstancedStaticMeshComponent.h"
 #include "HexTerrainGenerator.generated.h"
 
-struct FCachedChunkData;
 struct FCachedSectionData;
+struct FCachedFeatureData;
+struct FCachedChunkData;
 struct FCachedTerrainData;
 struct FHexCellConfigData;
 enum class EImageFormat : int8;
@@ -23,6 +24,7 @@ enum class EHexDirection : uint8
 	E, SE, SW, W, NW, NE
 };
 
+UENUM()
 enum class EHexBorderState : uint8
 {
 	Flat, Slope, Terrace, Cliff
@@ -34,6 +36,13 @@ enum class EHexTerrainType : uint8
 	None, Ice, Water, Grass, Sand, Stone, Road, MAX
 };
 
+UENUM()
+enum class EHexFeatureType : uint8
+{
+	None, Tree, Farm, Hovel, LowRise, HighRise, Tower, MAX
+};
+
+UENUM()
 enum class EHexRiverState : uint8
 {
 	None, StartPoint, EndPoint, PassThrough
@@ -147,6 +156,42 @@ struct FHexCellRoad
 	}
 };
 
+struct FHexCellFeature
+{
+	static int32 MaxUrbanLevel;
+	int32 UrbanLevel;
+
+	TArray<float> ProbabilityValues;
+	TArray<EHexFeatureType> FeatureTypes;
+
+	FHexCellFeature()
+		: UrbanLevel(0)
+	{}
+
+	void SetupFeature(int32 InUrbanLevel);
+
+	static FString GetHexFeatureString(EHexFeatureType InType)
+	{
+		switch (InType)
+		{
+		case EHexFeatureType::Tree:
+			return TEXT("Tree");
+		case EHexFeatureType::Farm:
+			return TEXT("Farm");
+		case EHexFeatureType::Hovel:
+			return TEXT("Hovel");
+		case EHexFeatureType::LowRise:
+			return TEXT("LowRise");
+		case EHexFeatureType::HighRise:
+			return TEXT("HighRise");
+		case EHexFeatureType::Tower:
+			return TEXT("Tower");
+		default:
+			return TEXT("");
+		}
+	}
+};
+
 struct FHexCellData
 {
 	static FIntPoint ChunkSize;
@@ -161,7 +206,6 @@ struct FHexCellData
 	FIntVector GridCoord;
 
 	FVector CellCenter;
-	//FLinearColor LinearColor;
 	FColor SRGBColor;
 	int32 Elevation;
 	int32 WaterLevel;
@@ -174,6 +218,8 @@ struct FHexCellData
 	FHexCellRiver HexRiver;
 	// Road
 	FHexCellRoad HexRoad;
+	// Feature
+	FHexCellFeature HexFeature;
 
 	FHexCellData(const FIntPoint& InIndex);
 	void LinkBorder(FHexCellData& OtherCell, EHexDirection LinkDirection);
@@ -320,11 +366,13 @@ struct FHexCellConfigData
 	static int32 DefaultElevation;
 	static int32 DefaultWaterLevel;
 	static EHexTerrainType DefaultTerrainType;
+	static int32 DefaultUrbanLevel;
 
 	bool bConfigValid;
 	TArray<TArray<int32>> ElevationsList;
 	TArray<TArray<int32>> WaterLevelsList;
 	TArray<TArray<EHexTerrainType>> TerrainTypesList;
+	TArray<TArray<int32>> UrbanLevelsList;
 	TArray<FHexRiverRoadConfigData> RiversList;
 	TArray<FHexRiverRoadConfigData> RoadsList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
@@ -339,6 +387,7 @@ struct FHexCellConfigData
 		OutCell.SRGBColor = ColorsMap[TerrainType];
 		OutCell.Elevation = ElevationsList[GridId.Y][GridId.X];
 		OutCell.WaterLevel = WaterLevelsList[GridId.Y][GridId.X];
+		OutCell.HexFeature.SetupFeature(UrbanLevelsList[GridId.Y][GridId.X]);
 	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
@@ -408,7 +457,7 @@ protected:
 	TObjectPtr<UProceduralMeshComponent> TerrainMeshComponent;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
-	TObjectPtr<UInstancedStaticMeshComponent> FeatureMeshComponent;
+	TMap<EHexFeatureType, TObjectPtr<UInstancedStaticMeshComponent>> FeatureMeshComponents;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CoordTextComponent;
@@ -484,6 +533,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Cells")
 	EHexTerrainType HexEditTerrainType;
 
+	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Cells")
+	int32 HexEditUrbanLevel;
+
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
 	int32 HexEditRiverId;
 
@@ -539,7 +591,6 @@ protected:
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
 	int32 CalcDiffToRoadVert(const TArray<int32>& RoadVertIndices, int32 CurIndex) const;
 	float CalcRoadWidthScale(int32 DiffToRoad) const;
-	void CalcFeatureTransform(const FHexCellData& InCellDatac, const FVector& InCenter, int32 LocDirectionId, TArray<FTransform>& OutFeatureLocations);
 
 	FVector CalcRiverVertOffset() const 
 	{
@@ -575,6 +626,8 @@ protected:
 
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
+	void AddFeature(const FHexCellData& InCellDatac, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
+	
 	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
 		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false, bool bRotTriangle = false);
 	void FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,
@@ -587,7 +640,7 @@ protected:
 	void PerturbingVertexInline(FHexVertexData& Vertex);
 	FHexVertexData PerturbingVertex(const FHexVertexData& Vertex);
 	
-	FVector2D GetRandomValueByPosition(const FVector& InVertex) const;
+	FVector4 GetRandomValueByPosition(const FVector& InVertex) const;
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos) const;
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY) const;
 	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
@@ -614,7 +667,7 @@ protected:
 	TArray<FHexCellData> HexGrids;
 	TArray<TArray<FColor>> NoiseTexture;
 
-	TArray<TArray<FVector2D>> RandomCache;
+	TArray<TArray<FVector4>> RandomCache;
 	TMap<int32, double> CachedNoiseZ;
 	FHexCellConfigData ConfigData;
 	TObjectPtr<APlayerController> PlayerController;
