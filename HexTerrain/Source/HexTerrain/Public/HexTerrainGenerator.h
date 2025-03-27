@@ -160,12 +160,13 @@ struct FHexCellFeature
 {
 	static int32 MaxUrbanLevel;
 	int32 UrbanLevel;
+	uint32 bHasWall : 1;
 
 	TArray<float> ProbabilityValues;
 	TArray<EHexFeatureType> FeatureTypes;
 
 	FHexCellFeature()
-		: UrbanLevel(0)
+		: UrbanLevel(0), bHasWall(false)
 	{}
 
 	void SetupFeature(int32 InUrbanLevel);
@@ -338,6 +339,16 @@ struct FHexVertexData
 	{
 		Normal = InNormal;
 		bHasNormal = true;
+	}
+
+	void ClearProperties()
+	{
+		VertexColor = FColor::White;
+		UV0 = FVector2D::ZeroVector;
+		UV1 = FVector2D::ZeroVector;
+		bHasVertexColor = false;
+		bHasUV0 = false;
+		bHasUV1 = false;
 	}
 
 	FVector Position;
@@ -624,9 +635,15 @@ protected:
 		return FVector::UpVector * WaterElevOffset * HexElevationStep;
 	}
 
+	FVector CalcWallVertOffset() const
+	{
+		return FVector::UpVector * HexElevationStep;
+	}
+
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
-	void AddFeature(const FHexCellData& InCellDatac, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
+	void AddDetailFeature(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
+	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<int32>& NumOfZSteps, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh);
 	
 	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
 		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false, bool bRotTriangle = false);
