@@ -361,6 +361,7 @@ struct FHexVertexData
 	uint32 bHasUV0 : 1;
 	uint32 bHasUV1 : 1;
 	uint32 bHasVertexColor : 1;
+	uint32 bPerturbed : 1;
 	
 	uint8 VertexState; //0-Ground 1-Water 2-Road
 	int32 VertexIndex;
