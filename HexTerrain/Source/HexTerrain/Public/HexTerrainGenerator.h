@@ -643,7 +643,7 @@ protected:
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
 	void AddDetailFeature(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
-	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<int32>& NumOfZSteps, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh);
+	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh);
 	
 	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
 		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false, bool bRotTriangle = false);

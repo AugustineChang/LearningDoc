@@ -1449,10 +1449,10 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 		int32 NumOfZStepsForWall = HexBorder.LinkState == EHexBorderState::Terrace ? NumOfZSteps : 0;
 		if (RoadIndex < 0 && RiverIndex < 0)
 		{
-			TArray<int32> ZStepsList;
-			ZStepsList.Init(NumOfZStepsForWall, NumOfVerts);
+			TArray<FIntPoint> AtrributesList;
+			AtrributesList.Init(FIntPoint{ NumOfZStepsForWall, -1 }, NumOfVerts);
 
-			GenerateWallFeature(FromVerts, ToVerts, ZStepsList, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVerts, ToVerts, AtrributesList, bHasToWall, OutTerrainMesh);
 		}
 		else
 		{
@@ -1471,21 +1471,21 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 				ToVertsHalf2.Add(ToVerts[Index]);
 			}
 
-			TArray<int32> ZStepsListHalf1, ZStepsListHalf2;
-			ZStepsListHalf1.Init(NumOfZStepsForWall, SkipIndex);
-			ZStepsListHalf2.Init(NumOfZStepsForWall, NumOfVerts - SkipIndex - 1);
+			TArray<FIntPoint> AttriListHalf1, AttriListHalf2;
+			AttriListHalf1.Init(FIntPoint{ NumOfZStepsForWall, -1 }, SkipIndex);
+			AttriListHalf2.Init(FIntPoint{ NumOfZStepsForWall, -1 }, NumOfVerts - SkipIndex - 1);
 
-			GenerateWallFeature(FromVertsHalf1, ToVertsHalf1, ZStepsListHalf1, bHasToWall, OutTerrainMesh);
-			GenerateWallFeature(FromVertsHalf2, ToVertsHalf2, ZStepsListHalf2, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVertsHalf1, ToVertsHalf1, AttriListHalf1, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVertsHalf2, ToVertsHalf2, AttriListHalf2, bHasToWall, OutTerrainMesh);
 
 			TArray<FHexVertexData> FromVertsMid1 = { FromVertsHalf1.Last() }, FromVertsMid2 = { FromVertsHalf2[0] };
 			TArray<FHexVertexData> ToVertsMid1 = { ToVertsHalf1.Last() }, ToVertsMid2 = { ToVertsHalf2[0] };
 
-			TArray<int32> ZStepsListMid;
-			ZStepsListMid.Init(NumOfZStepsForWall, 1);
+			TArray<FIntPoint> AttriListMid;
+			AttriListMid.Init(FIntPoint{ NumOfZStepsForWall, -1 }, 1);
 
-			GenerateWallFeature(FromVertsMid1, ToVertsMid1, ZStepsListMid, bHasToWall, OutTerrainMesh);
-			GenerateWallFeature(ToVertsMid2, FromVertsMid2, ZStepsListMid, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVertsMid1, ToVertsMid1, AttriListMid, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(ToVertsMid2, FromVertsMid2, AttriListMid, bHasToWall, OutTerrainMesh);
 		}
 	}
 }
@@ -1495,13 +1495,14 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 	int32 CIndex = static_cast<uint8>(CornerDirection) - 4;
 	const FHexCellCorner& CornerData = InCellData.HexCorners[CIndex];
 
+	bool bHasTerraceCell12 = CornerData.LinkState[0] == EHexBorderState::Terrace;
+	bool bHasTerraceCell13 = CornerData.LinkState[2] == EHexBorderState::Terrace;
+	bool bHasTerraceCell23 = CornerData.LinkState[1] == EHexBorderState::Terrace;
+
 	int32 NumOfTerraces = 0;	
-	if (CornerData.LinkState[0] == EHexBorderState::Terrace)
-		++NumOfTerraces;
-	if (CornerData.LinkState[1] == EHexBorderState::Terrace)
-		++NumOfTerraces;
-	if (CornerData.LinkState[2] == EHexBorderState::Terrace)
-		++NumOfTerraces;
+	if (bHasTerraceCell12) ++NumOfTerraces;
+	if (bHasTerraceCell23) ++NumOfTerraces;
+	if (bHasTerraceCell13) ++NumOfTerraces;
 
 	const FHexCellData& Cell1 = HexGrids[CornerData.LinkedCellsIndex.X];
 	const FHexCellData& Cell2 = HexGrids[CornerData.LinkedCellsIndex.Y];
@@ -1521,21 +1522,36 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 	bool bCell2UnderWater = Cell2.GetWaterDepth() > 0;
 	bool bCell3UnderWater = Cell3.GetWaterDepth() > 0;
 
-	bool bHasWallCell12 = bCell1InWall != bCell2InWall && !bCell1UnderWater && !bCell2UnderWater && CornerData.LinkState[0] < EHexBorderState::Cliff;
-	bool bHasWallCell13 = bCell1InWall != bCell3InWall && !bCell1UnderWater && !bCell3UnderWater && CornerData.LinkState[2] < EHexBorderState::Cliff;
-	bool bHasWallCell23 = bCell2InWall != bCell3InWall && !bCell2UnderWater && !bCell3UnderWater && CornerData.LinkState[1] < EHexBorderState::Cliff;
+	bool bHasWallCell12 = bCell1InWall != bCell2InWall && !bCell1UnderWater && !bCell2UnderWater;
+	bool bHasWallCell13 = bCell1InWall != bCell3InWall && !bCell1UnderWater && !bCell3UnderWater;
+	bool bHasWallCell23 = bCell2InWall != bCell3InWall && !bCell2UnderWater && !bCell3UnderWater;
+
+	bool bHasCliffCell12 = CornerData.LinkState[0] >= EHexBorderState::Cliff;
+	bool bHasCliffCell13 = CornerData.LinkState[2] >= EHexBorderState::Cliff;
+	bool bHasCliffCell23 = CornerData.LinkState[1] >= EHexBorderState::Cliff;
+	
+	int32 HighestElevation = FMath::Max3(Cell1.Elevation, Cell2.Elevation, Cell3.Elevation);
+	bool bHasWalledCliff12 = bHasWallCell12 && bHasCliffCell12 && (bCell1InWall == bCell3InWall ? Cell2.Elevation < HighestElevation : Cell1.Elevation < HighestElevation);
+	bool bHasWalledCliff13 = bHasWallCell13 && bHasCliffCell13 && (bCell1InWall == bCell2InWall ? Cell3.Elevation < HighestElevation : Cell1.Elevation < HighestElevation);
+	bool bHasWalledCliff23 = bHasWallCell23 && bHasCliffCell23 && (bCell1InWall == bCell2InWall ? Cell3.Elevation < HighestElevation : Cell2.Elevation < HighestElevation);
+
+	bHasWallCell12 = bHasWallCell12 && CornerData.LinkState[0] < EHexBorderState::Cliff;
+	bHasWallCell13 = bHasWallCell13 && CornerData.LinkState[2] < EHexBorderState::Cliff;
+	bHasWallCell23 = bHasWallCell23 && CornerData.LinkState[1] < EHexBorderState::Cliff;
 
 	int32 NumOfWalledBorders = 0;
 	if (bHasWallCell12) ++NumOfWalledBorders;
 	if (bHasWallCell13) ++NumOfWalledBorders;
 	if (bHasWallCell23) ++NumOfWalledBorders;
 
-	if (NumOfWalledBorders == 0 || NumOfWalledBorders == 3)
-		return;
+	int32 NumOfWalledCliffs = 0;
+	if (bHasWalledCliff12) ++NumOfWalledCliffs;
+	if (bHasWalledCliff13) ++NumOfWalledCliffs;
+	if (bHasWalledCliff23) ++NumOfWalledCliffs;
 
 	TArray<FHexVertexData> OuterVerts;
 	TArray<FHexVertexData> InnerVerts;
-	TArray<int32> ZStepsList;
+	TArray<FIntPoint> AttributesList;
 
 	int32 ZDiff[3] = {
 		FMath::Abs(Cell1.Elevation - Cell2.Elevation),
@@ -1547,96 +1563,96 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 	FHexVertexData V1 = CalcHexCellVertex(Cell2, CornerData.VertsId.Y, false);
 	FHexVertexData V2 = CalcHexCellVertex(Cell3, CornerData.VertsId.Z, false);
 
-	if (NumOfWalledBorders == 2)
+	if (NumOfWalledBorders == 2 || (NumOfWalledBorders == 1 && NumOfWalledCliffs == 1))
 	{
-		if (!bHasWallCell12)
+		if ((bHasWallCell13 || bHasWalledCliff13) && (bHasWallCell23 || bHasWalledCliff23))
 		{
 			if (bCell1InWall)
 			{
 				InnerVerts = { V1, V0 };
 				OuterVerts = { V2, V2 };
-				ZStepsList = {
-					CornerData.LinkState[1] == EHexBorderState::Terrace ? ZDiff[1] : 0,
-					CornerData.LinkState[2] == EHexBorderState::Terrace ? ZDiff[2] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, bHasCliffCell23 ? 1 : -1},
+					FIntPoint{bHasTerraceCell13 ? ZDiff[2] : 0, bHasCliffCell13 ? 1 : -1}
 				};
 			}
 			else
 			{
 				OuterVerts = { V0, V1 };
 				InnerVerts = { V2, V2 };
-				ZStepsList = {
-					CornerData.LinkState[2] == EHexBorderState::Terrace ? ZDiff[2] : 0,
-					CornerData.LinkState[1] == EHexBorderState::Terrace ? ZDiff[1] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell13 ? ZDiff[2] : 0, bHasCliffCell13 ? 1 : -1},
+					FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, bHasCliffCell23 ? 1 : -1}
 				};
 			}
 		}
-		else if (!bHasWallCell13)
+		else if ((bHasWallCell12 || bHasWalledCliff12) && (bHasWallCell23 || bHasWalledCliff23))
 		{
 			if (bCell1InWall)
 			{
 				InnerVerts = { V0, V2 };
 				OuterVerts = { V1, V1 };
-				ZStepsList = {
-					CornerData.LinkState[0] == EHexBorderState::Terrace ? ZDiff[0] : 0,
-					CornerData.LinkState[1] == EHexBorderState::Terrace ? ZDiff[1] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell12 ? ZDiff[0] : 0, bHasCliffCell12 ? 1 : -1},
+					FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, bHasCliffCell23 ? 1 : -1}
 				};
 			}
 			else
 			{
 				OuterVerts = { V2, V0 };
 				InnerVerts = { V1, V1 };
-				ZStepsList = {
-					CornerData.LinkState[1] == EHexBorderState::Terrace ? ZDiff[1] : 0,
-					CornerData.LinkState[0] == EHexBorderState::Terrace ? ZDiff[0] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, bHasCliffCell23 ? 1 : -1},
+					FIntPoint{bHasTerraceCell12 ? ZDiff[0] : 0, bHasCliffCell12 ? 1 : -1}
 				};
 			}
 		}
-		else //if (!bHasWallCell23)
+		else if ((bHasWallCell12 || bHasWalledCliff12) && (bHasWallCell13 || bHasWalledCliff13))
 		{
 			if (bCell2InWall)
 			{
 				InnerVerts = { V2, V1 };
 				OuterVerts = { V0, V0 };
-				ZStepsList = {
-					CornerData.LinkState[2] == EHexBorderState::Terrace ? ZDiff[2] : 0,
-					CornerData.LinkState[0] == EHexBorderState::Terrace ? ZDiff[0] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell13 ? ZDiff[2] : 0, bHasCliffCell13 ? 1 : -1},
+					FIntPoint{bHasTerraceCell12 ? ZDiff[0] : 0, bHasCliffCell12 ? 1 : -1}
 				};
 			}
 			else
 			{
 				OuterVerts = { V1, V2 };
 				InnerVerts = { V0, V0 };
-				ZStepsList = {
-					CornerData.LinkState[0] == EHexBorderState::Terrace ? ZDiff[0] : 0,
-					CornerData.LinkState[2] == EHexBorderState::Terrace ? ZDiff[2] : 0
+				AttributesList = {
+					FIntPoint{bHasTerraceCell12 ? ZDiff[0] : 0, bHasCliffCell12 ? 1 : -1},
+					FIntPoint{bHasTerraceCell13 ? ZDiff[2] : 0, bHasCliffCell13 ? 1 : -1}
 				};
 			}
 		}
 
-		GenerateWallFeature(OuterVerts, InnerVerts, ZStepsList, true, OutTerrainMesh);
+		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, OutTerrainMesh);
 	}
-	else if (NumOfWalledBorders == 1)
+	else if (NumOfWalledBorders == 1 && NumOfWalledCliffs == 0)
 	{
 		if (bHasWallCell12)
 		{
 			InnerVerts = { V0 };
 			OuterVerts = { V1 };
-			ZStepsList = { CornerData.LinkState[0] == EHexBorderState::Terrace ? ZDiff[0] : 0 };
+			AttributesList = { FIntPoint{bHasTerraceCell12 ? ZDiff[0] : 0, -1} };
 		}
 		else if (bHasWallCell13)
 		{
 			InnerVerts = { V2 };
 			OuterVerts = { V0 };
-			ZStepsList = { CornerData.LinkState[2] == EHexBorderState::Terrace ? ZDiff[2] : 0 };
+			AttributesList = { FIntPoint{bHasTerraceCell13 ? ZDiff[2] : 0, -1} };
 		}
 		else //if (bHasWallCell23)
 		{
 			InnerVerts = { V1 };
 			OuterVerts = { V2 };
-			ZStepsList = { CornerData.LinkState[1] == EHexBorderState::Terrace ? ZDiff[1] : 0 };
+			AttributesList = { FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, -1} };
 		}
 
-		GenerateWallFeature(OuterVerts, InnerVerts, ZStepsList, true, OutTerrainMesh);
+		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, OutTerrainMesh);
 	}
 }
 
@@ -2844,7 +2860,7 @@ void AHexTerrainGenerator::AddDetailFeature(const FHexCellData& InCellData, cons
 	}
 }
 
-void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<int32>& NumOfZSteps, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh)
+void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh)
 {
 	int32 NumOfVerts = FromVerts.Num();
 	if (NumOfVerts <= 0)
@@ -2866,22 +2882,42 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 
 	static FVector2D RatioXY{ 0.4, 0.6 };
 
+	int32 CliffEdgeIndex = -1;
 	for (int32 Index = 0; Index < NumOfVerts; ++Index)
 	{
-		FVector2D RatioZ = RatioXY;
-		if (NumOfZSteps[Index] > 0)
-		{
-			RatioZ.X = CalcTerraceRatio(RatioZ.X, NumOfZSteps[Index]);
-			RatioZ.Y = CalcTerraceRatio(RatioZ.Y, NumOfZSteps[Index]);
-		}
+		const FIntPoint& Attribute = AttributesList[Index];
+		int32 NumOfZSteps = Attribute.X;
+		bool bToCliff = Attribute.Y > 0;
 
-		FHexVertexData DownVert0 = FHexVertexData::LerpVertex(FromVerts[Index], ToVerts[Index], FVector{ RatioXY.X, RatioXY.X, RatioZ.X }, RatioXY.X);
-		FHexVertexData DownVert1 = FHexVertexData::LerpVertex(FromVerts[Index], ToVerts[Index], FVector{ RatioXY.Y, RatioXY.Y, RatioZ.Y }, RatioXY.Y);
+		const FHexVertexData& FromVert = FromVerts[Index];
+		const FHexVertexData& ToVert = ToVerts[Index];
+		
+		FHexVertexData DownVert0{ FVector::ZeroVector };
+		FHexVertexData DownVert1{ FVector::ZeroVector };
+
+		if (bToCliff)
+		{
+			DownVert0 = FromVert.Position.Z > ToVert.Position.Z ? FromVert : ToVert;
+			DownVert1 = DownVert0;
+			CliffEdgeIndex = Index;
+		}
+		else
+		{
+			FVector2D RatioZ = RatioXY;
+			if (NumOfZSteps > 0)
+			{
+				RatioZ.X = CalcTerraceRatio(RatioZ.X, NumOfZSteps);
+				RatioZ.Y = CalcTerraceRatio(RatioZ.Y, NumOfZSteps);
+			}
+
+			DownVert0 = FHexVertexData::LerpVertex(FromVert, ToVert, FVector{ RatioXY.X, RatioXY.X, RatioZ.X }, RatioXY.X);
+			DownVert1 = FHexVertexData::LerpVertex(FromVert, ToVert, FVector{ RatioXY.Y, RatioXY.Y, RatioZ.Y }, RatioXY.Y);
+
+			DownVert0.Position.Z = FMath::Min(DownVert0.Position.Z, DownVert1.Position.Z);
+			DownVert1.Position.Z = DownVert0.Position.Z;
+		}
 		DownVert0.ClearProperties();
 		DownVert1.ClearProperties();
-
-		DownVert0.Position.Z = FMath::Min(DownVert0.Position.Z, DownVert1.Position.Z);
-		DownVert1.Position.Z = DownVert0.Position.Z;
 
 		if (bToVertsInWall)
 		{
@@ -2899,7 +2935,7 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 		}
 	}
 
-	if (NumOfVerts <= 1)
+	if (OutWallVertsDown.Num() <= 1)
 	{
 		if (bToVertsInWall)
 			FillQuad(OutWallVertsDown[0], InWallVertsDown[0], OutWallVertsUp[0], InWallVertsUp[0], OutTerrainMesh.WallSection);
@@ -2908,6 +2944,15 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 	}
 	else
 	{
+		if (CliffEdgeIndex >= 0)
+		{
+			int32 OtherEdgeIndex = (CliffEdgeIndex + 1) % 2;
+			OutWallVertsDown[CliffEdgeIndex].Position.Z = OutWallVertsDown[OtherEdgeIndex].Position.Z;
+			OutWallVertsUp[CliffEdgeIndex].Position.Z = OutWallVertsUp[OtherEdgeIndex].Position.Z;
+			InWallVertsDown[CliffEdgeIndex].Position.Z = InWallVertsDown[OtherEdgeIndex].Position.Z;
+			InWallVertsUp[CliffEdgeIndex].Position.Z = InWallVertsUp[OtherEdgeIndex].Position.Z;
+		}
+
 		if (bToVertsInWall)
 		{
 			FillGrid(OutWallVertsDown, OutWallVertsUp, OutTerrainMesh.WallSection, 1);
