@@ -39,7 +39,7 @@ enum class EHexTerrainType : uint8
 UENUM()
 enum class EHexFeatureType : uint8
 {
-	None, Tree, Farm, Hovel, LowRise, HighRise, Tower, MAX
+	None, Tree, Farm, Hovel, LowRise, HighRise, Tower, Bridge, WallTower, MAX
 };
 
 UENUM()
@@ -187,6 +187,10 @@ struct FHexCellFeature
 			return TEXT("HighRise");
 		case EHexFeatureType::Tower:
 			return TEXT("Tower");
+		case EHexFeatureType::Bridge:
+			return TEXT("Bridge");
+		case EHexFeatureType::WallTower:
+			return TEXT("WallTower");
 		default:
 			return TEXT("");
 		}
@@ -233,6 +237,7 @@ struct FHexCellData
 	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
 	static EHexDirection CalcPreviousDirection(EHexDirection InDirection);
 	static EHexDirection CalcNextDirection(EHexDirection InDirection);
+	static uint8 CalcDirectionsDistance(EHexDirection InDirectionA, EHexDirection InDirectionB);
 	static uint8 CalcOppositeDirection(uint8 InDirection);
 	static uint8 CalcPreviousDirection(uint8 InDirection);
 	static uint8 CalcNextDirection(uint8 InDirection);
@@ -585,8 +590,10 @@ protected:
 	void GenerateNoRiverCenter(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
+	
 	bool GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
 	void GenerateRoadCenterWithRiver(const FHexCellData& InCellData, const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
+	void AddRoadBridgeFeature(const FHexCellData& InCellData, const FHexVertexData& CenterLV, const FHexVertexData& CenterRV, const FVector& OffsetDir, TArray<FCachedFeatureData>& OutFeatures);
 
 	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
 		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
@@ -644,8 +651,9 @@ protected:
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
 	void AddDetailFeature(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
-	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh);
-	
+	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, bool bAddTower, FCachedChunkData& OutTerrainMesh);
+	void AddWallTowerFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FVector2D>& RatioZ, TArray<FCachedFeatureData>& OutFeatures);
+
 	void FillGrid(const TArray<FHexVertexData>& FromV, const TArray<FHexVertexData>& ToV, FCachedSectionData& OutTerrainMesh,
 		int32 NumOfSteps, bool bTerrace = false, bool bClosed = false, bool bRotTriangle = false);
 	void FillStrip(const FHexVertexData& FromV0, const FHexVertexData& FromV1, const FHexVertexData& ToV0, const FHexVertexData& ToV1,

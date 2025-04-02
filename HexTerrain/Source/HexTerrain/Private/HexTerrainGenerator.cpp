@@ -4,6 +4,7 @@
 #include "IImageWrapper.h"
 #include "IImageWrapperModule.h"
 #include "Kismet/GameplayStatics.h"
+#include "Math/RotationMatrix.h"
 
 //#pragma optimize("", off)
 
@@ -192,6 +193,25 @@ EHexDirection FHexCellData::CalcNextDirection(EHexDirection InDirection)
 {
 	uint8 DirNum = static_cast<uint8>(InDirection);
 	return static_cast<EHexDirection>((DirNum + 1u) % CORNER_UNUM);
+}
+
+uint8 FHexCellData::CalcDirectionsDistance(EHexDirection InDirectionA, EHexDirection InDirectionB)
+{
+	uint8 DirA = static_cast<uint8>(InDirectionA);
+	uint8 DirB = static_cast<uint8>(InDirectionB);
+
+	uint8 TestDirA1 = DirA, TestDirA2 = DirA;
+	for (uint8 Index = 0u; Index < CORNER_UNUM; ++Index)
+	{
+		if (TestDirA1 == DirB || TestDirA2 == DirB)
+			return Index;
+
+		TestDirA1 = CalcPreviousDirection(TestDirA1);
+		TestDirA2 = CalcNextDirection(TestDirA2);
+	}
+
+	check(0);
+	return 255u;
 }
 
 uint8 FHexCellData::CalcOppositeDirection(uint8 InDirection)
@@ -686,7 +706,7 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	TerrainMeshComponent->OnReleased.AddDynamic(this, &AHexTerrainGenerator::OnReleased);
 
 	TArray<UInstancedStaticMeshComponent*> FeatureComponentsList;
-	for (int32 Index = 0; Index < 4; ++Index)
+	for (int32 Index = 0; Index < 6; ++Index)
 	{
 		FString FeatureCompNameStr = FString::Printf(TEXT("Feature%dMeshComponent"), Index);
 		UInstancedStaticMeshComponent* FeatureMeshComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(FName{ *FeatureCompNameStr });
@@ -702,6 +722,8 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 	FeatureMeshComponents.Add(EHexFeatureType::LowRise, FeatureComponentsList[2]);
 	FeatureMeshComponents.Add(EHexFeatureType::HighRise, FeatureComponentsList[2]);
 	FeatureMeshComponents.Add(EHexFeatureType::Tower, FeatureComponentsList[3]);
+	FeatureMeshComponents.Add(EHexFeatureType::Bridge, FeatureComponentsList[4]);
+	FeatureMeshComponents.Add(EHexFeatureType::WallTower, FeatureComponentsList[5]);
 
 	CoordTextComponent = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("GridCoordComponent"));
 	CoordTextComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -756,7 +778,7 @@ void AHexTerrainGenerator::GenerateTerrain()
 	TObjectPtr<UMaterialInterface> WaterMaterial = MaterialsLibrary.FindOrAdd(TEXT("Water"), nullptr);
 	TObjectPtr<UMaterialInterface> EstuaryMaterial = MaterialsLibrary.FindOrAdd(TEXT("Estuary"), nullptr);
 	TObjectPtr<UMaterialInterface> RiverMaterial = MaterialsLibrary.FindOrAdd(TEXT("River"), nullptr);
-	TObjectPtr<UMaterialInterface> WallMaterial = MaterialsLibrary.FindOrAdd(TEXT("Wall"), nullptr);
+	TObjectPtr<UMaterialInterface> WallMaterial = MaterialsLibrary.FindOrAdd(TEXT("Feature"), nullptr);
 
 	TerrainMeshComponent->ClearAllMeshSections();
 	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
@@ -1453,7 +1475,7 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 			TArray<FIntPoint> AtrributesList;
 			AtrributesList.Init(FIntPoint{ NumOfZStepsForWall, -1 }, NumOfVerts);
 
-			GenerateWallFeature(FromVerts, ToVerts, AtrributesList, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVerts, ToVerts, AtrributesList, bHasToWall, false, OutTerrainMesh);
 		}
 		else
 		{
@@ -1476,8 +1498,8 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 			AttriListHalf1.Init(FIntPoint{ NumOfZStepsForWall, -1 }, SkipIndex);
 			AttriListHalf2.Init(FIntPoint{ NumOfZStepsForWall, -1 }, NumOfVerts - SkipIndex - 1);
 
-			GenerateWallFeature(FromVertsHalf1, ToVertsHalf1, AttriListHalf1, bHasToWall, OutTerrainMesh);
-			GenerateWallFeature(FromVertsHalf2, ToVertsHalf2, AttriListHalf2, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVertsHalf1, ToVertsHalf1, AttriListHalf1, bHasToWall, false, OutTerrainMesh);
+			GenerateWallFeature(FromVertsHalf2, ToVertsHalf2, AttriListHalf2, bHasToWall, false, OutTerrainMesh);
 
 			TArray<FHexVertexData> FromVertsMid1 = { FromVertsHalf1.Last() }, FromVertsMid2 = { FromVertsHalf2[0] };
 			TArray<FHexVertexData> ToVertsMid1 = { ToVertsHalf1.Last() }, ToVertsMid2 = { ToVertsHalf2[0] };
@@ -1485,8 +1507,8 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 			TArray<FIntPoint> AttriListMid;
 			AttriListMid.Init(FIntPoint{ NumOfZStepsForWall, -1 }, 1);
 
-			GenerateWallFeature(FromVertsMid1, ToVertsMid1, AttriListMid, bHasToWall, OutTerrainMesh);
-			GenerateWallFeature(ToVertsMid2, FromVertsMid2, AttriListMid, bHasToWall, OutTerrainMesh);
+			GenerateWallFeature(FromVertsMid1, ToVertsMid1, AttriListMid, bHasToWall, false, OutTerrainMesh);
+			GenerateWallFeature(ToVertsMid2, FromVertsMid2, AttriListMid, bHasToWall, false, OutTerrainMesh);
 		}
 	}
 }
@@ -1630,7 +1652,7 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 			}
 		}
 
-		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, OutTerrainMesh);
+		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, true, OutTerrainMesh);
 	}
 	else if (NumOfWalledBorders == 1 && NumOfWalledCliffs == 0)
 	{
@@ -1653,7 +1675,7 @@ void AHexTerrainGenerator::GenerateHexCorner(const FHexCellData& InCellData, EHe
 			AttributesList = { FIntPoint{bHasTerraceCell23 ? ZDiff[1] : 0, -1} };
 		}
 
-		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, OutTerrainMesh);
+		GenerateWallFeature(OuterVerts, InnerVerts, AttributesList, true, false, OutTerrainMesh);
 	}
 }
 
@@ -2033,6 +2055,12 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 	{
 		GenerateRiverFan(InCellData, OutTerrainMesh, CenterL, Center, CenterR, OutDirection, bHasRoadVertR, bHasRoadVertL);
 		GenerateRiverFan(InCellData, OutTerrainMesh, CenterR, Center, CenterL, InDirection, bHasRoadVertL, bHasRoadVertR);
+
+		// Road Bridge
+		if (bHasRoadVertL && bHasRoadVertR)
+		{
+			AddRoadBridgeFeature(InCellData, CenterL, CenterR, OutDir, OutTerrainMesh.Features);
+		}
 	}
 }
 
@@ -2153,6 +2181,47 @@ void AHexTerrainGenerator::GenerateRoadCenterWithRiver(const FHexCellData& InCel
 		RoadEgdesLV.Add(RoadEdge);
 	}
 	FillGrid(RoadCentersV, RoadEgdesLV, OutTerrainMesh.RoadSection, 1);
+}
+
+void AHexTerrainGenerator::AddRoadBridgeFeature(const FHexCellData& InCellData, const FHexVertexData& CenterLV, const FHexVertexData& CenterRV, const FVector& OffsetDir, TArray<FCachedFeatureData>& OutFeatures)
+{
+	EHexDirection RiverInDirection = InCellData.HexRiver.IncomingDirection;
+	EHexDirection RiverOutDirection = InCellData.HexRiver.OutgoingDirection;
+	EHexDirection RiverOppoOutDirection = FHexCellData::CalcOppositeDirection(RiverOutDirection);
+
+	FVector DirL2R = CenterRV.Position - CenterLV.Position;
+	double LenL2R = DirL2R.Length();
+
+	FVector BridgeOffset = FVector::ZeroVector;
+	if (RiverOppoOutDirection == RiverInDirection)
+	{
+		uint8 TotalDistToRiverOut = 0u, TotalDistToRiverIn = 0u;
+		for (uint8 EdgeIndex = 0; EdgeIndex < CORNER_UNUM; ++EdgeIndex)
+		{
+			if (InCellData.HexRoad.RoadState[EdgeIndex])
+			{
+				EHexDirection RoadDirection = static_cast<EHexDirection>(EdgeIndex);
+				TotalDistToRiverOut += FHexCellData::CalcDirectionsDistance(RoadDirection, RiverOutDirection);
+				TotalDistToRiverIn += FHexCellData::CalcDirectionsDistance(RoadDirection, RiverInDirection);
+			}
+		}
+		float BridgeOffsetDist = HexCellRadius / float(HexCellSubdivision + 1) * 0.15f * FMath::Sign(TotalDistToRiverIn - TotalDistToRiverOut);
+		BridgeOffset = OffsetDir.GetSafeNormal() * BridgeOffsetDist;
+	}
+	else
+	{
+		bool bRiverRightTurn = RiverOppoOutDirection == FHexCellData::CalcNextDirection(RiverInDirection);
+		bool bRiverLeftTurn = RiverOppoOutDirection == FHexCellData::CalcPreviousDirection(RiverInDirection);
+
+		float BridgeOffsetDist = HexCellRadius / float(HexCellSubdivision + 1) * 0.075f * (bRiverRightTurn ? 1.0f : (bRiverLeftTurn ? -1.0f : 0.0f));
+		BridgeOffset = (DirL2R / LenL2R) * BridgeOffsetDist;
+		LenL2R *= 1.06;
+	}
+	
+	FVector Center = (CenterRV.Position + CenterLV.Position) * 0.5 + CalcRoadVertOffset() * 2.0 + BridgeOffset;
+	FQuat BridgeRot = FRotationMatrix::MakeFromX(DirL2R).ToQuat();
+	FTransform FeatureTransform{ BridgeRot, Center, FVector::OneVector * LenL2R * 0.01 };
+	OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::Bridge, FeatureTransform });
 }
 
 void AHexTerrainGenerator::GenerateNoTerraceCorner(const FHexCellData& Cell1, const FHexCellData& Cell2, const FHexCellData& Cell3, const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh)
@@ -2867,7 +2936,7 @@ void AHexTerrainGenerator::AddDetailFeature(const FHexCellData& InCellData, cons
 	}
 }
 
-void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, FCachedChunkData& OutTerrainMesh)
+void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, bool bAddTower, FCachedChunkData& OutTerrainMesh)
 {
 	int32 NumOfVerts = FromVerts.Num();
 	if (NumOfVerts <= 0)
@@ -2888,6 +2957,10 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 		};
 
 	static FVector2D RatioXY{ 0.4, 0.6 };
+	static FColor WallColor = FColor::Red;
+	
+	TArray<FVector2D> RatioZs;
+	RatioZs.Init(RatioXY, NumOfVerts);
 
 	int32 CliffEdgeIndex = -1;
 	for (int32 Index = 0; Index < NumOfVerts; ++Index)
@@ -2916,6 +2989,7 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 				RatioZ.X = CalcTerraceRatio(RatioZ.X, NumOfZSteps);
 				RatioZ.Y = CalcTerraceRatio(RatioZ.Y, NumOfZSteps);
 			}
+			RatioZs[Index] = RatioZ;
 
 			DownVert0 = FHexVertexData::LerpVertex(FromVert, ToVert, FVector{ RatioXY.X, RatioXY.X, RatioZ.X }, RatioXY.X);
 			DownVert1 = FHexVertexData::LerpVertex(FromVert, ToVert, FVector{ RatioXY.Y, RatioXY.Y, RatioZ.Y }, RatioXY.Y);
@@ -2925,6 +2999,8 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 		}
 		DownVert0.ClearProperties();
 		DownVert1.ClearProperties();
+		DownVert0.SetVertexColor(WallColor);
+		DownVert1.SetVertexColor(WallColor);
 
 		if (bToVertsInWall)
 		{
@@ -2971,6 +3047,38 @@ void AHexTerrainGenerator::GenerateWallFeature(const TArray<FHexVertexData>& Fro
 			FillGrid(OutWallVertsUp, OutWallVertsDown, OutTerrainMesh.WallSection, 1);
 			FillGrid(InWallVertsDown, InWallVertsUp, OutTerrainMesh.WallSection, 1);
 			FillGrid(InWallVertsUp, OutWallVertsUp, OutTerrainMesh.WallSection, 1);
+		}
+
+		if (bAddTower && CliffEdgeIndex < 0)
+		{
+			AddWallTowerFeature(FromVerts, ToVerts, RatioZs, OutTerrainMesh.Features);
+		}
+	}
+}
+
+void AHexTerrainGenerator::AddWallTowerFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FVector2D>& RatioZ, TArray<FCachedFeatureData>& OutFeatures)
+{
+	int32 NumOfVerts = FromVerts.Num();
+	for (int32 Index = 1; Index < NumOfVerts; ++Index)
+	{
+		FVector DirAlongWall = FromVerts[Index].Position - FromVerts[Index - 1].Position;
+		if (DirAlongWall.IsNearlyZero())
+			DirAlongWall = ToVerts[Index].Position - ToVerts[Index - 1].Position;
+
+		if (FMath::IsNearlyZero(DirAlongWall.Z))
+		{
+			FVector FromCenter = (FromVerts[Index - 1].Position + FromVerts[Index].Position) * 0.5;
+			FVector ToCenter = (ToVerts[Index - 1].Position + ToVerts[Index].Position) * 0.5;
+			FVector FeatureLocation = (FromCenter + ToCenter) * 0.5;
+
+			double LocZ0 = FMath::Lerp(FromCenter.Z, ToCenter.Z, RatioZ[Index - 1].X);
+			double LocZ1 = FMath::Lerp(FromCenter.Z, ToCenter.Z, RatioZ[Index - 1].Y);
+			FeatureLocation.Z = FMath::Min(LocZ0, LocZ1);
+
+			FQuat TowerRot = FRotationMatrix::MakeFromX(DirAlongWall).ToQuat();
+
+			FTransform FeatureTransform{ TowerRot, FeatureLocation, FVector{0.3, 0.3, 0.3} };
+			OutFeatures.Add(FCachedFeatureData{ EHexFeatureType::WallTower, FeatureTransform });
 		}
 	}
 }
