@@ -39,7 +39,9 @@ enum class EHexTerrainType : uint8
 UENUM()
 enum class EHexFeatureType : uint8
 {
-	None, Tree, Farm, Hovel, LowRise, HighRise, Tower, Bridge, WallTower, MAX
+	None, 
+	Tree, Farm, Hovel, LowRise, HighRise, Tower, Castle, Temple, 
+	Bridge, WallTower, MAX
 };
 
 UENUM()
@@ -158,18 +160,19 @@ struct FHexCellRoad
 
 struct FHexCellFeature
 {
-	static int32 MaxUrbanLevel;
-	int32 UrbanLevel;
+	static int32 MaxFeatureValue;
+	static int32 MaxDetailFeatureValue;
+	int32 FeatureValue;
 	uint32 bHasWall : 1;
 
 	TArray<float> ProbabilityValues;
 	TArray<EHexFeatureType> FeatureTypes;
 
 	FHexCellFeature()
-		: UrbanLevel(0), bHasWall(false)
+		: FeatureValue(0), bHasWall(false)
 	{}
 
-	void SetupFeature(int32 InUrbanLevel);
+	void SetupFeature(int32 InFeatureValue);
 
 	static FString GetHexFeatureString(EHexFeatureType InType)
 	{
@@ -187,6 +190,10 @@ struct FHexCellFeature
 			return TEXT("HighRise");
 		case EHexFeatureType::Tower:
 			return TEXT("Tower");
+		case EHexFeatureType::Castle:
+			return TEXT("Castle");
+		case EHexFeatureType::Temple:
+			return TEXT("Temple");
 		case EHexFeatureType::Bridge:
 			return TEXT("Bridge");
 		case EHexFeatureType::WallTower:
@@ -383,13 +390,13 @@ struct FHexCellConfigData
 	static int32 DefaultElevation;
 	static int32 DefaultWaterLevel;
 	static EHexTerrainType DefaultTerrainType;
-	static int32 DefaultUrbanLevel;
+	static int32 DefaultFeatureValue;
 
 	bool bConfigValid;
 	TArray<TArray<int32>> ElevationsList;
 	TArray<TArray<int32>> WaterLevelsList;
 	TArray<TArray<EHexTerrainType>> TerrainTypesList;
-	TArray<TArray<int32>> UrbanLevelsList;
+	TArray<TArray<int32>> FeatureValuesList;
 	TArray<FHexRiverRoadConfigData> RiversList;
 	TArray<FHexRiverRoadConfigData> RoadsList;
 	TMap<EHexTerrainType, FColor> ColorsMap;
@@ -404,7 +411,7 @@ struct FHexCellConfigData
 		OutCell.SRGBColor = ColorsMap[TerrainType];
 		OutCell.Elevation = ElevationsList[GridId.Y][GridId.X];
 		OutCell.WaterLevel = WaterLevelsList[GridId.Y][GridId.X];
-		OutCell.HexFeature.SetupFeature(UrbanLevelsList[GridId.Y][GridId.X]);
+		OutCell.HexFeature.SetupFeature(FeatureValuesList[GridId.Y][GridId.X]);
 	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
@@ -551,7 +558,7 @@ protected:
 	EHexTerrainType HexEditTerrainType;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrainEditor | Cells")
-	int32 HexEditUrbanLevel;
+	int32 HexEditFeatureValue;
 
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrainEditor | Rivers")
 	int32 HexEditRiverId;
@@ -651,6 +658,7 @@ protected:
 	static FVector CalcFaceNormal(const FVector& V0, const FVector& V1, const FVector& V2);
 	
 	void AddDetailFeature(const FHexCellData& InCellData, const FVector& InCenter, int32 LocDirectionId, TArray<FCachedFeatureData>& OutFeatures);
+	void AddLargeFeature(const FHexCellData& InCellData, const FVector& InCenter, TArray<FCachedFeatureData>& OutFeatures);
 	void GenerateWallFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FIntPoint>& AttributesList, bool bToVertsInWall, bool bAddTower, FCachedChunkData& OutTerrainMesh);
 	void AddWallTowerFeature(const TArray<FHexVertexData>& FromVerts, const TArray<FHexVertexData>& ToVerts, const TArray<FVector2D>& RatioZ, TArray<FCachedFeatureData>& OutFeatures);
 
