@@ -33,7 +33,7 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, Stone, Road, MAX
+	None, Ice, Water, Grass, Sand, Stone, Road, Moor, MAX
 };
 
 UENUM()
@@ -428,6 +428,8 @@ struct FHexCellConfigData
 			return EHexTerrainType::Stone;
 		else if (InTypeStr.Equals(TEXT("Road")))
 			return EHexTerrainType::Road;
+		else if (InTypeStr.Equals(TEXT("Moor")))
+			return EHexTerrainType::Moor;
 		else
 			return EHexTerrainType::None;
 	}
@@ -448,6 +450,8 @@ struct FHexCellConfigData
 			return TEXT("Stone");	
 		case EHexTerrainType::Road:
 			return TEXT("Road");
+		case EHexTerrainType::Moor:
+			return TEXT("Moor");
 		default:
 			return TEXT("");
 		}

@@ -11,13 +11,14 @@
 //////////////////////////////////////////////////////////////////////////
 int32 FHexCellFeature::MaxFeatureValue = 12;
 int32 FHexCellFeature::MaxDetailFeatureValue = 10;
-void FHexCellFeature::SetupFeature(int32 InFeatureValue)
+void FHexCellFeature::SetupFeature(int32 InFeatureWallValue)
 {
-	if (InFeatureValue < 0 || FeatureValue == InFeatureValue)
+	bHasWall = InFeatureWallValue < 0;
+	int32 InFeatureValue = FMath::Abs(InFeatureWallValue);
+	if (FeatureValue == InFeatureValue)
 		return;
 	
 	FeatureValue = InFeatureValue;
-	bHasWall = InFeatureValue >= 6;
 	switch (FeatureValue)
 	{
 	case 0:
@@ -960,7 +961,7 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 	LoadGridProperty(ElevationsList, FHexCellConfigData::DefaultElevation, -100, 100, ConfigData.ElevationsList);
 	LoadGridProperty(WaterLevelsList, FHexCellConfigData::DefaultWaterLevel, -100, 100, ConfigData.WaterLevelsList);
 	LoadGridProperty(TypesList, FHexCellConfigData::DefaultTerrainType, EHexTerrainType::None, EHexTerrainType::MAX, ConfigData.TerrainTypesList);
-	LoadGridProperty(FeatureValuesList, FHexCellConfigData::DefaultFeatureValue, 0, FHexCellFeature::MaxFeatureValue, ConfigData.FeatureValuesList);
+	LoadGridProperty(FeatureValuesList, FHexCellConfigData::DefaultFeatureValue, -FHexCellFeature::MaxFeatureValue, FHexCellFeature::MaxFeatureValue, ConfigData.FeatureValuesList);
 
 	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
 	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
@@ -1808,8 +1809,8 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 	EHexDirection InDirection = InCellData.HexRiver.IncomingDirection;
 	EHexDirection OutDirection = InCellData.HexRiver.OutgoingDirection;
 
-	uint8 InMVertId = FHexCellData::GetVertIdFromDirection(InDirection, true, 1u);
-	uint8 OutMVertId = FHexCellData::GetVertIdFromDirection(OutDirection, true, 1u);
+	int32 InMVertId = FHexCellData::GetVertIdFromDirection(InDirection, true, 1u);
+	int32 OutMVertId = FHexCellData::GetVertIdFromDirection(OutDirection, true, 1u);
 
 	FVector InDir = FHexCellData::HexSubVertices[InMVertId];
 	FVector OutDir = FHexCellData::HexSubVertices[OutMVertId];
@@ -1850,7 +1851,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			EHexDirection CurDirection = FHexCellData::CalcNextDirection(FromDirection);
 			while (CurDirection != ToDirection)
 			{
-				uint8 EdgeIndex = FHexCellData::GetVertIdFromDirection(CurDirection, false);
+				int32 EdgeIndex = FHexCellData::GetVertIdFromDirection(CurDirection, false);
 				for (int32 SubIndex = 0; SubIndex <= HexCellSubdivision; ++SubIndex)
 				{
 					if (SubIndex == 0)
@@ -1862,7 +1863,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 				CurDirection = FHexCellData::CalcNextDirection(CurDirection);
 			}
 			{
-				uint8 EdgeIndex = FHexCellData::GetVertIdFromDirection(CurDirection, false);
+				int32 EdgeIndex = FHexCellData::GetVertIdFromDirection(CurDirection, false);
 				EdgesV.Add(CalcHexCellVertex(InCellData, EdgeIndex, false));
 			}
 
@@ -1896,15 +1897,15 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 		const FHexVertexData& InCenterL, const FHexVertexData& InCenter, const FHexVertexData& InCenterR, EHexDirection Direction, 
 		bool bHasRoadVertL, bool bHasRoadVertR) -> void
 		{
-			uint8 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
-			uint8 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
-			uint8 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
+			int32 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
+			int32 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
+			int32 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
 
 			// Left Fan
 			TArray<FHexVertexData> EdgesLV;
-			uint8 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
+			int32 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
 			EdgesLV.Add(CalcHexCellVertex(InCellData, MainVertL, false));
-			for (uint8 Index = SVertId; Index <= MVertId - 1u; ++Index)
+			for (int32 Index = SVertId; Index <= MVertId - 1; ++Index)
 			{
 				EdgesLV.Add(CalcHexCellVertex(InCellData, Index, true));
 			}
@@ -1915,20 +1916,20 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FillGrid(CentersLV, EdgesLV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// Center Two Quads
-			FHexVertexData EdgeL = CalcHexCellVertex(InCellData, MVertId - 1u, true);
+			FHexVertexData EdgeL = CalcHexCellVertex(InCellData, MVertId - 1, true);
 			FHexVertexData EdgeC = CalcHexCellVertex(InCellData, MVertId, true);
-			FHexVertexData EdgeR = CalcHexCellVertex(InCellData, MVertId + 1u, true);
+			FHexVertexData EdgeR = CalcHexCellVertex(InCellData, MVertId + 1, true);
 
 			FillStrip(InCenterL, InCenter, EdgeL, EdgeC, OutTerrainMesh.GroundSection, RiverSubdivision);
 			FillStrip(InCenter, InCenterR, EdgeC, EdgeR, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// Right Fan
 			TArray<FHexVertexData> EdgesRV;
-			for (uint8 Index = MVertId + 1u; Index <= EVertId; ++Index)
+			for (int32 Index = MVertId + 1; Index <= EVertId; ++Index)
 			{
 				EdgesRV.Add(CalcHexCellVertex(InCellData, Index, true));
 			}
-			uint8 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
+			int32 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
 			EdgesRV.Add(CalcHexCellVertex(InCellData, MainVertR, false));
 
 			TArray<FHexVertexData> CentersRV;
@@ -1963,17 +1964,20 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 	auto GenerateSharpRiverFan = [this, WaterColor](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
 		const FHexVertexData& InCenterL, const FHexVertexData& InCenter, const FHexVertexData& InCenterR, EHexDirection Direction, bool bMoveLeft) -> void
 		{
-			uint8 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
-			uint8 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
-			uint8 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
+			int32 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
+			int32 MVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 1u);
+			int32 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
 
 			// Left Fan
 			TArray<FHexVertexData> EgdesLV;
-			uint8 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
+			int32 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
 			EgdesLV.Add(CalcHexCellVertex(InCellData, MainVertL, false));
-			for (uint8 Index = SVertId; Index <= MVertId - 2u; ++Index)
+			if (SVertId <= MVertId - 2)
 			{
-				EgdesLV.Add(CalcHexCellVertex(InCellData, Index, true));
+				for (int32 Index = SVertId; Index <= MVertId - 2; ++Index)
+				{
+					EgdesLV.Add(CalcHexCellVertex(InCellData, Index, true));
+				}
 			}
 
 			TArray<FHexVertexData> CentersLV;
@@ -1982,14 +1986,14 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FillGrid(CentersLV, EgdesLV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// Center Two Quads
-			uint8 MainVertIdL = FHexCellData::GetVertIdFromDirection(Direction, false);
-			uint8 MainVertIdR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
+			int32 MainVertIdL = FHexCellData::GetVertIdFromDirection(Direction, false);
+			int32 MainVertIdR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
 
-			FHexVertexData EdgeL2 = MVertId - 2u < SVertId ? CalcHexCellVertex(InCellData, MainVertIdL, false) : CalcHexCellVertex(InCellData, MVertId - 2u, true);
-			FHexVertexData EdgeL1 = CalcHexCellVertex(InCellData, MVertId - 1u, true);
+			FHexVertexData EdgeL2 = MVertId - 2 < SVertId ? CalcHexCellVertex(InCellData, MainVertIdL, false) : CalcHexCellVertex(InCellData, MVertId - 2, true);
+			FHexVertexData EdgeL1 = CalcHexCellVertex(InCellData, MVertId - 1, true);
 			FHexVertexData EdgeC = CalcHexCellVertex(InCellData, MVertId, true);
-			FHexVertexData EdgeR1 = CalcHexCellVertex(InCellData, MVertId + 1u, true);
-			FHexVertexData EdgeR2 = MVertId + 2u > EVertId ? CalcHexCellVertex(InCellData, MainVertIdR, false) : CalcHexCellVertex(InCellData, MVertId + 2u, true);
+			FHexVertexData EdgeR1 = CalcHexCellVertex(InCellData, MVertId + 1, true);
+			FHexVertexData EdgeR2 = MVertId + 2 > EVertId ? CalcHexCellVertex(InCellData, MainVertIdR, false) : CalcHexCellVertex(InCellData, MVertId + 2, true);
 
 			FVector EdgeCNoOffset = EdgeC.Position - CalcRiverVertOffset();
 			FVector EdgeL1WithOffset = EdgeL1.Position + CalcRiverVertOffset();
@@ -2031,11 +2035,15 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 
 			// Right Fan
 			TArray<FHexVertexData> EgdesRV;
-			for (uint8 Index = MVertId + 2u; Index <= EVertId; ++Index)
+			if (MVertId + 2 <= EVertId)
 			{
-				EgdesRV.Add(CalcHexCellVertex(InCellData, Index, true));
+				for (int32 Index = MVertId + 2; Index <= EVertId; ++Index)
+				{
+					EgdesRV.Add(CalcHexCellVertex(InCellData, Index, true));
+				}
 			}
-			uint8 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
+			
+			int32 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
 			EgdesRV.Add(CalcHexCellVertex(InCellData, MainVertR, false));
 
 			TArray<FHexVertexData> CentersRV;
@@ -2175,7 +2183,7 @@ void AHexTerrainGenerator::GenerateRoadCenterWithRiver(const FHexCellData& InCel
 		int32 EdgeIndex = FHexCellData::CalcNextDirection(VertIndex);
 		if (InCellData.HexRoad.RoadState[EdgeIndex])
 		{
-			uint8 SubVertIndex = FHexCellData::GetVertIdFromDirection(static_cast<EHexDirection>(EdgeIndex));
+			int32 SubVertIndex = FHexCellData::GetVertIdFromDirection(static_cast<EHexDirection>(EdgeIndex));
 			int32 RoadMidVert = SubVertIndex + VertIndex + 1;
 			RoadVertIndices.Add(RoadMidVert);
 		}

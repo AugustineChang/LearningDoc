@@ -35,7 +35,7 @@
 	"Rivers" : [
 		{
 			"StartPoint":[6,7],
-			"FlowDirections":[2,0,1,3,2,2,0,0]
+			"Directions":[2,0,1,3,2,2,0,0]
 		}],
 	"Roads" : []
 }
