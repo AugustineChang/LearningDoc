@@ -5,6 +5,7 @@
 #include "IImageWrapperModule.h"
 #include "Kismet/GameplayStatics.h"
 #include "Math/RotationMatrix.h"
+#include "Materials/MaterialInstanceDynamic.h"
 
 //#pragma optimize("", off)
 
@@ -98,11 +99,13 @@ int32 FHexCellData::MaxTerranceElevation = 0;
 TArray<FVector> FHexCellData::HexVertices;
 TArray<FVector> FHexCellData::HexSubVertices;
 
+FColor FHexCellData::RoadColor = FColor{ 111u,61u,20u };
+
 FHexCellData::FHexCellData(const FIntPoint& InIndex)
 	: GridIndex(InIndex.X + InIndex.Y * ChunkSize.X * ChunkCountX)
 	, GridCoord(CalcGridCoordinate(InIndex))
 	, CellCenter(EForceInit::ForceInitToZero)
-	, SRGBColor(0xffffffff), Elevation(0), WaterLevel(0)
+	, TerrainType(EHexTerrainType::MAX), Elevation(0), WaterLevel(0)
 	, HexRiver() , HexRoad(), HexFeature()
 {
 	GridId.X = InIndex.X / ChunkSize.X;
@@ -344,32 +347,42 @@ FHexVertexAttributeData& FUniqueVertexArray::FindOrAddVertex(const FVector& InVe
 }
 
 FHexVertexData::FHexVertexData(const FVector& InPos)
-	:Position(InPos), bHasNormal(false), bHasUV0(false), bHasUV1(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	:Position(InPos), bHasNormal(false), bHasUV0(false), bHasUV1(false), bHasUV2(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData::FHexVertexData(const FVector& InPos, const FColor& InColor)
 	:Position(InPos), VertexColor(InColor)
-	, bHasNormal(false), bHasUV0(false), bHasUV1(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	, bHasNormal(false), bHasUV0(false), bHasUV1(false), bHasUV2(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData::FHexVertexData(const FVector& InPos, const FVector2D& InUV0)
 	:Position(InPos), UV0(InUV0)
-	, bHasNormal(false), bHasUV0(true), bHasUV1(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	, bHasNormal(false), bHasUV0(true), bHasUV1(false), bHasUV2(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+{}
+
+FHexVertexData::FHexVertexData(const FVector& InPos, const FVector& InNormal)
+	:Position(InPos), Normal(InNormal)
+	, bHasNormal(true), bHasUV0(false), bHasUV1(false), bHasUV2(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData::FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal)
 	:Position(InPos), Normal(InNormal), VertexColor(InColor)
-	, bHasNormal(true), bHasUV0(false), bHasUV1(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	, bHasNormal(true), bHasUV0(false), bHasUV1(false), bHasUV2(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData::FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector2D& InUV0)
 	:Position(InPos), UV0(InUV0), VertexColor(InColor)
-	, bHasNormal(false), bHasUV0(true), bHasUV1(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	, bHasNormal(false), bHasUV0(true), bHasUV1(false), bHasUV2(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+{}
+
+FHexVertexData::FHexVertexData(const FVector& InPos, const FVector& InNormal, const FVector2D& InUV0)
+	:Position(InPos), Normal(InNormal), UV0(InUV0)
+	, bHasNormal(true), bHasUV0(true), bHasUV1(false), bHasUV2(false), bHasVertexColor(false), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData::FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal, const FVector2D& InUV0)
 	:Position(InPos), Normal(InNormal), UV0(InUV0), VertexColor(InColor)
-	, bHasNormal(true), bHasUV0(true), bHasUV1(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
+	, bHasNormal(true), bHasUV0(true), bHasUV1(false), bHasUV2(false), bHasVertexColor(true), bPerturbed(false), VertexState(0u), VertexIndex(-1)
 {}
 
 FHexVertexData FHexVertexData::LerpVertex(const FHexVertexData& FromV, const FHexVertexData& ToV, FVector PosRatio, float AttrRatio)
@@ -414,6 +427,16 @@ FHexVertexData FHexVertexData::LerpVertex(const FHexVertexData& FromV, const FHe
 		OutVertex.SetUV1(NewUV1);
 	}
 
+	bool bAllHasUV2 = FromV.bHasUV2 && ToV.bHasUV2;
+	if (bAllHasUV2)
+	{
+		FVector2D NewUV2;
+		NewUV2.X = FMath::Lerp(FromV.UV2.X, ToV.UV2.X, AttrRatio);
+		NewUV2.Y = FMath::Lerp(FromV.UV2.Y, ToV.UV2.Y, AttrRatio);
+
+		OutVertex.SetUV2(NewUV2);
+	}
+
 	return OutVertex;
 }
 
@@ -429,6 +452,8 @@ void FHexVertexData::ApplyOverrideInline(const FVector& InPosOffset, const FColo
 {
 	Position += InPosOffset;
 
+	ClearProperties();
+
 	if (InOverrideColor != nullptr)
 		SetVertexColor(*InOverrideColor);
 
@@ -443,6 +468,7 @@ protected:
 	TArray<FVector> Normals;
 	TArray<FVector2D> UV0s;
 	TArray<FVector2D> UV1s;
+	TArray<FVector2D> UV2s;
 	TArray<FColor> VertexColors;
 	TArray<int32> Triangles;
 	TArray<FProcMeshTangent> Tangents;
@@ -454,7 +480,7 @@ public:
 	{
 		TArray<FVector2D> EmptyUVs;
 		int32 SectionId = TerrainMeshComponent->GetNumSections();
-		TerrainMeshComponent->CreateMeshSection(SectionId, GetVertices(), GetTriangles(), GetNormals(), GetUV0s(), GetUV1s(), EmptyUVs, EmptyUVs, GetVertexColors(), GetTangents(), bCreateCollision);
+		TerrainMeshComponent->CreateMeshSection(SectionId, GetVertices(), GetTriangles(), GetNormals(), GetUV0s(), GetUV1s(), GetUV2s(), EmptyUVs, GetVertexColors(), GetTangents(), bCreateCollision);
 		if (!!SectionMaterial)
 		{
 			TerrainMeshComponent->SetMaterial(SectionId, SectionMaterial);
@@ -472,6 +498,7 @@ public:
 		Normals.Append(Other.Normals);
 		UV0s.Append(Other.UV0s);
 		UV1s.Append(Other.UV1s);
+		UV2s.Append(Other.UV2s);
 		VertexColors.Append(Other.VertexColors);
 
 		int32 NumOfIndices = Other.Triangles.Num();
@@ -520,6 +547,13 @@ public:
 			UV1s.Add(V0.UV1);
 			UV1s.Add(V1.UV1);
 			UV1s.Add(V2.UV1);
+		}
+
+		if (V0.bHasUV2 && V1.bHasUV2 && V2.bHasUV2)
+		{
+			UV2s.Add(V0.UV2);
+			UV2s.Add(V1.UV2);
+			UV2s.Add(V2.UV2);
 		}
 
 		Triangles.Add(BaseIndex);
@@ -575,6 +609,14 @@ public:
 			UV1s.Add(V3.UV1);
 		}
 
+		if (V0.bHasUV2 && V1.bHasUV2 && V2.bHasUV2 && V3.bHasUV2)
+		{
+			UV2s.Add(V0.UV2);
+			UV2s.Add(V1.UV2);
+			UV2s.Add(V2.UV2);
+			UV2s.Add(V3.UV2);
+		}
+
 		Triangles.Add(BaseIndex);
 		Triangles.Add(BaseIndex + 2);
 		Triangles.Add(BaseIndex + 1);
@@ -590,6 +632,7 @@ public:
 		Triangles.Empty(NumOfVerts * 3);
 		UV0s.Empty(NumOfVerts + 1);
 		UV1s.Empty(NumOfVerts + 1);
+		UV2s.Empty(NumOfVerts + 1);
 		Normals.Empty(NumOfVerts + 1);
 		VertexColors.Empty(NumOfVerts + 1);
 	}
@@ -615,6 +658,9 @@ public:
 		if (InVertex.bHasUV1)
 			UV1s.Add(InVertex.UV1);
 
+		if (InVertex.bHasUV2)
+			UV2s.Add(InVertex.UV2);
+
 		if (InVertex.bHasVertexColor)
 			VertexColors.Add(InVertex.VertexColor);
 
@@ -632,6 +678,7 @@ public:
 	const TArray<FVector>& GetNormals() const { return Normals; }
 	const TArray<FVector2D>& GetUV0s() const { return UV0s; }
 	const TArray<FVector2D>& GetUV1s() const { return UV1s; }
+	const TArray<FVector2D>& GetUV2s() const { return UV2s; }
 	const TArray<FColor>& GetVertexColors() const { return VertexColors; }
 	const TArray<int32>& GetTriangles() const { return Triangles; }
 	const TArray<FProcMeshTangent>& GetTangents() const { return Tangents; }
@@ -797,6 +844,19 @@ void AHexTerrainGenerator::GenerateTerrain()
 	TObjectPtr<UMaterialInterface> RiverMaterial = MaterialsLibrary.FindOrAdd(TEXT("River"), nullptr);
 	TObjectPtr<UMaterialInterface> WallMaterial = MaterialsLibrary.FindOrAdd(TEXT("Feature"), nullptr);
 
+	{
+		static FName WaterWaveSourcePos{ TEXT("ScrPos") };
+		FVector TerrainCenter = (HexGrids[0].CellCenter + HexGrids[HexGrids.Num() - 1].CellCenter) / 2.0;
+
+		UMaterialInstanceDynamic* WaterDynMaterial = UMaterialInstanceDynamic::Create(WaterMaterial, this);
+		WaterDynMaterial->SetVectorParameterValue(WaterWaveSourcePos, FVector4{ TerrainCenter.X, TerrainCenter.Y, 0.0, 0.0 });
+		WaterMaterial = WaterDynMaterial;
+
+		UMaterialInstanceDynamic* EstuaryDynMaterial = UMaterialInstanceDynamic::Create(EstuaryMaterial, this);
+		EstuaryDynMaterial->SetVectorParameterValue(WaterWaveSourcePos, FVector4{ TerrainCenter.X, TerrainCenter.Y, 0.0, 0.0 });
+		EstuaryMaterial = EstuaryDynMaterial;
+	}
+
 	TerrainMeshComponent->ClearAllMeshSections();
 	for (int32 CY = 0; CY < HexChunkCount.Y; ++CY)
 	{
@@ -892,9 +952,14 @@ void AHexTerrainGenerator::AddGridCoordinates(int32 HexGridSizeX, int32 HexGridS
 			const FHexCellData& CellData = HexGrids[GridIndex];
 
 			FTransform Instance{ CellData.CellCenter };
+			FIntPoint CellGridId{
+				CellData.GridId.X * HexChunkSize.X + CellData.GridId.Z,
+				CellData.GridId.Y * HexChunkSize.Y + CellData.GridId.W
+			};
+
 			CoordTextComponent->AddInstance(Instance, false);
-			CoordTextComponent->SetCustomDataValue(GridIndex, 0, CellData.GridCoord.X);
-			CoordTextComponent->SetCustomDataValue(GridIndex, 1, CellData.GridCoord.Z);
+			CoordTextComponent->SetCustomDataValue(GridIndex, 0, CellGridId.X);
+			CoordTextComponent->SetCustomDataValue(GridIndex, 1, CellGridId.Y);
 		}
 	}
 	CoordTextComponent->MarkRenderStateDirty();
@@ -962,20 +1027,6 @@ bool AHexTerrainGenerator::LoadHexTerrainConfig()
 	LoadGridProperty(WaterLevelsList, FHexCellConfigData::DefaultWaterLevel, -100, 100, ConfigData.WaterLevelsList);
 	LoadGridProperty(TypesList, FHexCellConfigData::DefaultTerrainType, EHexTerrainType::None, EHexTerrainType::MAX, ConfigData.TerrainTypesList);
 	LoadGridProperty(FeatureValuesList, FHexCellConfigData::DefaultFeatureValue, -FHexCellFeature::MaxFeatureValue, FHexCellFeature::MaxFeatureValue, ConfigData.FeatureValuesList);
-
-	TSharedPtr<FJsonObject> ColorsMap = JsonRoot->GetObjectField(TEXT("Colors"));
-	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
-	{
-		FString OutColorStr;
-		EHexTerrainType TerrainType = EHexTerrainType(Index);
-		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
-		if (ColorsMap->TryGetStringField(InTerrainTypeStr, OutColorStr))
-		{
-			FColor TempVal;
-			TempVal.InitFromString(OutColorStr);
-			ConfigData.ColorsMap.Add(TerrainType, TempVal);
-		}
-	}
 	
 	auto LoadRiverRoadConfig = [](const TArray<TSharedPtr<FJsonValue>>& InConfigList, TArray<FHexRiverRoadConfigData>& OutDataList)
 		{
@@ -1048,18 +1099,6 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 		TypesList.Add(MakeShared<FJsonValueArray>(TypeRow));
 		FeatureValuesList.Add(MakeShared<FJsonValueArray>(FeatureValueRow));
 	}
-
-	TSharedPtr<FJsonObject> ColorsMap = MakeShareable(new FJsonObject());
-	for (uint8 Index = 0u; Index < uint8(EHexTerrainType::MAX); ++Index)
-	{
-		FString OutColorStr;
-		EHexTerrainType TerrainType = EHexTerrainType(Index);
-		FString InTerrainTypeStr = FHexCellConfigData::GetHexTerrainString(TerrainType);
-		if (!InTerrainTypeStr.IsEmpty())
-		{
-			ColorsMap->SetStringField(InTerrainTypeStr, ConfigData.ColorsMap[TerrainType].ToString());
-		}
-	}
 	
 	auto SaveRiverRoadConfig = [](const TArray<FHexRiverRoadConfigData>& InDataList, TArray<TSharedPtr<FJsonValue>>& OutConfigList)
 		{
@@ -1095,7 +1134,6 @@ void AHexTerrainGenerator::SaveHexTerrainConfig()
 	JsonObject->SetArrayField(TEXT("WaterLevels"), WaterLevelsList);
 	JsonObject->SetArrayField(TEXT("HexTypes"), TypesList);
 	JsonObject->SetArrayField(TEXT("FeatureValues"), FeatureValuesList);
-	JsonObject->SetObjectField(TEXT("Colors"), ColorsMap);
 	JsonObject->SetArrayField(TEXT("Rivers"), RiversList);
 	JsonObject->SetArrayField(TEXT("Roads"), RoadsList);
 
@@ -1342,7 +1380,7 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	
 	TArray<FHexVertexData> FromVerts;
 	TArray<FHexVertexData> ToVerts;
-
+	
 	FromVerts.Add(CalcHexCellVertex(InCellData, HexBorder.FromVert.X, false));
 	ToVerts.Add(CalcHexCellVertex(OppositeCell, HexBorder.ToVert.X, false));
 	
@@ -1359,6 +1397,24 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	ToVerts.Add(CalcHexCellVertex(OppositeCell, HexBorder.ToVert.Y, false));
 	
 	int32 NumOfVerts = FromVerts.Num();
+
+	// texture
+	for (int32 Index = 0; Index < NumOfVerts; ++Index)
+	{
+		FHexVertexData& FromVert = FromVerts[Index];
+		FHexVertexData& ToVert = ToVerts[Index];
+
+		if (FromVert.VertexState == 1u)
+			FromVert.SetTextureData(InCellData.TerrainTextureType, OppositeCell.TerrainTextureType, InCellData.WaterTextureType, 0.0f, 0.0f, 1.0f);
+		else
+			FromVert.SetTextureData(InCellData.TerrainTextureType, OppositeCell.TerrainTextureType, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+
+		if (ToVert.VertexState == 1u)
+			ToVert.SetTextureData(InCellData.TerrainTextureType, OppositeCell.TerrainTextureType, OppositeCell.WaterTextureType, 0.0f, 0.0f, 1.0f);
+		else
+			ToVert.SetTextureData(InCellData.TerrainTextureType, OppositeCell.TerrainTextureType, OppositeCell.WaterTextureType, 0.0f, 1.0f, 0.0f);
+	}
+	
 	int32 NumOfZSteps = FMath::Abs(OppositeCell.Elevation - InCellData.Elevation);
 	int32 NumOfSegments = NumOfVerts - 1;
 	int32 MidIndex = NumOfSegments / 2;
@@ -1402,16 +1458,15 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	if (RiverIndex >= 0 && (FromWaterDepth <= 0 || ToWaterDepth <= 0))
 	{
 		FVector RiverZOffset = CalcWaterVertOffset();
-		const FColor& WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
 
 		float UVScale = CalcRiverUVScale(true, NumOfZSteps);
 		bool bHasOutRiver = BorderDirection == InCellData.HexRiver.OutgoingDirection;
 		FVector2D UV0s[4] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 0.0, 1.0 }, FVector2D{ UVScale, 0.0 }, FVector2D{ UVScale, 1.0 } };
 
-		FHexVertexData FromEdgeL = FromVerts[RiverIndex - 1].ApplyOverride(RiverZOffset, &WaterColor, &UV0s[bHasOutRiver ? 0 : 3]);
-		FHexVertexData FromEdgeR = FromVerts[RiverIndex + 1].ApplyOverride(RiverZOffset, &WaterColor, &UV0s[bHasOutRiver ? 1 : 2]);
-		FHexVertexData ToEdgeL = ToVerts[RiverIndex - 1].ApplyOverride(RiverZOffset, &WaterColor, &UV0s[bHasOutRiver ? 2 : 1]);
-		FHexVertexData ToEdgeR = ToVerts[RiverIndex + 1].ApplyOverride(RiverZOffset, &WaterColor, &UV0s[bHasOutRiver ? 3 : 0]);
+		FHexVertexData FromEdgeL = FromVerts[RiverIndex - 1].ApplyOverride(RiverZOffset, nullptr, &UV0s[bHasOutRiver ? 0 : 3]);
+		FHexVertexData FromEdgeR = FromVerts[RiverIndex + 1].ApplyOverride(RiverZOffset, nullptr, &UV0s[bHasOutRiver ? 1 : 2]);
+		FHexVertexData ToEdgeL = ToVerts[RiverIndex - 1].ApplyOverride(RiverZOffset, nullptr, &UV0s[bHasOutRiver ? 2 : 1]);
+		FHexVertexData ToEdgeR = ToVerts[RiverIndex + 1].ApplyOverride(RiverZOffset, nullptr, &UV0s[bHasOutRiver ? 3 : 0]);
 
 		bool bShouldSkip = false;
 		if (FromWaterDepth > 0)
@@ -1451,7 +1506,7 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	if (RoadIndex >= 0)
 	{
 		FVector RoadZOffset = CalcRoadVertOffset();
-		const FColor& RoadColor = ConfigData.ColorsMap[EHexTerrainType::Road];
+		const FColor& RoadColor = FHexCellData::RoadColor;
 
 		FVector2D UV0s[4] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 1.0, 0.0 }, FVector2D{ 0.0, 1.0 }, FVector2D{ 1.0, 1.0 } };
 
@@ -1710,7 +1765,17 @@ void AHexTerrainGenerator::GenerateNoRiverCenter(const FHexCellData& InCellData,
 		}
 	}
 
-	FHexVertexData CenterV{ InCellData.CellCenter, InCellData.SRGBColor, FVector::UpVector };
+	FHexVertexData CenterV{ InCellData.CellCenter, FVector::UpVector };
+
+	// texture
+	int32 NumOfVerts = EdgesV.Num();
+	for (int32 Index = 0; Index < NumOfVerts; ++Index)
+	{
+		FHexVertexData& EdgeVert = EdgesV[Index];
+
+		EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, EHexTerrainTextureType::None, 1.0f, 0.0f, 0.0f);
+	}
+	CenterV.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, EHexTerrainTextureType::None, 1.0f, 0.0f, 0.0f);
 
 	TArray<bool> Dummy;
 	FillFan(CenterV, EdgesV, Dummy, OutTerrainMesh.GroundSection, true);
@@ -1742,7 +1807,19 @@ void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCell
 	}
 	
 	int32 NumOfEdges = EdgesV.Num();
-	FHexVertexData CenterV{ InCellData.CellCenter, InCellData.SRGBColor };
+	FHexVertexData CenterV{ InCellData.CellCenter };
+
+	// texture
+	for (int32 Index = 0; Index < NumOfEdges; ++Index)
+	{
+		FHexVertexData& EdgeVert = EdgesV[Index];
+
+		if (EdgeVert.VertexState == 1u)
+			EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 0.0f, 0.0f, 1.0f);
+		else
+			EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+	}
+	CenterV.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
 
 	TArray<FHexVertexData> CentersV;
 	CentersV.Init(CenterV, NumOfEdges);
@@ -1763,27 +1840,27 @@ void AHexTerrainGenerator::GenerateCenterWithRiverEnd(const FHexCellData& InCell
 	if (RiverIndex >= 0 && InCellData.GetWaterDepth() <= 0)
 	{
 		FVector WaterZOffset = CalcWaterVertOffset();
-		const FColor& WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
 
-		FHexVertexData CopiedEdgeL = EdgesV[RiverIndex - 1].ApplyOverride(WaterZOffset, &WaterColor);
-		FHexVertexData CopiedEdgeR = EdgesV[RiverIndex + 1].ApplyOverride(WaterZOffset, &WaterColor);
+		FHexVertexData CopiedEdgeL = EdgesV[RiverIndex - 1].ApplyOverride(WaterZOffset);
+		FHexVertexData CopiedEdgeR = EdgesV[RiverIndex + 1].ApplyOverride(WaterZOffset);
+		FHexVertexData CopiedCenterV{ InCellData.CellCenter };
 
 		float UVScale = CalcRiverUVScale();
 
 		if (InCellData.HexRiver.RiverState == EHexRiverState::StartPoint)
 		{
-			CenterV.SetUV0(FVector2D{ 0.0, 0.5 });
+			CopiedCenterV.SetUV0(FVector2D{ 0.0, 0.5 });
 			CopiedEdgeL.SetUV0(FVector2D{ UVScale, 0.0 });
 			CopiedEdgeR.SetUV0(FVector2D{ UVScale, 1.0 });
 		}
 		else
 		{
-			CenterV.SetUV0(FVector2D{ UVScale, 0.5 });
+			CopiedCenterV.SetUV0(FVector2D{ UVScale, 0.5 });
 			CopiedEdgeL.SetUV0(FVector2D{ 0.0, 1.0 });
 			CopiedEdgeR.SetUV0(FVector2D{ 0.0, 0.0 });
 		}
 
-		FillQuad(CenterV, CenterV, CopiedEdgeL, CopiedEdgeR, OutTerrainMesh.RiverSection);
+		FillQuad(CopiedCenterV, CopiedCenterV, CopiedEdgeL, CopiedEdgeR, OutTerrainMesh.RiverSection);
 	}
 
 	// Road
@@ -1834,15 +1911,20 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 		LeftDir = bRSign ? FVector::ZeroVector : MidDir * 2.0;
 		RightDir = bRSign ? MidDir * 2.0 : FVector::ZeroVector;
 	}
-
-	FColor WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
+	
 	float MoveDist = HexCellRadius / float(HexCellSubdivision + 1);
 	FVector RiverOffset = InCellData.GetWaterDepth() > 0 ? FVector::ZeroVector : CalcRiverVertOffset();
+	float RiverWeight = InCellData.GetWaterDepth() > 0 ? 0.0f : 1.0f;
 
-	FHexVertexData CenterL = FHexVertexData{ InCellData.CellCenter + LeftDir * MoveDist, InCellData.SRGBColor };
-	FHexVertexData Center = FHexVertexData{ InCellData.CellCenter + (LeftDir + RightDir) * 0.5 * MoveDist + RiverOffset, WaterColor };
-	FHexVertexData CenterR = FHexVertexData{ InCellData.CellCenter + RightDir * MoveDist, InCellData.SRGBColor };
+	FHexVertexData CenterL = FHexVertexData{ InCellData.CellCenter + LeftDir * MoveDist };
+	FHexVertexData Center = FHexVertexData{ InCellData.CellCenter + (LeftDir + RightDir) * 0.5 * MoveDist + RiverOffset};
+	FHexVertexData CenterR = FHexVertexData{ InCellData.CellCenter + RightDir * MoveDist};
 	
+	// texture
+	CenterL.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+	Center.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, RiverWeight > 0.0f ? 0.0f : 1.0f, 0.0f, RiverWeight);
+	CenterR.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+
 	auto GenerateFansWithoutRiver = [this](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
 		EHexDirection FromDirection, EHexDirection ToDirection, const FHexVertexData& InCenter) -> bool
 		{
@@ -1870,6 +1952,17 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			TArray<FHexVertexData> CentersV;
 			CentersV.Init(InCenter, EdgesV.Num());
 
+			// texture
+			int32 NumOfVerts = EdgesV.Num();
+			for (int32 Index = 0; Index < NumOfVerts; ++Index)
+			{
+				FHexVertexData& EdgeVert = EdgesV[Index];
+				FHexVertexData& CenterVert = CentersV[Index];
+
+				EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+				CenterVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			}
+
 			FillGrid(CentersV, EdgesV, OutTerrainMesh.GroundSection, RiverSubdivision, false, false);
 			
 			// Road
@@ -1893,7 +1986,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 	bool bSharpLeftTurn = OutDirection == FHexCellData::CalcNextDirection(InDirection);
 	bool bSharpRightTurn = OutDirection == FHexCellData::CalcPreviousDirection(InDirection);
 
-	auto GenerateRiverFan = [this, WaterColor](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
+	auto GenerateRiverFan = [this](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
 		const FHexVertexData& InCenterL, const FHexVertexData& InCenter, const FHexVertexData& InCenterR, EHexDirection Direction, 
 		bool bHasRoadVertL, bool bHasRoadVertR) -> void
 		{
@@ -1913,12 +2006,31 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			TArray<FHexVertexData> CentersLV;
 			CentersLV.Init(InCenterL, EdgesLV.Num());
 			
+			// texture
+			int32 NumOfVerts = EdgesLV.Num();
+			for (int32 Index = 0; Index < NumOfVerts; ++Index)
+			{
+				FHexVertexData& EdgeVert = EdgesLV[Index];
+				FHexVertexData& CenterVert = CentersLV[Index];
+
+				EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+				CenterVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			}
+
 			FillGrid(CentersLV, EdgesLV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// Center Two Quads
 			FHexVertexData EdgeL = CalcHexCellVertex(InCellData, MVertId - 1, true);
 			FHexVertexData EdgeC = CalcHexCellVertex(InCellData, MVertId, true);
 			FHexVertexData EdgeR = CalcHexCellVertex(InCellData, MVertId + 1, true);
+
+			// texture
+			EdgeL.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			if (EdgeC.VertexState == 1u)
+				EdgeC.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 0.0f, 0.0f, 1.0f);
+			else
+				EdgeC.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			EdgeR.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
 
 			FillStrip(InCenterL, InCenter, EdgeL, EdgeC, OutTerrainMesh.GroundSection, RiverSubdivision);
 			FillStrip(InCenter, InCenterR, EdgeC, EdgeR, OutTerrainMesh.GroundSection, RiverSubdivision);
@@ -1935,6 +2047,17 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			TArray<FHexVertexData> CentersRV;
 			CentersRV.Init(InCenterR, EdgesRV.Num());
 
+			// texture
+			NumOfVerts = EdgesRV.Num();
+			for (int32 Index = 0; Index < NumOfVerts; ++Index)
+			{
+				FHexVertexData& EdgeVert = EdgesRV[Index];
+				FHexVertexData& CenterVert = CentersRV[Index];
+
+				EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+				CenterVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			}
+
 			FillGrid(CentersRV, EdgesRV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// River
@@ -1946,10 +2069,10 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 				bool bHasOutRiver = Direction == InCellData.HexRiver.OutgoingDirection;
 				FVector2D UV0s[4] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 0.0, 1.0 }, FVector2D{ UVScale, 0.0 }, FVector2D{ UVScale, 1.0 } };
 
-				FHexVertexData CopiedCenterL = InCenterL.ApplyOverride(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 0 : 3]);
-				FHexVertexData CopiedCenterR = InCenterR.ApplyOverride(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 1 : 2]);
-				EdgeL.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 2 : 1]);
-				EdgeR.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 3 : 0]);
+				FHexVertexData CopiedCenterL = InCenterL.ApplyOverride(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 0 : 3]);
+				FHexVertexData CopiedCenterR = InCenterR.ApplyOverride(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 1 : 2]);
+				EdgeL.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 2 : 1]);
+				EdgeR.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 3 : 0]);
 
 				FillStrip(CopiedCenterL, CopiedCenterR, EdgeL, EdgeR, OutTerrainMesh.RiverSection, RiverSubdivision);
 			}
@@ -1961,7 +2084,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 				GenerateRoadCenterWithRiver(InCellData, InCenterR, EdgesRV, OutTerrainMesh);
 		};
 	
-	auto GenerateSharpRiverFan = [this, WaterColor](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
+	auto GenerateSharpRiverFan = [this, RiverOffset, RiverWeight](const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh,
 		const FHexVertexData& InCenterL, const FHexVertexData& InCenter, const FHexVertexData& InCenterR, EHexDirection Direction, bool bMoveLeft) -> void
 		{
 			int32 SVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 0u);
@@ -1969,21 +2092,32 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			int32 EVertId = FHexCellData::GetVertIdFromDirection(Direction, true, 2u);
 
 			// Left Fan
-			TArray<FHexVertexData> EgdesLV;
+			TArray<FHexVertexData> EdgesLV;
 			int32 MainVertL = FHexCellData::GetVertIdFromDirection(Direction, false);
-			EgdesLV.Add(CalcHexCellVertex(InCellData, MainVertL, false));
+			EdgesLV.Add(CalcHexCellVertex(InCellData, MainVertL, false));
 			if (SVertId <= MVertId - 2)
 			{
 				for (int32 Index = SVertId; Index <= MVertId - 2; ++Index)
 				{
-					EgdesLV.Add(CalcHexCellVertex(InCellData, Index, true));
+					EdgesLV.Add(CalcHexCellVertex(InCellData, Index, true));
 				}
 			}
 
 			TArray<FHexVertexData> CentersLV;
-			CentersLV.Init(InCenterL, EgdesLV.Num());
+			CentersLV.Init(InCenterL, EdgesLV.Num());
 
-			FillGrid(CentersLV, EgdesLV, OutTerrainMesh.GroundSection, RiverSubdivision);
+			// texture
+			int32 NumOfVerts = EdgesLV.Num();
+			for (int32 Index = 0; Index < NumOfVerts; ++Index)
+			{
+				FHexVertexData& EdgeVert = EdgesLV[Index];
+				FHexVertexData& CenterVert = CentersLV[Index];
+
+				EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+				CenterVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			}
+
+			FillGrid(CentersLV, EdgesLV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// Center Two Quads
 			int32 MainVertIdL = FHexCellData::GetVertIdFromDirection(Direction, false);
@@ -1994,15 +2128,30 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			FHexVertexData EdgeC = CalcHexCellVertex(InCellData, MVertId, true);
 			FHexVertexData EdgeR1 = CalcHexCellVertex(InCellData, MVertId + 1, true);
 			FHexVertexData EdgeR2 = MVertId + 2 > EVertId ? CalcHexCellVertex(InCellData, MainVertIdR, false) : CalcHexCellVertex(InCellData, MVertId + 2, true);
+			
+			FVector EdgeCNoOffset = EdgeC.Position - RiverOffset;
+			FVector EdgeL1WithOffset = EdgeL1.Position + RiverOffset;
+			FVector EdgeR1WithOffset = EdgeR1.Position + RiverOffset;
+			FHexVertexData MidL{ bMoveLeft ? (InCenterL.Position + EdgeL2.Position) * 0.5 : (InCenterL.Position + EdgeCNoOffset) * 0.5 };
+			FHexVertexData MidC{ bMoveLeft ? (InCenter.Position + EdgeL1WithOffset) * 0.5 : (InCenter.Position + EdgeR1WithOffset) * 0.5 };
+			FHexVertexData MidR{ bMoveLeft ? (InCenterR.Position + EdgeCNoOffset) * 0.5 : (InCenterR.Position + EdgeR2.Position) * 0.5 };
+			FHexVertexData MidE{ bMoveLeft ? (InCenterR.Position + EdgeR2.Position) * 0.5 : (InCenterL.Position + EdgeL2.Position) * 0.5 };
 
-			FVector EdgeCNoOffset = EdgeC.Position - CalcRiverVertOffset();
-			FVector EdgeL1WithOffset = EdgeL1.Position + CalcRiverVertOffset();
-			FVector EdgeR1WithOffset = EdgeR1.Position + CalcRiverVertOffset();
-			FHexVertexData MidL{ bMoveLeft ? (InCenterL.Position + EdgeL2.Position) * 0.5 : (InCenterL.Position + EdgeCNoOffset) * 0.5, InCellData.SRGBColor };
-			FHexVertexData MidC{ bMoveLeft ? (InCenter.Position + EdgeL1WithOffset) * 0.5 : (InCenter.Position + EdgeR1WithOffset) * 0.5, WaterColor };
-			FHexVertexData MidR{ bMoveLeft ? (InCenterR.Position + EdgeCNoOffset) * 0.5 : (InCenterR.Position + EdgeR2.Position) * 0.5, InCellData.SRGBColor };
-			FHexVertexData MidE{ bMoveLeft ? (InCenterR.Position + EdgeR2.Position) * 0.5 : (InCenterL.Position + EdgeL2.Position) * 0.5, InCellData.SRGBColor };
+			// texture
+			EdgeL2.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			EdgeL1.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			if (EdgeC.VertexState == 1u)
+				EdgeC.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 0.0f, 0.0f, 1.0f);
+			else
+				EdgeC.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			EdgeR1.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			EdgeR2.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
 
+			MidL.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			MidC.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, RiverWeight > 0.0f ? 0.0f : 1.0f, 0.0f, RiverWeight);
+			MidR.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			MidE.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			
 			FHexVertexData CenterL = InCenterL;
 			FHexVertexData Center = InCenter;
 			FHexVertexData CenterR = InCenterR;
@@ -2034,22 +2183,33 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 			}
 
 			// Right Fan
-			TArray<FHexVertexData> EgdesRV;
+			TArray<FHexVertexData> EdgesRV;
 			if (MVertId + 2 <= EVertId)
 			{
 				for (int32 Index = MVertId + 2; Index <= EVertId; ++Index)
 				{
-					EgdesRV.Add(CalcHexCellVertex(InCellData, Index, true));
+					EdgesRV.Add(CalcHexCellVertex(InCellData, Index, true));
 				}
 			}
 			
 			int32 MainVertR = FHexCellData::GetVertIdFromDirection(FHexCellData::CalcNextDirection(Direction), false);
-			EgdesRV.Add(CalcHexCellVertex(InCellData, MainVertR, false));
+			EdgesRV.Add(CalcHexCellVertex(InCellData, MainVertR, false));
 
 			TArray<FHexVertexData> CentersRV;
-			CentersRV.Init(InCenterR, EgdesRV.Num());
+			CentersRV.Init(InCenterR, EdgesRV.Num());
 
-			FillGrid(CentersRV, EgdesRV, OutTerrainMesh.GroundSection, RiverSubdivision);
+			// texture
+			NumOfVerts = EdgesRV.Num();
+			for (int32 Index = 0; Index < NumOfVerts; ++Index)
+			{
+				FHexVertexData& EdgeVert = EdgesRV[Index];
+				FHexVertexData& CenterVert = CentersRV[Index];
+
+				EdgeVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+				CenterVert.SetTextureData(InCellData.TerrainTextureType, EHexTerrainTextureType::None, InCellData.WaterTextureType, 1.0f, 0.0f, 0.0f);
+			}
+
+			FillGrid(CentersRV, EdgesRV, OutTerrainMesh.GroundSection, RiverSubdivision);
 
 			// River
 			if (InCellData.GetWaterDepth() <= 0)
@@ -2059,12 +2219,12 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 				float UVScale = CalcRiverUVScale();
 				FVector2D UV0s[6] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 0.0, 1.0 }, FVector2D{ 0.5 * UVScale, 0.0 }, FVector2D{ 0.5 * UVScale, 1.0 },FVector2D{ UVScale, 0.0 },FVector2D{ UVScale, 1.0 } };
 
-				CenterL.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 0 : 5]);
-				CenterR.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 1 : 4]);
-				MidL.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 2 : 3]);
-				MidR.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 3 : 2]);
-				EdgeL1.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 4 : 1]);
-				EdgeR1.ApplyOverrideInline(WaterZOffset, &WaterColor, &UV0s[bHasOutRiver ? 5 : 0]);
+				CenterL.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 0 : 5]);
+				CenterR.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 1 : 4]);
+				MidL.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 2 : 3]);
+				MidR.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 3 : 2]);
+				EdgeL1.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 4 : 1]);
+				EdgeR1.ApplyOverrideInline(WaterZOffset, nullptr, &UV0s[bHasOutRiver ? 5 : 0]);
 
 				FillQuad(CenterL, CenterR, MidL, MidR, OutTerrainMesh.RiverSection);
 				FillQuad(MidL, MidR, EdgeL1, EdgeR1, OutTerrainMesh.RiverSection);
@@ -2092,7 +2252,7 @@ void AHexTerrainGenerator::GenerateCenterWithRiverThrough(const FHexCellData& In
 bool AHexTerrainGenerator::GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh)
 {
 	FVector RoadZOffset = CalcRoadVertOffset();
-	const FColor& RoadColor = ConfigData.ColorsMap[EHexTerrainType::Road];
+	const FColor& RoadColor = FHexCellData::RoadColor;
 	FVector2D UV0s[5] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 1.0, 0.5 }, FVector2D{ 0.0, 1.0 }, FVector2D{ 1.0, 1.0 }, FVector2D{ 1.0, 0.0 } };
 
 	FHexVertexData RoadCenterV = CenterV.ApplyOverride(RoadZOffset, &RoadColor, &UV0s[0]);
@@ -2174,7 +2334,7 @@ bool AHexTerrainGenerator::GenerateRoadCenter(const FHexVertexData& CenterV, con
 void AHexTerrainGenerator::GenerateRoadCenterWithRiver(const FHexCellData& InCellData, const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh)
 {
 	FVector RoadZOffset = CalcRoadVertOffset();
-	const FColor& RoadColor = ConfigData.ColorsMap[EHexTerrainType::Road];
+	const FColor& RoadColor = FHexCellData::RoadColor;
 	FVector2D UV0s[2] = { FVector2D{ 0.0, 0.0 }, FVector2D{ 1.0, 0.5 } };
 
 	TArray<int32> RoadVertIndices;
@@ -2255,6 +2415,11 @@ void AHexTerrainGenerator::GenerateNoTerraceCorner(const FHexCellData& Cell1, co
 	FHexVertexData V1 = CalcHexCellVertex(Cell2, CornerData.VertsId.Y, false);
 	FHexVertexData V2 = CalcHexCellVertex(Cell3, CornerData.VertsId.Z, false);
 
+	// texture
+	V0.SetTextureData(Cell1.TerrainTextureType, Cell2.TerrainTextureType, Cell3.TerrainTextureType, 1.0f, 0.0f, 0.0f);
+	V1.SetTextureData(Cell1.TerrainTextureType, Cell2.TerrainTextureType, Cell3.TerrainTextureType, 0.0f, 1.0f, 0.0f);
+	V2.SetTextureData(Cell1.TerrainTextureType, Cell2.TerrainTextureType, Cell3.TerrainTextureType, 0.0f, 0.0f, 1.0f);
+
 	PerturbingVertexInline(V0);
 	PerturbingVertexInline(V1);
 	PerturbingVertexInline(V2);
@@ -2309,6 +2474,11 @@ void AHexTerrainGenerator::GenerateCornerWithTerrace(const FHexCellData& Cell1, 
 	FHexVertexData Vert0 = CalcHexCellVertex(*CellsList[0], VertsList[0], false);
 	FHexVertexData Vert1 = CalcHexCellVertex(*CellsList[1], VertsList[1], false);
 	FHexVertexData Vert2 = CalcHexCellVertex(*CellsList[2], VertsList[2], false);
+
+	// texture
+	Vert0.SetTextureData(CellsList[0]->TerrainTextureType, CellsList[1]->TerrainTextureType, CellsList[2]->TerrainTextureType, 1.0f, 0.0f, 0.0f);
+	Vert1.SetTextureData(CellsList[0]->TerrainTextureType, CellsList[1]->TerrainTextureType, CellsList[2]->TerrainTextureType, 0.0f, 1.0f, 0.0f);
+	Vert2.SetTextureData(CellsList[0]->TerrainTextureType, CellsList[1]->TerrainTextureType, CellsList[2]->TerrainTextureType, 0.0f, 0.0f, 1.0f);
 
 	FHexVertexData DisturbedVert0 = PerturbingVertex(Vert0);
 	FHexVertexData DisturbedVert1 = PerturbingVertex(Vert1);
@@ -2464,7 +2634,6 @@ void AHexTerrainGenerator::GenerateHexWaterCenter(const FHexCellData& InCellData
 		return;
 
 	FVector WaterZOffset = CalcWaterVertOffset(InCellData.GetWaterDepth());
-	const FColor& WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
 	FVector2D WaterUV0{ 0.0, 1.0 };
 
 	TArray<FHexVertexData> EdgesV;
@@ -2486,7 +2655,7 @@ void AHexTerrainGenerator::GenerateHexWaterCenter(const FHexCellData& InCellData
 		}
 	}
 
-	FHexVertexData CenterV{ InCellData.CellCenter + WaterZOffset, WaterColor, FVector::UpVector, WaterUV0 };
+	FHexVertexData CenterV{ InCellData.CellCenter + WaterZOffset, FVector::UpVector, WaterUV0 };
 	CenterV.VertexState = 1u;
 
 	TArray<bool> Dummy;
@@ -2682,10 +2851,10 @@ FVector AHexTerrainGenerator::CalcHexCellCenter(const FIntPoint& GridId, int32 E
 	return VertOffset;
 }
 
-FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertState, bool bFillDefaultNormal) const
+FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertType, bool bFillDefaultNormal) const
 {
-	FHexVertexData OutVertex{ InCellData.CellCenter, InCellData.SRGBColor };
-	const FColor& WaterColor = ConfigData.ColorsMap[EHexTerrainType::Water];
+	FHexVertexData OutVertex{ InCellData.CellCenter };
+
 	TArray<int32> BorderDirections;
 
 	if (bSubVert)
@@ -2694,7 +2863,7 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 		OutVertex.VertexIndex = VertIndex + VertDirectionId + 1;
 		int32 BorderDirectionId = FHexCellData::CalcNextDirection(uint8(VertDirectionId));
 
-		if (VertState == 0u)
+		if (VertType == 0u) // Ground
 		{
 			TArray<int32> RiverVerts;
 			switch (InCellData.HexRiver.RiverState)
@@ -2729,16 +2898,18 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 
 			if (RiverVerts.Contains(VertIndex))
 			{
-				OutVertex.VertexState = 1u;
 				if (InCellData.GetWaterDepth() <= 0)
-					OutVertex.ApplyOverrideInline(CalcRiverVertOffset(), &WaterColor);
+				{
+					OutVertex.VertexState = 1u;
+					OutVertex.ApplyOverrideInline(CalcRiverVertOffset());
+				}
 			}
 			else if (RoadVerts.Contains(VertIndex))
 			{
 				OutVertex.VertexState = 2u;
 			}
 		}
-		else if (VertState == 1u)
+		else if (VertType == 1u) // Water
 		{
 			BorderDirections.Add(BorderDirectionId);
 		}
@@ -2747,7 +2918,7 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 	{
 		OutVertex.VertexIndex = VertIndex * (HexCellSubdivision + 1);
 
-		if (VertState == 1u)
+		if (VertType == 1u) // Water
 		{
 			BorderDirections.Add(VertIndex);
 			BorderDirections.Add(FHexCellData::CalcNextDirection(uint8(VertIndex)));
@@ -2755,7 +2926,7 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 	}
 
 	double WaterVertRadiusScale = 1.0;
-	if (VertState == 1u)
+	if (VertType == 1u) // Water
 	{
 		int32 WaterDepth = InCellData.GetWaterDepth();
 
@@ -2779,7 +2950,7 @@ FHexVertexData AHexTerrainGenerator::CalcHexCellVertex(const FHexCellData& InCel
 
 		OutVertex.VertexState = 1u;
 		FVector2D WaterUV0{ bShore ? 1.0 : 0.0, bNearShore ? 0.0 : 1.0 };
-		OutVertex.ApplyOverrideInline(CalcWaterVertOffset(bShore ? (NeighborWaterLevel - InCellData.Elevation) : WaterDepth), &WaterColor, &WaterUV0);
+		OutVertex.ApplyOverrideInline(CalcWaterVertOffset(bShore ? (NeighborWaterLevel - InCellData.Elevation) : WaterDepth), nullptr, &WaterUV0);
 		
 		WaterVertRadiusScale = (bFullNeighbor && WaterDepth > 0) ? 0.8 : 1.0;
 	}

@@ -33,7 +33,19 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, Stone, Road, Moor, MAX
+	None, Ice, Water, Grass, Sand, Stone, Moor, MAX
+};
+UENUM()
+enum class EHexTerrainTextureType : uint8
+{
+	None, 
+	Ice1, Ice2, Ice3,
+	Water1, Water2, Water3,
+	Grass1, Grass2, Grass3,
+	Sand1, Sand2, Sand3,
+	Stone1, Stone2, Stone3,
+	Moor1, Moor2, Moor3,
+	MAX
 };
 
 UENUM()
@@ -212,13 +224,18 @@ struct FHexCellData
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
 	static TArray<FVector> HexSubVertices;
+	
+	static FColor RoadColor;
 
 	int32 GridIndex;
 	FIntVector4 GridId;
 	FIntVector GridCoord;
 
 	FVector CellCenter;
-	FColor SRGBColor;
+	EHexTerrainType TerrainType;
+	EHexTerrainTextureType TerrainTextureType;
+	EHexTerrainTextureType WaterTextureType;
+	//FColor SRGBColor;
 	int32 Elevation;
 	int32 WaterLevel;
 
@@ -318,9 +335,13 @@ struct FHexVertexData
 
 	FHexVertexData(const FVector& InPos, const FVector2D& InUV0);
 
+	FHexVertexData(const FVector& InPos, const FVector& InNormal);
+
 	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal);
 
 	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector2D& InUV0);
+
+	FHexVertexData(const FVector& InPos, const FVector& InNormal, const FVector2D& InUV0);
 
 	FHexVertexData(const FVector& InPos, const FColor& InColor, const FVector& InNormal, const FVector2D& InUV0);
 
@@ -341,6 +362,12 @@ struct FHexVertexData
 		bHasUV1 = true;
 	}
 
+	void SetUV2(const FVector2D& InUV2)
+	{
+		UV2 = InUV2;
+		bHasUV2 = true;
+	}
+
 	void SetVertexColor(const FColor& InColor)
 	{
 		VertexColor = InColor;
@@ -353,25 +380,44 @@ struct FHexVertexData
 		bHasNormal = true;
 	}
 
+	void SetTextureData(
+		EHexTerrainTextureType InType1, EHexTerrainTextureType InType2, EHexTerrainTextureType InType3,
+		float InWeight1, float InWeight2, float InWeight3)
+	{
+		VertexColor = FColor{ uint8(InType1), uint8(InType2), uint8(InType3) };
+		UV0.X = InWeight1;
+		UV0.Y = InWeight2;
+		UV1.X = InWeight3;
+		UV1.Y = 0.0f;
+
+		bHasVertexColor = true;
+		bHasUV0 = true;
+		bHasUV1 = true;
+	}
+
 	void ClearProperties()
 	{
 		VertexColor = FColor::White;
 		UV0 = FVector2D::ZeroVector;
 		UV1 = FVector2D::ZeroVector;
+		UV2 = FVector2D::ZeroVector;
 		bHasVertexColor = false;
 		bHasUV0 = false;
 		bHasUV1 = false;
+		bHasUV2 = false;
 	}
 
 	FVector Position;
 	FVector Normal;
 	FVector2D UV0;
 	FVector2D UV1;
+	FVector2D UV2;
 	FColor VertexColor;
 
 	uint32 bHasNormal : 1;
 	uint32 bHasUV0 : 1;
 	uint32 bHasUV1 : 1;
+	uint32 bHasUV2 : 1;
 	uint32 bHasVertexColor : 1;
 	uint32 bPerturbed : 1;
 	
@@ -399,7 +445,6 @@ struct FHexCellConfigData
 	TArray<TArray<int32>> FeatureValuesList;
 	TArray<FHexRiverRoadConfigData> RiversList;
 	TArray<FHexRiverRoadConfigData> RoadsList;
-	TMap<EHexTerrainType, FColor> ColorsMap;
 
 	FHexCellConfigData()
 		: bConfigValid(false)
@@ -408,7 +453,17 @@ struct FHexCellConfigData
 	void GetHexCellTerrainData(const FIntPoint& GridId, FHexCellData& OutCell)
 	{
 		EHexTerrainType TerrainType = TerrainTypesList[GridId.Y][GridId.X];
-		OutCell.SRGBColor = ColorsMap[TerrainType];
+		OutCell.TerrainType = TerrainType;
+		if (TerrainType == EHexTerrainType::None || TerrainType == EHexTerrainType::MAX)
+			OutCell.TerrainTextureType = EHexTerrainTextureType::None;
+		else
+		{
+			uint8 TextureTypeId = (uint8(TerrainType) - 1u) * 3u + uint8(FMath::RandHelper(3)) + 1u;
+			OutCell.TerrainTextureType = EHexTerrainTextureType(TextureTypeId);
+		}
+		uint8 WaterTypeId = uint8(EHexTerrainTextureType::Water1) + uint8(FMath::RandHelper(3));
+		OutCell.WaterTextureType = EHexTerrainTextureType(WaterTypeId);
+
 		OutCell.Elevation = ElevationsList[GridId.Y][GridId.X];
 		OutCell.WaterLevel = WaterLevelsList[GridId.Y][GridId.X];
 		OutCell.HexFeature.SetupFeature(FeatureValuesList[GridId.Y][GridId.X]);
@@ -426,8 +481,6 @@ struct FHexCellConfigData
 			return EHexTerrainType::Sand;
 		else if (InTypeStr.Equals(TEXT("Stone")))
 			return EHexTerrainType::Stone;
-		else if (InTypeStr.Equals(TEXT("Road")))
-			return EHexTerrainType::Road;
 		else if (InTypeStr.Equals(TEXT("Moor")))
 			return EHexTerrainType::Moor;
 		else
@@ -447,9 +500,7 @@ struct FHexCellConfigData
 		case EHexTerrainType::Sand:
 			return TEXT("Sand");
 		case EHexTerrainType::Stone:
-			return TEXT("Stone");	
-		case EHexTerrainType::Road:
-			return TEXT("Road");
+			return TEXT("Stone");
 		case EHexTerrainType::Moor:
 			return TEXT("Moor");
 		default:
@@ -617,7 +668,7 @@ protected:
 	void GenerateHexWaterCorner(const FHexCellData& InCellData, EHexDirection CornerDirection, FCachedChunkData& OutTerrainMesh);
 
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
-	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertState = 0u, bool bFillDefaultNormal = false) const;
+	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertType = 0u, bool bFillDefaultNormal = false) const;
 	FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
 	int32 CalcDiffToRoadVert(const TArray<int32>& RoadVertIndices, int32 CurIndex) const;
 	float CalcRoadWidthScale(int32 DiffToRoad) const;
