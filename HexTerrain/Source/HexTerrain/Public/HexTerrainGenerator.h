@@ -256,6 +256,8 @@ struct FHexCellData
 	void LinkRoad(int32 RoadIndex, EHexDirection LinkDirection);
 	bool operator<(const FHexCellData& Other) const;
 	int32 GetWaterDepth() const { return WaterLevel - Elevation; }
+	EHexTerrainTextureType GetTerrainTextureType() const { return GetWaterDepth() > 0 ? WaterTextureType : TerrainTextureType; }
+	EHexRiverState GetTerrainRiverState() const { return GetWaterDepth() > 0 ? EHexRiverState::None : HexRiver.RiverState; }
 
 	static FIntVector CalcGridCoordinate(const FIntPoint& InGridIndex);
 	static EHexDirection CalcOppositeDirection(EHexDirection InDirection);
@@ -347,8 +349,8 @@ struct FHexVertexData
 
 	static FHexVertexData LerpVertex(const FHexVertexData& FromV, const FHexVertexData& ToV, FVector PosRatio, float AttrRatio);
 
-	FHexVertexData ApplyOverride(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr) const;
-	void ApplyOverrideInline(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr);
+	FHexVertexData ApplyOverride(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr, bool bClear = true) const;
+	void ApplyOverrideInline(const FVector& InPosOffset, const FColor* InOverrideColor = nullptr, const FVector2D* InOverrideUV0 = nullptr, bool bClear = true);
 
 	void SetUV0(const FVector2D& InUV0)
 	{
@@ -653,14 +655,14 @@ protected:
 	void GenerateCenterWithRiverEnd(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateCenterWithRiverThrough(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	
+	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
+		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
+	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
+		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
+
 	bool GenerateRoadCenter(const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
 	void GenerateRoadCenterWithRiver(const FHexCellData& InCellData, const FHexVertexData& CenterV, const TArray<FHexVertexData>& EdgesV, FCachedChunkData& OutTerrainMesh);
 	void AddRoadBridgeFeature(const FHexCellData& InCellData, const FHexVertexData& CenterLV, const FHexVertexData& CenterRV, const FVector& OffsetDir, TArray<FCachedFeatureData>& OutFeatures);
-
-	void GenerateNoTerraceCorner(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3,
-		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
-	void GenerateCornerWithTerrace(const FHexCellData& InCell1, const FHexCellData& InCell2, const FHexCellData& InCell3, 
-		const FHexCellCorner& CornerData, FCachedChunkData& OutTerrainMesh);
 	
 	void GenerateHexWaterCell(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
 	void GenerateHexWaterCenter(const FHexCellData& InCellData, FCachedChunkData& OutTerrainMesh);
