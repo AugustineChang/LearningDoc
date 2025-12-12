@@ -93,7 +93,7 @@ void FHexCellFeature::SetupFeature(int32 InFeatureWallValue)
 }
 
 FIntPoint FHexCellData::ChunkSize{ 0, 0 };
-int32 FHexCellData::ChunkCountX = 0;
+FIntPoint FHexCellData::ChunkCount{ 0, 0 };
 uint8 FHexCellData::CellSubdivision = 0u;
 int32 FHexCellData::MaxTerranceElevation = 0;
 TArray<FVector> FHexCellData::HexVertices;
@@ -102,7 +102,7 @@ TArray<FVector> FHexCellData::HexSubVertices;
 FColor FHexCellData::RoadColor = FColor{ 111u,61u,20u };
 
 FHexCellData::FHexCellData(const FIntPoint& InIndex)
-	: GridIndex(InIndex.X + InIndex.Y * ChunkSize.X * ChunkCountX)
+	: GridIndex(InIndex.X + InIndex.Y * ChunkSize.X * ChunkCount.X)
 	, GridCoord(CalcGridCoordinate(InIndex))
 	, CellCenter(EForceInit::ForceInitToZero)
 	, TerrainType(EHexTerrainType::MAX), Elevation(0), WaterLevel(0)
@@ -252,7 +252,7 @@ int32 FHexCellData::CalcGridIndexByCoord(const FIntVector& InGridCoord)
 	int32 IndexY = InGridCoord.Z;
 	int32 IndexX = InGridCoord.X + IndexY / 2;
 
-	int32 RowSize = ChunkSize.X * ChunkCountX;
+	int32 RowSize = ChunkSize.X * ChunkCount.X;
 	if (IndexX >= 0 && IndexX < RowSize && IndexY >= 0)
 		return IndexX + IndexY * RowSize;
 	else
@@ -755,7 +755,8 @@ AHexTerrainGenerator::AHexTerrainGenerator()
 {
  	PrimaryActorTick.bCanEverTick = true;
 
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
+	RootSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootSceneComponent"));
+	RootComponent = RootSceneComponent;
 
 	TerrainMeshComponent = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("TerrainMeshComponent"));
 	TerrainMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -1156,7 +1157,7 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 		return;
 
 	FHexCellData::ChunkSize = HexChunkSize;
-	FHexCellData::ChunkCountX = HexChunkCount.X;
+	FHexCellData::ChunkCount = HexChunkCount;
 	FHexCellData::CellSubdivision = HexCellSubdivision;
 	FHexCellData::MaxTerranceElevation = MaxElevationForTerrace;
 	FHexCellData::HexVertices.Empty(CORNER_NUM);

@@ -219,7 +219,7 @@ struct FHexCellFeature
 struct FHexCellData
 {
 	static FIntPoint ChunkSize;
-	static int32 ChunkCountX;
+	static FIntPoint ChunkCount;
 	static uint8 CellSubdivision;
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
@@ -532,7 +532,17 @@ public:
 	UFUNCTION(CallInEditor, Category = "HexTerrain")
 	void GenerateTerrain();
 
+public:
+
+	const TArray<FHexCellData>& GetHexGrids() const { return HexGrids; }
+
+	UFUNCTION(BlueprintCallable, Category = "HexTerrain")
+	FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
+
 protected:
+
+	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly)
+	TObjectPtr<USceneComponent> RootSceneComponent;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UProceduralMeshComponent> TerrainMeshComponent;
@@ -671,7 +681,7 @@ protected:
 
 	FVector CalcHexCellCenter(const FIntPoint& GridId, int32 Elevation) const;
 	FHexVertexData CalcHexCellVertex(const FHexCellData& InCellData, int32 VertIndex, bool bSubVert, uint8 VertType = 0u, bool bFillDefaultNormal = false) const;
-	FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
+	//FIntPoint CalcHexCellGridId(const FVector& WorldPos) const;
 	int32 CalcDiffToRoadVert(const TArray<int32>& RoadVertIndices, int32 CurIndex) const;
 	float CalcRoadWidthScale(int32 DiffToRoad) const;
 
