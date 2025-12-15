@@ -876,6 +876,7 @@ void AHexTerrainGenerator::GenerateTerrain()
 					GenerateHexWaterCell(CellData, CurrentChunkSection);
 				}
 			}
+			CurrentChunkSection.CollisionSection = CurrentChunkSection.GroundSection;
 
 			// Create Sections
 			CurrentChunkSection.GroundSection.CreateMesh(TerrainMeshComponent, GroundMaterial);
@@ -1321,8 +1322,6 @@ void AHexTerrainGenerator::GenerateHexCell(const FHexCellData& InCellData, FCach
 
 	// Inner HexCell
 	GenerateHexCenter(InCellData, OutTerrainMesh);
-
-	OutTerrainMesh.CollisionSection = OutTerrainMesh.GroundSection;
 
 	// Border
 	int32 WIndex = InCellData.HexNeighbors[static_cast<uint8>(EHexDirection::W)].LinkedCellIndex;

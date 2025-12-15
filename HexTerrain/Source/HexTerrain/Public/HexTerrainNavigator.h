@@ -37,6 +37,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Navigator")
 	void GridIndicesToGridPositions(const TArray<int32>& InPathSteps, TArray<FVector>& OutPathPositions);
 
+	UFUNCTION(BlueprintCallable, Category = "Navigator")
+	void GridIndices2DTo1D(const TArray<FIntPoint>& InIndices2D, TArray<int32>& OutIndices1D);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

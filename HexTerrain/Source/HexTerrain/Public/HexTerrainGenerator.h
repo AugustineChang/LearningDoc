@@ -282,8 +282,7 @@ struct FHexVertexAttributeData
 
 	FHexVertexAttributeData(const FVector& InVertex, const TSharedPtr<FOctreeElementId2>& InIdPtr)
 		: VertexPos(InVertex), NoiseVector(FVector::ZeroVector), OctreeId(InIdPtr)
-	{
-	}
+	{}
 };
 
 struct FUniqueVertexArray

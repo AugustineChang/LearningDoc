@@ -199,6 +199,18 @@ void AHexTerrainNavigator::GridIndicesToGridPositions(const TArray<int32>& InPat
 	}
 }
 
+void AHexTerrainNavigator::GridIndices2DTo1D(const TArray<FIntPoint>& InIndices2D, TArray<int32>& OutIndices1D)
+{
+	int32 HexGridSizeX = FHexCellData::ChunkSize.X * FHexCellData::ChunkCount.X;
+
+	int32 NumOfIndices = InIndices2D.Num();
+	OutIndices1D.Empty(NumOfIndices);
+	for (int32 Index = 0; Index < NumOfIndices; ++Index)
+	{
+		OutIndices1D.Add(InIndices2D[Index].X + InIndices2D[Index].Y * HexGridSizeX);
+	}
+}
+
 // Called when the game starts or when spawned
 void AHexTerrainNavigator::BeginPlay()
 {
