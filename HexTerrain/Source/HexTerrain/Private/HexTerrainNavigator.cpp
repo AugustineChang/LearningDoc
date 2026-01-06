@@ -277,8 +277,13 @@ int32 AHexTerrainNavigator::CalcDirectDistance(const FNavigatorContext& InContex
 {
 	const FHexCellData& StartCellData = InContext.HexGrids[InStartGridIndex];
 	const FHexCellData& EndCellData = InContext.HexGrids[InEndGridIndex];
+	
+	return CalcDirectDistance(StartCellData.GridCoord, EndCellData.GridCoord);
+}
 
-	FIntVector Diff = EndCellData.GridCoord - StartCellData.GridCoord;
+int32 AHexTerrainNavigator::CalcDirectDistance(const FIntVector& InStartGridCoord, const FIntVector& InEndGridCoord)
+{
+	FIntVector Diff = InEndGridCoord - InStartGridCoord;
 	Diff.X = FMath::Abs(Diff.X);
 	Diff.Y = FMath::Abs(Diff.Y);
 	Diff.Z = FMath::Abs(Diff.Z);

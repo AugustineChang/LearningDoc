@@ -40,6 +40,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Navigator")
 	void GridIndices2DTo1D(const TArray<FIntPoint>& InIndices2D, TArray<int32>& OutIndices1D);
 
+	static int32 CalcDirectDistance(const FIntVector& InStartGridCoord, const FIntVector& InEndGridCoord);
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

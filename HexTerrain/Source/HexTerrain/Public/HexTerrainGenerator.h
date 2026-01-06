@@ -440,6 +440,9 @@ struct FHexCellConfigData
 	static int32 DefaultFeatureValue;
 
 	bool bConfigValid;
+	FIntPoint HexChunkCount;
+	FIntPoint HexChunkSize;
+
 	TArray<TArray<int32>> ElevationsList;
 	TArray<TArray<int32>> WaterLevelsList;
 	TArray<TArray<EHexTerrainType>> TerrainTypesList;
@@ -448,7 +451,7 @@ struct FHexCellConfigData
 	TArray<FHexRiverRoadConfigData> RoadsList;
 
 	FHexCellConfigData()
-		: bConfigValid(false)
+		: bConfigValid(false), HexChunkCount(0, 0) , HexChunkSize(0, 0)
 	{}
 
 	void GetHexCellTerrainData(const FIntPoint& GridId, FHexCellData& OutCell)
@@ -523,13 +526,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UFUNCTION(CallInEditor, Category = "HexTerrain")
-	void LoadTerrain();
+	void GenerateOrLoadTerrain();
 
 	UFUNCTION(CallInEditor, Category = "HexTerrain")
 	void SaveTerrain();
+	
+	UFUNCTION(CallInEditor, Category = "HexTerrain", meta=(DisplayName = "RefreshTerrain"))
+	void CreateTerrain();
 
 	UFUNCTION(CallInEditor, Category = "HexTerrain")
-	void GenerateTerrain();
+	void Debug();
 
 public:
 
@@ -559,6 +565,9 @@ protected:
 	TMap<FString, TObjectPtr<UStaticMesh>> ModelsLibrary;
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain")
+	bool bGenerateRandomly;
+
+	UPROPERTY(EditAnywhere, Category = "HexTerrain", meta = (EditCondition = "!bGenerateRandomly"))
 	FString ConfigFileName;
 
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrain")
