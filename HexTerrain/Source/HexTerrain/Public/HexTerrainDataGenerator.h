@@ -7,33 +7,40 @@ enum class EHexTerrainType : uint8;
 
 struct FHexTerrainDataGenerator 
 {
-	FHexTerrainDataGenerator(const FIntPoint& GridSize, const FIntPoint& ChunkSize, FHexCellConfigData& OutData);
+	FHexTerrainDataGenerator(FHexCellConfigData& OutData);
 
 	void GenerateData();
+	FIntPoint GetMapSize() const { return MapSize; }
 
 private:
 	
 	void LoadConfigFromFile();
 
-	int32 RaiseSinkTerrain(int32 NumOfGrids, bool bSink = false);
+	void CreateRegions();
+	int32 RaiseSinkTerrain(int32 NumOfGrids, int32 RegionId, bool bSink = false);
 	bool SelectGridFromNeighborsRandomly(FIntPoint& OutGrid);
 	void GetGridNeighbors(const FIntPoint& CurGrid, int32 MaxDist, TArray<FIntVector>& OutNeighbors);
 	EHexTerrainType GetTerrainTypeByElevation(int32 InElevation);
+	FIntPoint GetRandomGridInMap(int32 RegionId);
 
 	void GenerateCoastline(EHexTerrainType FirstLayer, EHexTerrainType SecondLayer);
 
 private:
 
 	// inputs
-	FIntPoint GridSize;
-	FIntPoint ChunkSize;
 	FHexCellConfigData& OutConfigData;
 
 	// common
+	FIntPoint MapSize;
+	FIntPoint ChunkSize;
+	int32 RandomSeed;
+	FIntPoint MapBorder;
 	FIntPoint ElevationRange;
-	int32 StartElevation;
+	FIntPoint StartElevation;
 	int32 StartWaterLevel;
 	TMap<EHexTerrainType, int32> ElevationToTerrainType;
+	TArray<FInt32Rect> MapRegions;
+	int32 RegionBorder;
 
 	// land
 	float LandRandomness;

@@ -10,9 +10,10 @@ static TArray<FIntPoint> OddAroundGrids = {
 	FIntPoint{1, 0}, FIntPoint{1, 1}, FIntPoint{0, 1}, FIntPoint{-1, 0}, FIntPoint{0, -1}, FIntPoint{1, -1}
 };
 
-FHexTerrainDataGenerator::FHexTerrainDataGenerator(const FIntPoint& GridSize, const FIntPoint& ChunkSize, FHexCellConfigData& OutData)
-	: GridSize(GridSize), ChunkSize(ChunkSize), OutConfigData(OutData),
-	ElevationRange(-4,10), StartElevation(-1), StartWaterLevel(0),
+FHexTerrainDataGenerator::FHexTerrainDataGenerator(FHexCellConfigData& OutData)
+	: OutConfigData(OutData),
+	MapSize(20, 20), ChunkSize(5, 5), RandomSeed(FMath::Rand()), MapBorder(0, 0), ElevationRange(-4,10), 
+	StartElevation(-2,-1), StartWaterLevel(0), RegionBorder(0),
 	LandRandomness(0.5f), LandPercentage(50), NumOfGridsPerLand(50, 200), HighRiseProbability(0.0f), SinkProbability(0.0f)
 {
 	ElevationToTerrainType.Add(EHexTerrainType::Sand, 0);
@@ -22,46 +23,68 @@ FHexTerrainDataGenerator::FHexTerrainDataGenerator(const FIntPoint& GridSize, co
 	ElevationToTerrainType.Add(EHexTerrainType::Ice, ElevationRange.Y);
 
 	LoadConfigFromFile();
-	StartElevation = FMath::Clamp(StartElevation, ElevationRange.X, ElevationRange.Y);
+	StartElevation.X = FMath::Clamp(StartElevation.X, ElevationRange.X, ElevationRange.Y);
+	StartElevation.Y = FMath::Clamp(StartElevation.Y, ElevationRange.X, ElevationRange.Y);
 }
 
 void FHexTerrainDataGenerator::GenerateData()
 {
+	FMath::RandInit(RandomSeed);
+	FMath::SRandInit(RandomSeed);
+	CreateRegions();
+
 	OutConfigData.bConfigValid = true;
 	OutConfigData.HexChunkSize = ChunkSize;
-	OutConfigData.HexChunkCount = GridSize / ChunkSize;
+	OutConfigData.HexChunkCount = MapSize / ChunkSize;
 
 	EHexTerrainType FirstLayerType = ElevationToTerrainType.Get(FSetElementId::FromInteger(0)).Key;
 	EHexTerrainType SecondLayerType = ElevationToTerrainType.Get(FSetElementId::FromInteger(1)).Key;
 
 	// Init
-	OutConfigData.ElevationsList.Empty(GridSize.Y);
-	OutConfigData.ElevationsList.AddDefaulted(GridSize.Y);
-	OutConfigData.WaterLevelsList.Empty(GridSize.Y);
-	OutConfigData.WaterLevelsList.AddDefaulted(GridSize.Y);
-	OutConfigData.TerrainTypesList.Empty(GridSize.Y);
-	OutConfigData.TerrainTypesList.AddDefaulted(GridSize.Y);
-	OutConfigData.FeatureValuesList.Empty(GridSize.Y);
-	OutConfigData.FeatureValuesList.AddDefaulted(GridSize.Y);
-	for (int32 Y = 0; Y < GridSize.Y; ++Y)
+	OutConfigData.ElevationsList.Empty(MapSize.Y);
+	OutConfigData.ElevationsList.AddDefaulted(MapSize.Y);
+	OutConfigData.WaterLevelsList.Empty(MapSize.Y);
+	OutConfigData.WaterLevelsList.AddDefaulted(MapSize.Y);
+	OutConfigData.TerrainTypesList.Empty(MapSize.Y);
+	OutConfigData.TerrainTypesList.AddDefaulted(MapSize.Y);
+	OutConfigData.FeatureValuesList.Empty(MapSize.Y);
+	OutConfigData.FeatureValuesList.AddDefaulted(MapSize.Y);
+	for (int32 Y = 0; Y < MapSize.Y; ++Y)
 	{
-		OutConfigData.ElevationsList[Y].Init(StartElevation, GridSize.X);
-		OutConfigData.WaterLevelsList[Y].Init(StartWaterLevel, GridSize.X);
-		OutConfigData.TerrainTypesList[Y].Init(FirstLayerType, GridSize.X);
-		OutConfigData.FeatureValuesList[Y].AddZeroed(GridSize.X);
+		OutConfigData.ElevationsList[Y].AddZeroed(MapSize.X);
+		OutConfigData.WaterLevelsList[Y].Init(StartWaterLevel, MapSize.X);
+		OutConfigData.TerrainTypesList[Y].Init(FirstLayerType, MapSize.X);
+		OutConfigData.FeatureValuesList[Y].AddZeroed(MapSize.X);
+
+		for (int32 X = 0; X < MapSize.X; ++X)
+		{
+			OutConfigData.ElevationsList[Y][X] = FMath::RandRange(StartElevation.X, StartElevation.Y);
+		}
 	}
-	
+	OutConfigData.RiversList.Empty();
+	OutConfigData.RoadsList.Empty();
+
 	// Raise Lands
-	int32 LandBudget = FMath::RoundToInt(GridSize.X * GridSize.Y * LandPercentage * 0.01f);
-	while(LandBudget > 0)
+	int32 LandBudget = FMath::RoundToInt(MapSize.X * MapSize.Y * LandPercentage * 0.01f);
+	int32 StopCounter = 0;
+	int32 NumOfRegions = MapRegions.Num();
+	while(LandBudget > 0 && StopCounter < 10000)
 	{
+		int32 RIndex = StopCounter % NumOfRegions;
 		bool bSinkTerrain = FMath::FRand() < SinkProbability;
 		int32 DesiredLandGrids = FMath::Min(LandBudget, FMath::RandRange(NumOfGridsPerLand.X, NumOfGridsPerLand.Y));
-		int32 ChangedLandGrids = RaiseSinkTerrain(DesiredLandGrids, bSinkTerrain);
+		int32 ChangedLandGrids = RaiseSinkTerrain(DesiredLandGrids, RIndex, bSinkTerrain);
+
 		if (bSinkTerrain)
 			LandBudget += ChangedLandGrids;
-		else 
+		else
 			LandBudget -= ChangedLandGrids;
+
+		++StopCounter;
+	}
+	if (LandBudget > 0) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Failed to use up all land budget, remaining(%d)."), LandBudget);
 	}
 
 	// Coastline
@@ -77,15 +100,26 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		ConfigFile.Read(ConfigFilePath);
 
 		static FString ConfigCommonSectionName{ TEXT("Common") };
+		static FString ConfigGridsSizeXName{ TEXT("GridsSizeX") };
+		static FString ConfigGridsSizeYName{ TEXT("GridsSizeY") };
+		static FString ConfigChunkSizeXName{ TEXT("ChunkSizeX") };
+		static FString ConfigChunkSizeYName{ TEXT("ChunkSizeY") };
+		static FString ConfigRandomSeedName{ TEXT("RandomSeed") };
+		static FString ConfigMapBorderXName{ TEXT("MapBorderX") };
+		static FString ConfigMapBorderYName{ TEXT("MapBorderY") };
 		static FString ConfigElevationMinName{ TEXT("ElevationMin") };
 		static FString ConfigElevationMaxName{ TEXT("ElevationMax") };
-		static FString ConfigDefaultElevationName{ TEXT("DefaultElevation") };
+		static FString ConfigDefaultElevationMinName{ TEXT("DefaultElevationMin") };
+		static FString ConfigDefaultElevationMaxName{ TEXT("DefaultElevationMax") };
 		static FString ConfigDefaultWaterLevelName{ TEXT("DefaultWaterLevel") };
 		static FString ConfigSandElevationName{ TEXT("SandElevation") };
 		static FString ConfigGrassElevationName{ TEXT("GrassElevation") };
 		static FString ConfigStoneElevationName{ TEXT("StoneElevation") };
 		static FString ConfigMoorElevationName{ TEXT("MoorElevation") };
 		static FString ConfigIceElevationName{ TEXT("IceElevation") };
+
+		static FString ConfigRegionSectionName{ TEXT("Region") };
+		static FString ConfigRegionBorderName{ TEXT("RegionBorder") };
 
 		static FString ConfigRaiseSinkTerrainSectionName{ TEXT("RaiseSinkTerrain") };
 		static FString ConfigLandPercentageName{ TEXT("LandPercentage") };
@@ -95,9 +129,17 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		static FString ConfigHighRiseProbabilityName{ TEXT("HighRiseProbability") };
 		static FString ConfigSinkProbabilityName{ TEXT("SinkProbability") };
 		
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigGridsSizeXName, MapSize.X);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigGridsSizeYName, MapSize.Y);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigChunkSizeXName, ChunkSize.X);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigChunkSizeYName, ChunkSize.Y);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigRandomSeedName, RandomSeed);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigMapBorderXName, MapBorder.X);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigMapBorderYName, MapBorder.Y);
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigElevationMinName, ElevationRange.X);
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigElevationMaxName, ElevationRange.Y);
-		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigDefaultElevationName, StartElevation);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigDefaultElevationMinName, StartElevation.X);
+		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigDefaultElevationMaxName, StartElevation.Y);
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigDefaultWaterLevelName, StartWaterLevel);
 
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigSandElevationName, ElevationToTerrainType[EHexTerrainType::Sand]);
@@ -106,6 +148,8 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigMoorElevationName, ElevationToTerrainType[EHexTerrainType::Moor]);
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigIceElevationName, ElevationToTerrainType[EHexTerrainType::Ice]);
 		ElevationToTerrainType.ValueSort([](const int32& Val0, const int32& Val1) { return Val0 < Val1; });
+
+		ConfigFile.GetInt(*ConfigRegionSectionName, *ConfigRegionBorderName, RegionBorder);
 
 		ConfigFile.GetInt(*ConfigRaiseSinkTerrainSectionName, *ConfigLandPercentageName, LandPercentage);
 		ConfigFile.GetFloat(*ConfigRaiseSinkTerrainSectionName, *ConfigLandRandomnessName, LandRandomness);
@@ -116,11 +160,41 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 	}
 }
 
-int32 FHexTerrainDataGenerator::RaiseSinkTerrain(int32 NumOfGrids, bool bSink)
+void FHexTerrainDataGenerator::CreateRegions()
+{
+	MapRegions.Empty();
+
+#if 0
+	FInt32Rect Region;
+	Region.Min.X = MapBorder.X;
+	Region.Min.Y = MapBorder.Y;
+
+	Region.Max.X = MapSize.X - 1 - MapBorder.X;
+	Region.Max.Y = MapSize.Y - 1 - MapBorder.Y;
+
+	MapRegions.Add(Region);
+#else
+	FInt32Rect Region;
+	Region.Min.X = MapBorder.X;
+	Region.Min.Y = MapBorder.Y;
+
+	Region.Max.X = (MapSize.X - 1) / 2 - RegionBorder;
+	Region.Max.Y = MapSize.Y - 1 - MapBorder.Y;
+
+	MapRegions.Add(Region);
+
+	Region.Min.X = (MapSize.X - 1) / 2 + RegionBorder;
+	Region.Max.X = MapSize.X - 1 - MapBorder.X;
+
+	MapRegions.Add(Region);
+#endif
+}
+
+int32 FHexTerrainDataGenerator::RaiseSinkTerrain(int32 NumOfGrids, int32 RegionId, bool bSink)
 {
 	SelectedGrids.Empty();
 	NeighborGrids.Empty();
-	NeighborGrids.Add(FIntPoint{ FMath::RandHelper(GridSize.X) , FMath::RandHelper(GridSize.Y) }, 0);
+	NeighborGrids.Add(GetRandomGridInMap(RegionId), 0);
 	
 	int32 RiseAmount = FMath::FRand() < HighRiseProbability ? 2 : 1;
 	if (bSink) RiseAmount = -RiseAmount;
@@ -169,8 +243,8 @@ bool FHexTerrainDataGenerator::SelectGridFromNeighborsRandomly(FIntPoint& OutGri
 	for (int32 Index = 0; Index < NumOfAroundGrids; ++Index)
 	{
 		FIntPoint AroundGrid = OutGrid + AroundGrids[Index];
-		if (AroundGrid.X < 0 || AroundGrid.X >= GridSize.X ||
-			AroundGrid.Y < 0 || AroundGrid.Y >= GridSize.Y)
+		if (AroundGrid.X < 0 || AroundGrid.X >= MapSize.X ||
+			AroundGrid.Y < 0 || AroundGrid.Y >= MapSize.Y)
 			continue;
 
 		if (NeighborGrids.Contains(AroundGrid) || SelectedGrids.Contains(AroundGrid))
@@ -213,8 +287,8 @@ void FHexTerrainDataGenerator::GetGridNeighbors(const FIntPoint& CurGrid, int32 
 		for (int32 Index = 0; Index < NumOfAroundGrids; ++Index)
 		{
 			FIntPoint AroundGrid = OneCheckGrid + AroundGrids[Index];
-			if (AroundGrid.X < 0 || AroundGrid.X >= GridSize.X ||
-				AroundGrid.Y < 0 || AroundGrid.Y >= GridSize.Y)
+			if (AroundGrid.X < 0 || AroundGrid.X >= MapSize.X ||
+				AroundGrid.Y < 0 || AroundGrid.Y >= MapSize.Y)
 				continue;
 
 			if (CheckGrids.Contains(AroundGrid) || OutputGrids.Contains(AroundGrid))
@@ -245,12 +319,23 @@ EHexTerrainType FHexTerrainDataGenerator::GetTerrainTypeByElevation(int32 InElev
 	return EHexTerrainType::None;
 }
 
+FIntPoint FHexTerrainDataGenerator::GetRandomGridInMap(int32 RegionId)
+{
+	FIntPoint OutGrid;
+	const FInt32Rect& Region = MapRegions[RegionId];
+
+	OutGrid.X = FMath::RandRange(Region.Min.X, Region.Max.X);
+	OutGrid.Y = FMath::RandRange(Region.Min.Y, Region.Max.Y);
+
+	return OutGrid;
+}
+
 void FHexTerrainDataGenerator::GenerateCoastline(EHexTerrainType FirstLayer, EHexTerrainType SecondLayer)
 {
-	for (int32 Y = 0; Y < GridSize.Y; ++Y)
+	for (int32 Y = 0; Y < MapSize.Y; ++Y)
 	{
 		const TArray<FIntPoint>& AroundGrids = Y % 2 == 0 ? EvenAroundGrids : OddAroundGrids;
-		for (int32 X = 0; X < GridSize.X; ++X)
+		for (int32 X = 0; X < MapSize.X; ++X)
 		{
 			const int32& Elevation = OutConfigData.ElevationsList[Y][X];
 			const int32& WaterLevel = OutConfigData.WaterLevelsList[Y][X];

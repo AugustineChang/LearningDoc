@@ -820,10 +820,10 @@ void AHexTerrainGenerator::GenerateOrLoadTerrain()
 {
 	if (bGenerateRandomly)
 	{
-		FIntPoint GridSize{ 50,50 };
-		FHexTerrainDataGenerator DataGenerator{ GridSize, FIntPoint{ 10,10 }, ConfigData };
+		FHexTerrainDataGenerator DataGenerator{ ConfigData };
 		DataGenerator.GenerateData();
-		ConfigFileName = FString::Format(TEXT("HexTerrainConfig{0}x{1}.json"), { GridSize.X, GridSize.Y });
+		FIntPoint MapSize = DataGenerator.GetMapSize();
+		ConfigFileName = FString::Format(TEXT("HexTerrainConfig{0}x{1}.json"), { MapSize.X, MapSize.Y });
 	}
 	else
 		ConfigData.bConfigValid = LoadHexTerrainConfig();
@@ -920,13 +920,13 @@ void AHexTerrainGenerator::CreateTerrain()
 	AddGridCoordinates(HexGridSizeX, HexGridSizeY);
 }
 
-void AHexTerrainGenerator::Debug()
+/*void AHexTerrainGenerator::Debug()
 {
 	for (int32 Index = 0; Index < 10; ++Index)
 	{
 		UE_LOG(LogTemp, Display, TEXT("SRand = %0.4f"), FMath::SRand());
 	}
-}
+}*/
 
 void AHexTerrainGenerator::AddTerrainFeatures(const FCachedTerrainData& CachedTerrain)
 {
@@ -3599,6 +3599,25 @@ FHexVertexData AHexTerrainGenerator::PerturbingVertex(const FHexVertexData& Vert
 		return Vertex;
 }
 
+void AHexTerrainGenerator::GenerateRandomCache()
+{
+	static int32 RandomCacheSize = 512;
+	RandomCache.Empty(RandomCacheSize);
+	RandomCache.AddDefaulted(RandomCacheSize);
+	for (int32 Y = 0; Y < RandomCacheSize; ++Y)
+	{
+		RandomCache[Y].AddDefaulted(RandomCacheSize);
+		for (int32 X = 0; X < RandomCacheSize; ++X)
+		{
+			FVector4& OneRand = RandomCache[Y][X];
+			OneRand.X = FMath::FRand();
+			OneRand.Y = FMath::FRand();
+			OneRand.Z = FMath::FRand();
+			OneRand.W = FMath::FRand();
+		}
+	}
+}
+
 FVector4 AHexTerrainGenerator::GetRandomValueByPosition(const FVector& InVertex) const
 {
 	if (RandomCache.IsEmpty())
@@ -3759,22 +3778,7 @@ void AHexTerrainGenerator::PostLoad()
 	FFileHelper::LoadFileToArray(TextureBinData, *(FPaths::ProjectDir() / NoiseTexturePath));
 	CreateTextureFromData(NoiseTexture, TextureBinData, EImageFormat::PNG);
 
-	static int32 RandomCacheSize = 512;
-	RandomCache.Empty(RandomCacheSize);
-	RandomCache.AddDefaulted(RandomCacheSize);
-	for (int32 Y = 0; Y < RandomCacheSize; ++Y)
-	{
-		RandomCache[Y].AddDefaulted(RandomCacheSize);
-		for (int32 X = 0; X < RandomCacheSize; ++X)
-		{
-			FVector4& OneRand = RandomCache[Y][X];
-			OneRand.X = FMath::FRand();
-			OneRand.Y = FMath::FRand();
-			OneRand.Z = FMath::FRand();
-			OneRand.W = FMath::FRand();
-		}
-	}
-
+	GenerateRandomCache();
 	GenerateOrLoadTerrain();
 }
 

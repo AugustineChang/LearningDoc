@@ -534,8 +534,8 @@ public:
 	UFUNCTION(CallInEditor, Category = "HexTerrain", meta=(DisplayName = "RefreshTerrain"))
 	void CreateTerrain();
 
-	UFUNCTION(CallInEditor, Category = "HexTerrain")
-	void Debug();
+	//UFUNCTION(CallInEditor, Category = "HexTerrain")
+	//void Debug();
 
 public:
 
@@ -570,7 +570,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", meta = (EditCondition = "!bGenerateRandomly"))
 	FString ConfigFileName;
 
-	UPROPERTY(VisibleAnywhere, Category = "HexTerrain")
+	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FIntPoint HexChunkCount;
 
 	UPROPERTY(VisibleAnywhere, Category = "HexTerrain", AdvancedDisplay)
@@ -749,6 +749,7 @@ protected:
 	void PerturbingVertexInline(FHexVertexData& Vertex);
 	FHexVertexData PerturbingVertex(const FHexVertexData& Vertex);
 	
+	void GenerateRandomCache();
 	FVector4 GetRandomValueByPosition(const FVector& InVertex) const;
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos) const;
 	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY) const;
