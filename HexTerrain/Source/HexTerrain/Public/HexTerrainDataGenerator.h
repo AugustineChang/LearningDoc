@@ -7,7 +7,7 @@ enum class EHexTerrainType : uint8;
 
 struct FHexTerrainDataGenerator 
 {
-	FHexTerrainDataGenerator(FHexCellConfigData& OutData);
+	FHexTerrainDataGenerator(int32 MaxTerranceElevation, FHexCellConfigData& OutData);
 
 	void GenerateData();
 	FIntPoint GetMapSize() const { return MapSize; }
@@ -15,19 +15,24 @@ struct FHexTerrainDataGenerator
 private:
 	
 	void LoadConfigFromFile();
-
 	void CreateRegions();
+
 	int32 RaiseSinkTerrain(int32 NumOfGrids, int32 RegionId, bool bSink = false);
 	bool SelectGridFromNeighborsRandomly(FIntPoint& OutGrid);
-	void GetGridNeighbors(const FIntPoint& CurGrid, int32 MaxDist, TArray<FIntVector>& OutNeighbors);
 	EHexTerrainType GetTerrainTypeByElevation(int32 InElevation);
 	FIntPoint GetRandomGridInMap(int32 RegionId);
 
-	void GenerateCoastline(EHexTerrainType FirstLayer, EHexTerrainType SecondLayer);
+	void ErodeTerrain();
+	bool CheckErodible(const FIntPoint& CurGrid, const TArray<FIntVector>& Neighbors);
+	bool CheckErodible(const FIntPoint& CurGrid, const FIntPoint& Neighbor);
+	
+	void PaintTerrainType(EHexTerrainType FirstLayer, EHexTerrainType SecondLayer);
+	void GetGridNeighbors(const FIntPoint& CurGrid, int32 MaxDist, TArray<FIntVector>& OutNeighbors);
 
 private:
 
 	// inputs
+	int32 MaxTerranceElevation;
 	FHexCellConfigData& OutConfigData;
 
 	// common
@@ -40,6 +45,7 @@ private:
 	int32 StartWaterLevel;
 	TMap<EHexTerrainType, int32> ElevationToTerrainType;
 	TArray<FInt32Rect> MapRegions;
+	FIntPoint RegionCount;
 	int32 RegionBorder;
 
 	// land
@@ -48,6 +54,9 @@ private:
 	FIntPoint NumOfGridsPerLand;
 	float HighRiseProbability;
 	float SinkProbability;
+
+	// erosion
+	int32 ErosionPercentage;
 
 	// inner
 	TSet<FIntPoint> SelectedGrids;

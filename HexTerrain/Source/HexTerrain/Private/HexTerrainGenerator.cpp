@@ -820,7 +820,7 @@ void AHexTerrainGenerator::GenerateOrLoadTerrain()
 {
 	if (bGenerateRandomly)
 	{
-		FHexTerrainDataGenerator DataGenerator{ ConfigData };
+		FHexTerrainDataGenerator DataGenerator{ MaxElevationForTerrace, ConfigData };
 		DataGenerator.GenerateData();
 		FIntPoint MapSize = DataGenerator.GetMapSize();
 		ConfigFileName = FString::Format(TEXT("HexTerrainConfig{0}x{1}.json"), { MapSize.X, MapSize.Y });
