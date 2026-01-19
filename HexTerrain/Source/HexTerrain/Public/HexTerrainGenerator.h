@@ -33,7 +33,7 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, Stone, Moor, MAX
+	None, Ice, Water, Grass, Sand, Stone, Plateau, Mud, MAX
 };
 UENUM()
 enum class EHexTerrainTextureType : uint8
@@ -44,7 +44,8 @@ enum class EHexTerrainTextureType : uint8
 	Grass1, Grass2, Grass3,
 	Sand1, Sand2, Sand3,
 	Stone1, Stone2, Stone3,
-	Moor1, Moor2, Moor3,
+	Plateau1, Plateau2, Plateau3,
+	Mud1, Mud2, Mud3,
 	MAX
 };
 
@@ -224,8 +225,6 @@ struct FHexCellData
 	static int32 MaxTerranceElevation;
 	static TArray<FVector> HexVertices;
 	static TArray<FVector> HexSubVertices;
-	
-	static FColor RoadColor;
 
 	int32 GridIndex;
 	FIntVector4 GridId;
@@ -235,9 +234,9 @@ struct FHexCellData
 	EHexTerrainType TerrainType;
 	EHexTerrainTextureType TerrainTextureType;
 	EHexTerrainTextureType WaterTextureType;
-	//FColor SRGBColor;
 	int32 Elevation;
 	int32 WaterLevel;
+	FVector2D CustomData;
 
 	// Borders
 	FHexCellBorder HexNeighbors[CORNER_NUM]; // E, SE, SW, W, NW, NE
@@ -447,6 +446,7 @@ struct FHexCellConfigData
 	TArray<TArray<int32>> WaterLevelsList;
 	TArray<TArray<EHexTerrainType>> TerrainTypesList;
 	TArray<TArray<int32>> FeatureValuesList;
+	TArray<TArray<FVector2D>> CustomDataList;
 	TArray<FHexRiverRoadConfigData> RiversList;
 	TArray<FHexRiverRoadConfigData> RoadsList;
 
@@ -471,6 +471,7 @@ struct FHexCellConfigData
 		OutCell.Elevation = ElevationsList[GridId.Y][GridId.X];
 		OutCell.WaterLevel = WaterLevelsList[GridId.Y][GridId.X];
 		OutCell.HexFeature.SetupFeature(FeatureValuesList[GridId.Y][GridId.X]);
+		OutCell.CustomData = CustomDataList[GridId.Y][GridId.X];
 	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
@@ -485,8 +486,10 @@ struct FHexCellConfigData
 			return EHexTerrainType::Sand;
 		else if (InTypeStr.Equals(TEXT("Stone")))
 			return EHexTerrainType::Stone;
-		else if (InTypeStr.Equals(TEXT("Moor")))
-			return EHexTerrainType::Moor;
+		else if (InTypeStr.Equals(TEXT("Plateau")))
+			return EHexTerrainType::Plateau;
+		else if (InTypeStr.Equals(TEXT("Mud")))
+			return EHexTerrainType::Mud;
 		else
 			return EHexTerrainType::None;
 	}
@@ -505,8 +508,10 @@ struct FHexCellConfigData
 			return TEXT("Sand");
 		case EHexTerrainType::Stone:
 			return TEXT("Stone");
-		case EHexTerrainType::Moor:
-			return TEXT("Moor");
+		case EHexTerrainType::Plateau:
+			return TEXT("Plateau");
+		case EHexTerrainType::Mud:
+			return TEXT("Mud");
 		default:
 			return TEXT("");
 		}
@@ -533,6 +538,9 @@ public:
 	
 	UFUNCTION(CallInEditor, Category = "HexTerrain", meta=(DisplayName = "RefreshTerrain"))
 	void CreateTerrain();
+
+	UFUNCTION(CallInEditor, Category = "HexTerrain")
+	void ClearTerrain();
 
 	//UFUNCTION(CallInEditor, Category = "HexTerrain")
 	//void Debug();
