@@ -15,6 +15,16 @@ struct FClimateData
 	void ClearData();
 };
 
+struct FRiverFlagData
+{
+	bool bHasInRiver;
+	bool bHasOutRiver;
+
+	FRiverFlagData()
+		: bHasInRiver(false), bHasOutRiver(false)
+	{}
+};
+
 struct FHexTerrainDataGenerator 
 {
 	FHexTerrainDataGenerator(int32 MaxTerranceElevation, FHexCellConfigData& OutData);
@@ -36,8 +46,11 @@ private:
 	bool CheckErodible(const FIntPoint& CurGrid, const FIntPoint& Neighbor);
 	
 	void EvolveClimateData();
+
+	void CreateRivers(int32 LandCells);
+	int32 CreateOneRiver(const FIntPoint& StartGrid);
+
 	void PaintTerrainType(EHexTerrainType FirstLayer);
-	EHexTerrainType GetTerrainTypeByElevation(int32 InElevation);
 	EHexTerrainType GetTerrainTypeByParameters(float Humidity, int32 InElevation);
 	void GetGridNeighbors(const FIntPoint& CurGrid, int32 MaxDist, TArray<FIntVector>& OutNeighbors);
 	static EHexDirection GetHexDirection(const FString& InTypeStr);
@@ -56,8 +69,11 @@ private:
 	FIntPoint ElevationRange;
 	FIntPoint StartElevation;
 	int32 StartWaterLevel;
+	float BeachRatio;
 	TMap<EHexTerrainType, int32> ElevationToTerrainType;
 	TMap<EHexTerrainType, float> HumidityToTerrainType;
+	
+	// regions
 	TArray<FInt32Rect> MapRegions;
 	FIntPoint RegionCount;
 	int32 RegionBorder;
@@ -68,6 +84,8 @@ private:
 	FIntPoint NumOfGridsPerLand;
 	float HighRiseProbability;
 	float SinkProbability;
+	TSet<FIntPoint> SelectedGrids;
+	TMap<FIntPoint, int32> NeighborGrids;
 
 	// erosion
 	int32 ErosionPercentage;
@@ -83,7 +101,9 @@ private:
 	EHexDirection WindDirection;
 	float WindStrength;
 
-	// inner
-	TSet<FIntPoint> SelectedGrids;
-	TMap<FIntPoint, int32> NeighborGrids;
+	// rivers
+	int32 RiverPercentage;
+	int32 MinRiverLength;
+	int32 RiverRetryTimes;
+	TArray<TArray<FRiverFlagData>> TerrainRiverFlag;
 };

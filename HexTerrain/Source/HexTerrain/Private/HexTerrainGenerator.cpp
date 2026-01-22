@@ -1243,6 +1243,29 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 	}
 
 	// Fill RiverData
+	auto SetupRiverNode = [](FHexCellRiver& HexRiver, EHexRiverState NewRiverState)
+		{
+			switch (HexRiver.RiverState)
+			{
+			case EHexRiverState::None:
+				HexRiver.RiverState = NewRiverState;
+				break;
+
+			case EHexRiverState::StartPoint:
+				if (NewRiverState == EHexRiverState::EndPoint)
+					HexRiver.RiverState = EHexRiverState::PassThrough;
+				break;
+
+			case EHexRiverState::EndPoint:
+				if (NewRiverState == EHexRiverState::StartPoint)
+					HexRiver.RiverState = EHexRiverState::PassThrough;
+				break;
+
+			case EHexRiverState::PassThrough:
+				break;
+			}
+		};
+
 	int32 NumOfGrids = HexGrids.Num();
 	for (int32 Index = 0; Index < ConfigData.RiversList.Num(); ++Index)
 	{
@@ -1255,7 +1278,7 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 
 		FHexCellData& FirstRiverNode = HexGrids[FirstIndex];
 		FirstRiverNode.HexRiver.RiverIndex = Index;
-		FirstRiverNode.HexRiver.RiverState = EHexRiverState::StartPoint;
+		SetupRiverNode(FirstRiverNode.HexRiver, EHexRiverState::StartPoint);
 		
 		FHexCellData* LastRiverNode = &FirstRiverNode;
 		for (int32 Step = 0; Step < LenOfRiver; ++Step)
@@ -1277,7 +1300,7 @@ void AHexTerrainGenerator::UpdateHexGridsData()
 			}
 
 			CurRiverNode.HexRiver.RiverIndex = Index;
-			CurRiverNode.HexRiver.RiverState = (Step == LenOfRiver - 1) ? EHexRiverState::EndPoint : EHexRiverState::PassThrough;
+			SetupRiverNode(CurRiverNode.HexRiver, (Step == LenOfRiver - 1) ? EHexRiverState::EndPoint : EHexRiverState::PassThrough);
 
 			LastRiverNode->HexRiver.OutgoingDirection = StepDirection;
 			CurRiverNode.HexRiver.IncomingDirection = FHexCellData::CalcOppositeDirection(StepDirection);
@@ -1495,12 +1518,12 @@ void AHexTerrainGenerator::GenerateHexBorder(const FHexCellData& InCellData, EHe
 	int32 RoadIndex = -1;
 	for (int32 Index = 0; Index < NumOfVerts; ++Index)
 	{
-		if (FromVerts[Index].VertexState == 1u)
+		if (FromVerts[Index].VertexState == 1u || ToVerts[Index].VertexState == 1u)
 		{
 			RiverIndex = Index;
 			break;
 		}
-		else if (FromVerts[Index].VertexState == 2u)
+		else if (FromVerts[Index].VertexState == 2u && ToVerts[Index].VertexState == 2u)
 		{
 			RoadIndex = Index;
 			break;

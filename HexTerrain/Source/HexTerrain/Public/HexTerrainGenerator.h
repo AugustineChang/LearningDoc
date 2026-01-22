@@ -33,7 +33,7 @@ enum class EHexBorderState : uint8
 UENUM()
 enum class EHexTerrainType : uint8
 {
-	None, Ice, Water, Grass, Sand, Stone, Plateau, Mud, MAX
+	None, Ice, Water, Grass, Sand, Stone, Plateau, Mud, SmallStone, MAX
 };
 UENUM()
 enum class EHexTerrainTextureType : uint8
@@ -46,6 +46,7 @@ enum class EHexTerrainTextureType : uint8
 	Stone1, Stone2, Stone3,
 	Plateau1, Plateau2, Plateau3,
 	Mud1, Mud2, Mud3,
+	SmallStone1, SmallStone2, SmallStone3,
 	MAX
 };
 
@@ -619,9 +620,6 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
 	FVector2D PerturbingScalingHV;
-
-	UPROPERTY(EditAnywhere, Category = "HexTerrain", AdvancedDisplay)
-	FVector2D PerturbingTest;
 
 protected:
 	
