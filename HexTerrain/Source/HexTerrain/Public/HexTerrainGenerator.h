@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Math/GenericOctree.h"
+#include "HexTerrainCommon.h"
 #include "ProceduralMeshComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "HexTerrainGenerator.generated.h"
@@ -12,7 +13,6 @@ struct FCachedFeatureData;
 struct FCachedChunkData;
 struct FCachedTerrainData;
 struct FHexCellConfigData;
-enum class EImageFormat : int8;
 
 #define	CORNER_NUM 6
 #define	CORNER_UNUM 6u
@@ -54,7 +54,14 @@ UENUM()
 enum class EHexFeatureType : uint8
 {
 	None, 
-	Tree, Farm, Hovel, LowRise, HighRise, Tower, Castle, Temple, 
+	Plant, Farm, Hovel, LowRise, HighRise, Tower, Castle, Temple, MAX
+};
+
+UENUM()
+enum class EHexFeatureMeshType : uint8
+{
+	None,
+	OakTree, PineTree, Bushes, Farm, Building, Tower, Castle, Temple,
 	Bridge, WallTower, MAX
 };
 
@@ -188,29 +195,29 @@ struct FHexCellFeature
 
 	void SetupFeature(int32 InFeatureValue);
 
-	static FString GetHexFeatureString(EHexFeatureType InType)
+	static FString GetHexFeatureString(EHexFeatureMeshType InType)
 	{
 		switch (InType)
 		{
-		case EHexFeatureType::Tree:
-			return TEXT("Tree");
-		case EHexFeatureType::Farm:
+		case EHexFeatureMeshType::OakTree:
+			return TEXT("OakTree");
+		case EHexFeatureMeshType::PineTree:
+			return TEXT("PineTree");
+		case EHexFeatureMeshType::Bushes:
+			return TEXT("Bushes");
+		case EHexFeatureMeshType::Farm:
 			return TEXT("Farm");
-		case EHexFeatureType::Hovel:
-			return TEXT("Hovel");
-		case EHexFeatureType::LowRise:
-			return TEXT("LowRise");
-		case EHexFeatureType::HighRise:
-			return TEXT("HighRise");
-		case EHexFeatureType::Tower:
+		case EHexFeatureMeshType::Building:
+			return TEXT("Building");
+		case EHexFeatureMeshType::Tower:
 			return TEXT("Tower");
-		case EHexFeatureType::Castle:
+		case EHexFeatureMeshType::Castle:
 			return TEXT("Castle");
-		case EHexFeatureType::Temple:
+		case EHexFeatureMeshType::Temple:
 			return TEXT("Temple");
-		case EHexFeatureType::Bridge:
+		case EHexFeatureMeshType::Bridge:
 			return TEXT("Bridge");
-		case EHexFeatureType::WallTower:
+		case EHexFeatureMeshType::WallTower:
 			return TEXT("WallTower");
 		default:
 			return TEXT("");
@@ -434,14 +441,10 @@ struct FHexRiverRoadConfigData
 
 struct FHexCellConfigData
 {
-	static int32 DefaultElevation;
-	static int32 DefaultWaterLevel;
-	static EHexTerrainType DefaultTerrainType;
-	static int32 DefaultFeatureValue;
-
 	bool bConfigValid;
 	FIntPoint HexChunkCount;
 	FIntPoint HexChunkSize;
+	int32 SeaLevel;
 
 	TArray<TArray<int32>> ElevationsList;
 	TArray<TArray<int32>> WaterLevelsList;
@@ -452,7 +455,7 @@ struct FHexCellConfigData
 	TArray<FHexRiverRoadConfigData> RoadsList;
 
 	FHexCellConfigData()
-		: bConfigValid(false), HexChunkCount(0, 0) , HexChunkSize(0, 0)
+		: bConfigValid(false), HexChunkCount(0, 0), HexChunkSize(0, 0), SeaLevel(0)
 	{}
 
 	void GetHexCellTerrainData(const FIntPoint& GridId, FHexCellData& OutCell)
@@ -466,13 +469,19 @@ struct FHexCellConfigData
 			uint8 TextureTypeId = (uint8(TerrainType) - 1u) * 3u + uint8(FMath::RandHelper(3)) + 1u;
 			OutCell.TerrainTextureType = EHexTerrainTextureType(TextureTypeId);
 		}
-		uint8 WaterTypeId = uint8(EHexTerrainTextureType::Water1) + uint8(FMath::RandHelper(3));
-		OutCell.WaterTextureType = EHexTerrainTextureType(WaterTypeId);
-
+		
 		OutCell.Elevation = ElevationsList[GridId.Y][GridId.X];
 		OutCell.WaterLevel = WaterLevelsList[GridId.Y][GridId.X];
 		OutCell.HexFeature.SetupFeature(FeatureValuesList[GridId.Y][GridId.X]);
 		OutCell.CustomData = CustomDataList[GridId.Y][GridId.X];
+
+		if (OutCell.Elevation >= SeaLevel)
+		{
+			uint8 WaterTypeId = uint8(EHexTerrainTextureType::Water1) + uint8(FMath::RandHelper(3));
+			OutCell.WaterTextureType = EHexTerrainTextureType(WaterTypeId);
+		}
+		else
+			OutCell.WaterTextureType = OutCell.TerrainTextureType;
 	}
 
 	static EHexTerrainType GetHexTerrainType(const FString& InTypeStr)
@@ -562,7 +571,7 @@ protected:
 	TObjectPtr<UProceduralMeshComponent> TerrainMeshComponent;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
-	TMap<EHexFeatureType, TObjectPtr<UInstancedStaticMeshComponent>> FeatureMeshComponents;
+	TMap<EHexFeatureMeshType, TObjectPtr<UInstancedStaticMeshComponent>> FeatureMeshComponents;
 
 	UPROPERTY(Category = "HexTerrain", BlueprintReadOnly, Transient)
 	TObjectPtr<UInstancedStaticMeshComponent> CoordTextComponent;
@@ -754,12 +763,6 @@ protected:
 	FVector PerturbingVertex(const FVector& Vertex, const FVector2D& Strength, bool bPerturbZ);
 	void PerturbingVertexInline(FHexVertexData& Vertex);
 	FHexVertexData PerturbingVertex(const FHexVertexData& Vertex);
-	
-	void GenerateRandomCache();
-	FVector4 GetRandomValueByPosition(const FVector& InVertex) const;
-	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, const FVector& SamplePos) const;
-	FLinearColor SampleTextureBilinear(const TArray<TArray<FColor>>& InTexture, int32 SamplePosX, int32 SamplePosY) const;
-	void CreateTextureFromData(TArray<TArray<FColor>>& OutTexture, const TArray<uint8>& InBineryData, EImageFormat InFormat);
 
 	UFUNCTION()
 	void OnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
@@ -781,9 +784,8 @@ public:
 protected:
 
 	TArray<FHexCellData> HexGrids;
-	TArray<TArray<FColor>> NoiseTexture;
-
-	TArray<TArray<FVector4>> RandomCache;
+	
+	FHexTerrainNoiser Noiser;
 	TMap<int32, double> CachedNoiseZ;
 	FHexCellConfigData ConfigData;
 	TObjectPtr<APlayerController> PlayerController;

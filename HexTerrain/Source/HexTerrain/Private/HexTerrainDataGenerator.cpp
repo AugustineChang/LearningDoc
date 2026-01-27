@@ -20,27 +20,34 @@ void FClimateData::ClearData()
 {
 	CloudAmount = 0.0f;
 	Humidity = 0.0f;
+	Temperature = 0.0f;
 }
 
 #pragma optimize("", off)
 
-FHexTerrainDataGenerator::FHexTerrainDataGenerator(int32 MaxTerranceElevation, FHexCellConfigData& OutData)
-	: MaxTerranceElevation(MaxTerranceElevation), OutConfigData(OutData),
+int32 FHexTerrainDataGenerator::NumOfHumidityLevels = 5;
+int32 FHexTerrainDataGenerator::NumOfTemperatureLevels = 5;
+
+FHexTerrainDataGenerator::FHexTerrainDataGenerator(int32 MaxTerranceElevation, const FHexTerrainNoiser& InNoiser, FHexCellConfigData& OutData)
+	: MaxTerranceElevation(MaxTerranceElevation), Noiser(InNoiser), OutConfigData(OutData),
 	MapSize(20, 20), ChunkSize(5, 5), RandomSeed(FMath::Rand()), MapBorder(0, 0), ElevationRange(-4,10), 
 	StartElevation(-2,-1), StartWaterLevel(0), BeachRatio(0.5f),
 	RegionCount(1,1), RegionBorder(0), 
 	LandRandomness(0.5f), LandPercentage(50), NumOfGridsPerLand(50, 200), HighRiseProbability(0.0f), SinkProbability(0.0f),
 	ErosionPercentage(50),
 	EvolutionSteps(50), EvaporationRatio(0.5f), PrecipitationRatio(0.25f), RunOffRatio(0.25f), SeepageRatio(0.125f), WindDirection(EHexDirection::E), WindStrength(1.0f),
+	TemperatureRange(0.0f, 1.0f), HemisphereMode(EHemisphereMode::Both), TemperatureJitter(0.1f),
 	RiverPercentage(10), MinRiverLength(5), RiverRetryTimes(3)
 {
-	ElevationToTerrainType.Add(EHexTerrainType::Sand, 0);
-	ElevationToTerrainType.Add(EHexTerrainType::Ice, ElevationRange.Y - 2);
-	HumidityToTerrainType.Add(EHexTerrainType::Grass, 1.0f);
-	HumidityToTerrainType.Add(EHexTerrainType::Mud, 0.8f);
-	HumidityToTerrainType.Add(EHexTerrainType::Plateau, 0.6f);
-	HumidityToTerrainType.Add(EHexTerrainType::SmallStone, 0.4f);
-	HumidityToTerrainType.Add(EHexTerrainType::Stone, 0.2f);
+	HumidityThresholds = { 0.2f, 0.4f, 0.6f, 0.8f };
+	TemperatureThresholds = { 0.2f, 0.4f, 0.6f, 0.8f };
+
+	BiomeMatrix.AddDefaulted(NumOfTemperatureLevels);
+	BiomeMatrix[0] = { FBiomeData{EHexTerrainType::Stone,0}, FBiomeData{EHexTerrainType::SmallStone,0}, FBiomeData{EHexTerrainType::Ice,0},     FBiomeData{EHexTerrainType::Ice,0},     FBiomeData{EHexTerrainType::Ice,0} };
+	BiomeMatrix[1] = { FBiomeData{EHexTerrainType::Stone,0}, FBiomeData{EHexTerrainType::SmallStone,0}, FBiomeData{EHexTerrainType::Plateau,1}, FBiomeData{EHexTerrainType::Plateau,2}, FBiomeData{EHexTerrainType::Mud,1} };
+	BiomeMatrix[2] = { FBiomeData{EHexTerrainType::Sand,0},  FBiomeData{EHexTerrainType::SmallStone,0}, FBiomeData{EHexTerrainType::Plateau,1}, FBiomeData{EHexTerrainType::Mud,1},     FBiomeData{EHexTerrainType::Mud,2} };
+	BiomeMatrix[3] = { FBiomeData{EHexTerrainType::Sand,0},  FBiomeData{EHexTerrainType::SmallStone,0}, FBiomeData{EHexTerrainType::Plateau,1}, FBiomeData{EHexTerrainType::Mud,1},     FBiomeData{EHexTerrainType::Grass,2} };
+	BiomeMatrix[4] = { FBiomeData{EHexTerrainType::Sand,0},  FBiomeData{EHexTerrainType::Plateau,1},    FBiomeData{EHexTerrainType::Mud,2},     FBiomeData{EHexTerrainType::Grass,2},   FBiomeData{EHexTerrainType::Grass,3} };
 
 	LoadConfigFromFile();
 }
@@ -54,8 +61,7 @@ void FHexTerrainDataGenerator::GenerateData()
 	OutConfigData.bConfigValid = true;
 	OutConfigData.HexChunkSize = ChunkSize;
 	OutConfigData.HexChunkCount = MapSize / ChunkSize;
-
-	EHexTerrainType FirstLayerType = ElevationToTerrainType.Get(FSetElementId::FromInteger(0)).Key;
+	OutConfigData.SeaLevel = StartWaterLevel;
 
 	// Init
 	OutConfigData.ElevationsList.Empty(MapSize.Y);
@@ -72,7 +78,7 @@ void FHexTerrainDataGenerator::GenerateData()
 	{
 		OutConfigData.ElevationsList[Y].AddZeroed(MapSize.X);
 		OutConfigData.WaterLevelsList[Y].Init(StartWaterLevel, MapSize.X);
-		OutConfigData.TerrainTypesList[Y].Init(FirstLayerType, MapSize.X);
+		OutConfigData.TerrainTypesList[Y].Init(EHexTerrainType::None, MapSize.X);
 		OutConfigData.FeatureValuesList[Y].AddZeroed(MapSize.X);
 		OutConfigData.CustomDataList[Y].AddZeroed(MapSize.X);
 
@@ -124,6 +130,7 @@ void FHexTerrainDataGenerator::GenerateData()
 	}
 	for (int32 Index = 0; Index < EvolutionSteps; ++Index)
 		EvolveClimateData();
+	CalcTemperature();
 
 	// Create Rivers
 	TerrainRiverFlag.Empty(MapSize.Y);
@@ -135,7 +142,7 @@ void FHexTerrainDataGenerator::GenerateData()
 	CreateRivers(LandCells);
 
 	// TerrainType && Coastline
-	PaintTerrainType(FirstLayerType);
+	PaintTerrainType();
 }
 
 void FHexTerrainDataGenerator::LoadConfigFromFile()
@@ -160,13 +167,6 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		static FString ConfigDefaultElevationMaxName{ TEXT("DefaultElevationMax") };
 		static FString ConfigDefaultWaterLevelName{ TEXT("DefaultWaterLevel") };
 		static FString ConfigBeachRatioName{ TEXT("BeachRatio") };
-		static FString ConfigSandElevationName{ TEXT("SandElevation") };
-		static FString ConfigIceElevationName{ TEXT("IceElevation") };
-		static FString ConfigGrassHumidityName{ TEXT("GrassHumidity") };
-		static FString ConfigMudHumidityName{ TEXT("MudHumidity") };
-		static FString ConfigPlateauHumidityName{ TEXT("PlateauHumidity") };
-		static FString ConfigSmallStoneHumidityName{ TEXT("SmallStoneHumidity") };
-		static FString ConfigStoneHumidityName{ TEXT("StoneHumidity") };
 		
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigGridsSizeXName, MapSize.X);
 		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigGridsSizeYName, MapSize.Y);
@@ -184,14 +184,6 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigBeachRatioName, BeachRatio);
 		StartElevation.X = FMath::Clamp(StartElevation.X, ElevationRange.X, ElevationRange.Y);
 		StartElevation.Y = FMath::Clamp(StartElevation.Y, ElevationRange.X, ElevationRange.Y);
-
-		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigSandElevationName, ElevationToTerrainType[EHexTerrainType::Sand]);
-		ConfigFile.GetInt(*ConfigCommonSectionName, *ConfigIceElevationName, ElevationToTerrainType[EHexTerrainType::Ice]);
-		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigGrassHumidityName, HumidityToTerrainType[EHexTerrainType::Grass]);
-		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigMudHumidityName, HumidityToTerrainType[EHexTerrainType::Mud]);
-		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigPlateauHumidityName, HumidityToTerrainType[EHexTerrainType::Plateau]);
-		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigSmallStoneHumidityName, HumidityToTerrainType[EHexTerrainType::SmallStone]);
-		ConfigFile.GetFloat(*ConfigCommonSectionName, *ConfigStoneHumidityName, HumidityToTerrainType[EHexTerrainType::Stone]);
 
 		static FString ConfigRegionSectionName{ TEXT("Region") };
 		static FString ConfigRegionCountXName{ TEXT("RegionCountX") };
@@ -239,6 +231,11 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		static FString ConfigSeepageRatioName{ TEXT("SeepageRatio") };
 		static FString ConfigWindDirectionName{ TEXT("WindDirection") };
 		static FString ConfigWindStrengthName{ TEXT("WindStrength") };
+		static FString ConfigTemperatureMinName{ TEXT("TemperatureMin") };
+		static FString ConfigTemperatureMaxName{ TEXT("TemperatureMax") };
+		static FString ConfigTemperatureJitterName{ TEXT("TemperatureJitter") };
+		static FString ConfigHumidityThresholdsName{ TEXT("HumidityThresholds") };
+		static FString ConfigTemperatureThresholdsName{ TEXT("TemperatureThresholds") };
 
 		ConfigFile.GetInt(*ConfigClimateSectionName, *ConfigEvolutionStepsName, EvolutionSteps);
 		ConfigFile.GetFloat(*ConfigClimateSectionName, *ConfigEvaporationRatioName, EvaporationRatio);
@@ -258,13 +255,36 @@ void FHexTerrainDataGenerator::LoadConfigFromFile()
 		SeepageRatio = FMath::Clamp(SeepageRatio, 0.0f, 1.0f);
 		WindStrength = FMath::Clamp(WindStrength, 0.0f, 10.0f);
 
+		ConfigFile.GetFloat(*ConfigClimateSectionName, *ConfigTemperatureMinName, TemperatureRange.X);
+		ConfigFile.GetFloat(*ConfigClimateSectionName, *ConfigTemperatureMaxName, TemperatureRange.Y);
+		ConfigFile.GetFloat(*ConfigClimateSectionName, *ConfigTemperatureJitterName, TemperatureJitter);
+		TemperatureJitter = FMath::Clamp(TemperatureJitter, 0.0f, 1.0f);
+		
+		TArray<FString> HumidityThresholdStrs;
+		ConfigFile.GetArray(*ConfigClimateSectionName, *ConfigHumidityThresholdsName, HumidityThresholdStrs);
+		TArray<FString> TemperatureThresholdStrs;
+		ConfigFile.GetArray(*ConfigClimateSectionName, *ConfigTemperatureThresholdsName, TemperatureThresholdStrs);
+
+		HumidityThresholds.Empty(NumOfHumidityLevels - 1);
+		for (int32 Index = 0; Index < NumOfHumidityLevels - 1; ++Index)
+		{
+			const FString& HumidityStr = HumidityThresholdStrs[Index];
+			HumidityThresholds.Add(FMath::Clamp(FCString::Atof(*HumidityStr), 0.0f, 1.0f));
+		}	
+		TemperatureThresholds.Empty(NumOfTemperatureLevels - 1);
+		for (int32 Index = 0; Index < NumOfTemperatureLevels - 1; ++Index)
+		{
+			const FString& TemperatureStr = TemperatureThresholdStrs[Index];
+			TemperatureThresholds.Add(FCString::Atof(*TemperatureStr));
+		}	
+
 		static FString ConfigRiversSectionName{ TEXT("Rivers") };
 		static FString ConfigRiverPercentageName{ TEXT("RiverPercentage") };
-		static FString ConfigMinRiverLengthName{ TEXT("MinRiverLength") };
+		static FString ConfigRiverLengthMinName{ TEXT("RiverLengthMin") };
 		static FString ConfigRiverRetryTimesName{ TEXT("RiverRetryTimes") };
 
 		ConfigFile.GetInt(*ConfigRiversSectionName, *ConfigRiverPercentageName, RiverPercentage);
-		ConfigFile.GetInt(*ConfigRiversSectionName, *ConfigMinRiverLengthName, MinRiverLength);
+		ConfigFile.GetInt(*ConfigRiversSectionName, *ConfigRiverLengthMinName, MinRiverLength);
 		ConfigFile.GetInt(*ConfigRiversSectionName, *ConfigRiverRetryTimesName, RiverRetryTimes);
 		RiverPercentage = FMath::Clamp(RiverPercentage, 0, 100);
 		MinRiverLength = FMath::Clamp(MinRiverLength, 0, 50);
@@ -300,16 +320,16 @@ void FHexTerrainDataGenerator::CreateRegions()
 	MapRegions.Empty(RegionCount.X * RegionCount.Y);
 	for (int32 RY = 0; RY < RegionCount.Y; ++RY)
 	{
-		int32 RegionMin = MapEdgesX[RY * 2];
-		int32 RegionMax = MapEdgesX[RY * 2 + 1];
+		int32 RegionYMin = MapEdgesY[RY * 2];
+		int32 RegionYMax = MapEdgesY[RY * 2 + 1];
 		for (int32 RX = 0; RX < RegionCount.X; ++RX)
 		{
 			FInt32Rect Region;
 			Region.Min.X = MapEdgesX[RX * 2];
-			Region.Min.Y = RegionMin;
+			Region.Min.Y = RegionYMin;
 
 			Region.Max.X = MapEdgesX[RX * 2 + 1];
-			Region.Max.Y = RegionMax;
+			Region.Max.Y = RegionYMax;
 
 			MapRegions.Add(Region);
 		}
@@ -657,6 +677,40 @@ void FHexTerrainDataGenerator::EvolveClimateData()
 	}
 }
 
+void FHexTerrainDataGenerator::CalcTemperature()
+{
+	int32 JitterChannel = FMath::RandHelper(4);
+	for (int32 Y = 0; Y < MapSize.Y; ++Y)
+	{
+		for (int32 X = 0; X < MapSize.X; ++X)
+		{
+			FClimateData& GridClimate = TerrainClimate[Y][X];
+			
+			// base temperature
+			float TemperatureAlpha = float(Y) / float(MapSize.Y);
+			if (HemisphereMode == EHemisphereMode::South)
+				TemperatureAlpha = 1.0f - TemperatureAlpha;
+			else if (HemisphereMode == EHemisphereMode::Both)
+				TemperatureAlpha = 1.0f - FMath::Abs(1.0f - 2.0f * TemperatureAlpha);
+
+			GridClimate.Temperature = FMath::Lerp(TemperatureRange.X, TemperatureRange.Y, TemperatureAlpha);
+
+			// affect by elevation
+			const int32& Elevation = OutConfigData.ElevationsList[Y][X];
+			float CurElevation = FMath::Max(0, Elevation - StartWaterLevel);
+			float MaxElevation = 1.0f + ElevationRange.Y - StartWaterLevel;
+			GridClimate.Temperature *= 1.0f - CurElevation / MaxElevation;
+
+			// jitter
+			double JitterX = double(X) / double(MapSize.X);
+			double JitterY = double(Y) / double(MapSize.Y);
+
+			float JitterVal = Noiser.SampleTextureBilinear(FVector{ JitterX,JitterY,0.0 } *0.5, true).Component(JitterChannel);
+			GridClimate.Temperature += (JitterVal * 2.0f - 1.0f) * TemperatureJitter;
+		}
+	}
+}
+
 void FHexTerrainDataGenerator::CreateRivers(int32 LandCells)
 {
 	// Get origins
@@ -682,8 +736,6 @@ void FHexTerrainDataGenerator::CreateRivers(int32 LandCells)
 				RiverOrigins[2].Add(CurGrid);
 		}
 	}
-
-	UE_LOG(LogTemp, Display, TEXT("RiverOrigins: %d %d %d"), RiverOrigins[0].Num(), RiverOrigins[1].Num(), RiverOrigins[2].Num());
 
 	// Select origin & Create river
 	int32 RiverCells = FMath::RoundToInt(LandCells * RiverPercentage * 0.01f);
@@ -866,6 +918,11 @@ int32 FHexTerrainDataGenerator::CreateOneRiver(const FIntPoint& StartGrid)
 			{
 				EndWaterLevel = MinAroundElevation;
 			}
+			else if (MinAroundElevation == EndElevation)
+			{
+				EndWaterLevel = MinAroundElevation;
+				--EndElevation;
+			}
 		}
 
 		// Fill river config
@@ -878,8 +935,6 @@ int32 FHexTerrainDataGenerator::CreateOneRiver(const FIntPoint& StartGrid)
 			uint8 RiverDirection = uint8(RiverGrids[Index].Z);
 			RiverConfig.ExtensionDirections.Add(static_cast<EHexDirection>(RiverDirection));
 		}
-
-		UE_LOG(LogTemp, Warning, TEXT("River: Len%d End(%d,%d)"), NumOfRiverGrids, EndGrid.X, EndGrid.Y);
 	}
 	else if (NumOfRiverGrids > 1)
 	{
@@ -896,7 +951,7 @@ int32 FHexTerrainDataGenerator::CreateOneRiver(const FIntPoint& StartGrid)
 	return bRiverHasValidLen ? NumOfRiverGrids : 0;
 }
 
-void FHexTerrainDataGenerator::PaintTerrainType(EHexTerrainType FirstLayer)
+void FHexTerrainDataGenerator::PaintTerrainType()
 {
 	for (int32 Y = 0; Y < MapSize.Y; ++Y)
 	{
@@ -904,16 +959,19 @@ void FHexTerrainDataGenerator::PaintTerrainType(EHexTerrainType FirstLayer)
 		{
 			const int32& Elevation = OutConfigData.ElevationsList[Y][X];
 			EHexTerrainType& TerrainType = OutConfigData.TerrainTypesList[Y][X];
-			
+			int32& FeatureValue = OutConfigData.FeatureValuesList[Y][X];
 			const FClimateData& Climate = TerrainClimate[Y][X];
-			TerrainType = GetTerrainTypeByParameters(Climate.Humidity, Elevation - StartWaterLevel);
 
-			OutConfigData.CustomDataList[Y][X].X = TerrainRiverFlag[Y][X].bHasInRiver ? 1.0f : 0.0f;
-			OutConfigData.CustomDataList[Y][X].Y = TerrainRiverFlag[Y][X].bHasOutRiver ? 1.0f : 0.0f;
+			FBiomeData TerrainBiomeData;
+			GetTerrainBiomeByParameters(Climate.Humidity, Climate.Temperature, Elevation - StartWaterLevel, TerrainBiomeData);
+
+			TerrainType = TerrainBiomeData.TerrainType;
+			FeatureValue = TerrainBiomeData.PlantLevel;
+			OutConfigData.CustomDataList[Y][X].X = Climate.Temperature;
 
 			// Coastline
 			int32 Diff = Elevation - StartWaterLevel;
-			if (Diff != 0)
+			if (Diff != 0 || TerrainType == EHexTerrainType::Ice)
 				continue;
 
 			TArray<FIntVector> Neighbors;
@@ -929,34 +987,54 @@ void FHexTerrainDataGenerator::PaintTerrainType(EHexTerrainType FirstLayer)
 				}
 			}
 
-			if (DistToWater == 1)
-				TerrainType = FMath::FRand() < BeachRatio ? FirstLayer : TerrainType;
+			if (DistToWater == 1 && FMath::FRand() < BeachRatio)
+			{
+				TerrainType = EHexTerrainType::Sand;
+				FeatureValue = 0;
+			}
 		}
 	}
 }
 
-EHexTerrainType FHexTerrainDataGenerator::GetTerrainTypeByParameters(float Humidity, int32 InElevation)
+void FHexTerrainDataGenerator::GetTerrainBiomeByParameters(float Humidity, float Termperature, int32 Elevation, FBiomeData& OutBiome)
 {
-	EHexTerrainType OutTerrainType = EHexTerrainType::None;
-	if (Humidity <= HumidityToTerrainType[EHexTerrainType::Stone])
-		OutTerrainType = EHexTerrainType::Stone;
-	else if (Humidity <= HumidityToTerrainType[EHexTerrainType::SmallStone])
-		OutTerrainType = EHexTerrainType::SmallStone;
-	else if (Humidity <= HumidityToTerrainType[EHexTerrainType::Plateau])
-		OutTerrainType = EHexTerrainType::Plateau;
-	else if (Humidity <= HumidityToTerrainType[EHexTerrainType::Mud])
-		OutTerrainType = EHexTerrainType::Mud;
-	else if (Humidity <= HumidityToTerrainType[EHexTerrainType::Grass])
-		OutTerrainType = EHexTerrainType::Grass;
-
-	if (InElevation < ElevationToTerrainType[EHexTerrainType::Sand])
-		OutTerrainType = EHexTerrainType::Sand;
-	else if (InElevation >= ElevationToTerrainType[EHexTerrainType::Ice])
+	if (Elevation < 0)
 	{
-		if (Humidity > 0.2f)
-			OutTerrainType = EHexTerrainType::Ice;
+		OutBiome.PlantLevel = 0;
+
+		if (Elevation == -1) OutBiome.TerrainType = EHexTerrainType::Water;
+		else if (Elevation == -2) OutBiome.TerrainType = EHexTerrainType::Water;
+		else OutBiome.TerrainType = EHexTerrainType::Stone;
+		
+		return;
 	}
-	return OutTerrainType;
+
+	int32 HumidityIndex = NumOfHumidityLevels - 1;
+	for (int32 Index = 0; Index < NumOfHumidityLevels - 1; ++Index)
+	{
+		if (Humidity <= HumidityThresholds[Index])
+		{
+			HumidityIndex = Index;
+			break;
+		}
+	}
+
+	int32 TemperatureIndex = NumOfTemperatureLevels - 1;
+	for (int32 Index = 0; Index < NumOfTemperatureLevels - 1; ++Index)
+	{
+		if (Termperature <= TemperatureThresholds[Index])
+		{
+			TemperatureIndex = Index;
+			break;
+		}
+	}
+
+	OutBiome = BiomeMatrix[TemperatureIndex][HumidityIndex];
+	if (Elevation >= ElevationRange.Y - StartWaterLevel)
+	{
+		OutBiome.TerrainType = EHexTerrainType::Ice;
+		OutBiome.PlantLevel = 0;
+	}
 }
 
 void FHexTerrainDataGenerator::GetGridNeighbors(const FIntPoint& CurGrid, int32 MaxDist, TArray<FIntVector>& OutNeighbors)
