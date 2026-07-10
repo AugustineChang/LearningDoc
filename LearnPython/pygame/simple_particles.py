@@ -6,7 +6,6 @@ def particle_main():
     # 1. Initialize & Setup
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
-    clock = pygame.time.Clock()
 
     objects:list[PhyObject] = [PhyAlignedBox(0.0, -4.0, 6.0, 0.5, getRandomColor())]
     forces:list[ForceGenerator] = [GravityForce()]
@@ -15,7 +14,7 @@ def particle_main():
 
     # 2. Main Game Loop
     while usrCtrl.isRunning():
-        dt = clock.tick_busy_loop(240) * 0.001  # Delta time in seconds
+        dt = usrCtrl.preTick()
 
         # controller
         usrCtrl.eventReceiver()
@@ -24,7 +23,7 @@ def particle_main():
         for force in forces:
             force.simulate(dt)
         particleSys.simulate(dt, forces)
-        collision_detect_all(objects, particleSys.listAlive)
+        collision_detect_all(dt, objects, particleSys.listAlive)
         
         # rendering
         if usrCtrl.shouldRender():
@@ -35,7 +34,7 @@ def particle_main():
                 obj.draw(screen)
             particleSys.draw(screen)
             pygame.display.flip() # Update the display
-        usrCtrl.tick()
+        usrCtrl.postTick()
 
     pygame.quit()
     

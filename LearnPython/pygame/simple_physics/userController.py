@@ -8,9 +8,16 @@ from .common import getRandomColor, getRandomDirection, getRandomFloatRange, get
 class UserController:
     def __init__(self, objects:list[PhyObject] = None, particleSys:PartcleSystem = None):
         self.status = 1 # 0-stop 1-running
+        self.clock = pygame.time.Clock()
+        self.framerate = 240
+        self.maxTimestep = 5.0 / self.framerate
         self.frameCounter = 0
         self.allObjects = objects
         self.particleSystem = particleSys
+
+    def preTick(self) -> float:
+        dt = self.clock.tick_busy_loop(self.framerate) * 0.001  # Delta time in seconds
+        return min(self.maxTimestep, dt)
 
     def eventReceiver(self):
         for event in pygame.event.get():
@@ -25,7 +32,7 @@ class UserController:
         if isNoObjects and isParticlesStop:
             self.quit()
 
-    def tick(self):
+    def postTick(self):
         self.frameCounter += 1
 
     def leftClick(self):

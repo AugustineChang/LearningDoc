@@ -12,8 +12,8 @@ class PhyObject:
         self.velocity = zero_vector.copy()
         self.acceleration = zero_vector.copy()
         self.forceAccum = zero_vector.copy()
-        self.mass = 1.0
-        self.invMass = None
+        self.mass = 0.0
+        self.invMass = 0.0
         self.damping = 1.0#0.65
         self.restitution = 0.8
 
@@ -43,7 +43,8 @@ class PhyObject:
 
         return screenPos[0] < 0 or screenPos[0] >= screenWidth or screenPos[1] < 0 or screenPos[1] >= screenHeight
 
-    def calcInvMass(self):
+    def setMass(self, mass:float):
+        self.mass = mass
         self.invMass = 1.0 / self.mass if self.mass > 0.0 else 0.0
 
 class PhySphere(PhyObject):
@@ -52,8 +53,7 @@ class PhySphere(PhyObject):
         self.objType = 'sphere'
         self.color = color
         self.radius = radius
-        self.mass = np.pi * radius * radius * 10.0
-        self.calcInvMass()
+        self.setMass(np.pi * radius * radius * 10.0)
 
     def simulate(self, dt:float):
         if self.status != 1: return
@@ -72,8 +72,6 @@ class PhyAlignedBox(PhyObject):
         self.objType = 'abox'
         self.color = color
         self.size = np.array([width, height], dtype=precision_type)
-        self.mass = 0.0
-        self.calcInvMass()
 
     def simulate(self, dt:float):
         pass
@@ -95,8 +93,7 @@ class PhyParticle(PhyObject):
         self.color = color
         self.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
         self.radius = radius
-        self.mass = np.pi * radius * radius * 10.0
-        self.calcInvMass()
+        self.setMass(np.pi * radius * radius * 10.0)
         
         self.maxAge = 3.0
         self.age = self.maxAge

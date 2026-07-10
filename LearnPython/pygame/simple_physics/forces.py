@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 from .common import epsilon, zero_vector, precision_type, physicsVectorToPixelVector, getRandomColor, getRandomDirection
 from .objects import PhyObject
+from .rendering import drawDottedLine
 
 ################################# Force Types #################################
 
@@ -85,29 +86,17 @@ class AttractionForce(ForceGenerator):
         obj.forceAccum += force * self.forceIntensity
 
 class SpringForce(ForceGenerator):
-    def __init__(self, endA:PhyObject|np.ndarray, endB:PhyObject|np.ndarray, restLen:float, springConst:float, 
+    def __init__(self, endA:PhyObject, endB:PhyObject, restLen:float, springConst:float, 
                  dampingRatio:float=1.0, isRope:bool=False):
         super().__init__()
         self.isRope = isRope
-        self.endA:PhyObject|np.ndarray = endA
-        self.endB:PhyObject|np.ndarray = endB
-        self.color  = getRandomColor()
+        self.endA:PhyObject = endA
+        self.endB:PhyObject = endB
+        self.color = getRandomColor()
         self.restLength = restLen
-        self.maxLength = restLen * 3.0
+        self.maxLength = restLen * springConst * 0.3
         self.springConstant = springConst
         self.dampingRatio = dampingRatio
-
-    @staticmethod
-    def getEndPosition(end:PhyObject|np.ndarray):
-        return end.position if isinstance(end, PhyObject) else end
-
-    @staticmethod
-    def getEndInvMass(end:PhyObject|np.ndarray):
-        return end.invMass if isinstance(end, PhyObject) else 0.0
-
-    @staticmethod
-    def getEndVelocity(end:PhyObject|np.ndarray):
-        return end.velocity if isinstance(end, PhyObject) else zero_vector.copy()
 
     def simulate(self, dt:float):
         if self.status != 1: return
@@ -116,7 +105,7 @@ class SpringForce(ForceGenerator):
         if not isEndAMovable and not isEndBMovable:
             return
 
-        forceDir = SpringForce.getEndPosition(self.endB) - SpringForce.getEndPosition(self.endA)
+        forceDir = self.endB.position - self.endA.position
         springLen = np.linalg.norm(forceDir)
         if springLen <= epsilon:
             forceDir = getRandomDirection()
@@ -136,11 +125,11 @@ class SpringForce(ForceGenerator):
         springF = deltaDist * -self.springConstant
 
         # dampF
-        m_reduced_inv = SpringForce.getEndInvMass(self.endB) + SpringForce.getEndInvMass(self.endA) 
+        m_reduced_inv = self.endB.invMass + self.endA.invMass
         if m_reduced_inv > 0.0:
             m_reduced = 1.0 / m_reduced_inv
             c = self.dampingRatio * 2.0 * np.sqrt(self.springConstant * m_reduced) # 临界阻尼
-            v_rela = SpringForce.getEndVelocity(self.endB) - SpringForce.getEndVelocity(self.endA)
+            v_rela = self.endB.velocity - self.endA.velocity
             dampF = -c * np.dot(v_rela, forceDir)
         else:
             dampF = 0.0
@@ -154,7 +143,7 @@ class SpringForce(ForceGenerator):
 
     def draw(self, surface):
         if self.status != 1: return
-        pixelPosA = physicsVectorToPixelVector(SpringForce.getEndPosition(self.endA))
-        pixelPosB = physicsVectorToPixelVector(SpringForce.getEndPosition(self.endB))
+        pixelPosA = physicsVectorToPixelVector(self.endA.position, True, False)
+        pixelPosB = physicsVectorToPixelVector(self.endB.position, True, False)
 
-        pygame.draw.line(surface, self.color, pixelPosA, pixelPosB, width=2)   
+        drawDottedLine(surface, self.color, pixelPosA, pixelPosB, width=2)   
