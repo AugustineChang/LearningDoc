@@ -9,15 +9,22 @@ epsilon = 1e-6
 
 rng = np.random.default_rng()
 precision_type = np.float32
-zero_vector = np.array([0, 0], dtype=precision_type)
+
+def makeArray(alist:list, dtype=precision_type):
+    return np.array(alist, dtype=dtype)
+
+zero_vector = makeArray([0, 0])
+x_vector = makeArray([1, 0])
+y_vector = makeArray([0, 1])
+one_vector = makeArray([1, 1])
 
 def lerp(a:np.ndarray|float, b:np.ndarray|float, alpha:float):
     return a + alpha * (b - a)
 
 def physicsVectorToPixelVector(physicsPos:np.ndarray, isPoint:bool = True, tolist:bool = True):
-    pixelPos = physicsPos * np.array([meterPerPixel, -meterPerPixel], dtype=precision_type)
+    pixelPos = physicsPos * makeArray([meterPerPixel, -meterPerPixel])
     if isPoint:
-        pixelPos += np.array([screenWidth*0.5, screenHeight*0.5], dtype=precision_type)
+        pixelPos += makeArray([screenWidth*0.5, screenHeight*0.5])
 
     if tolist:
         return np.round(pixelPos).tolist()
@@ -31,6 +38,17 @@ def physicsScalarToPixelScalar(physicsScalar:float|np.ndarray, tolist:bool = Tru
     else:
         return result
 
+def pixelVectorToPhysicsVector(pixelPosX:float|int, pixelPosY:float|int, isPoint:bool = True):
+    physicsPos = makeArray([pixelPosX, pixelPosY])
+    if isPoint:
+        physicsPos -= makeArray([screenWidth*0.5, screenHeight*0.5])
+    physicsPos /= makeArray([meterPerPixel, -meterPerPixel])
+    
+    return physicsPos
+
+def pixelScalarToPhysicsScalar(pixelScalar:float|int):
+    return pixelScalar / meterPerPixel
+
 def getSceneSize():
     return (screenWidth / meterPerPixel, screenHeight / meterPerPixel)
 
@@ -40,10 +58,47 @@ def getRandomColor():
 
 def getRandomDirection():
     rand_theta = rng.uniform(0, 2 * np.pi)
-    return np.array([np.cos(rand_theta), np.sin(rand_theta)], dtype=precision_type)
+    return makeArray([np.cos(rand_theta), np.sin(rand_theta)])
 
 def getRandomIntRange(min:int, max:int):
     return rng.integers(min, max)
 
 def getRandomFloatRange(min:float, max:float):
     return rng.uniform(min, max)
+
+def arcAreaAndL(d:float, r:float):
+        r2 = r*r
+        half_l = np.sqrt(r2-d*d)
+        return r2 * np.arccos(d/r) - d * half_l, half_l * 2.0
+
+def polygonAreaAndCenter(vertices:np.ndarray):
+    """
+    计算按顺序排列的多边形的面积和重心(Centroid)
+    vertices: 形如 [[x1,y1], [x2,y2], ...] 的 NumPy 数组或列表
+    """
+    n = len(vertices)
+    
+    if n < 3:
+        return 0.0, (0.0, 0.0)
+        
+    # 巧妙利用 np.roll 将顶点错开一位，实现高效的错位相乘
+    x = vertices[:, 0]
+    y = vertices[:, 1]
+    next_x = np.roll(x, -1)
+    next_y = np.roll(y, -1)
+    
+    # 计算每一项的交叉乘积 (xi * yi+1 - xi+1 * yi)
+    cross_product = x * next_y - next_x * y
+    
+    # 1. 计算总面积 (Shoelace Formula)
+    area = 0.5 * np.sum(cross_product)
+    area_abs = np.abs(area)
+
+    if area_abs < 1e-6: # 防止除以 0
+        return 0.0, makeArray([np.mean(x), np.mean(y)])
+        
+    # 2. 计算重心坐标 Cx, Cy
+    cx = np.sum((x + next_x) * cross_product) / (6.0 * area)
+    cy = np.sum((y + next_y) * cross_product) / (6.0 * area)
+    
+    return area_abs, makeArray([cx, cy])

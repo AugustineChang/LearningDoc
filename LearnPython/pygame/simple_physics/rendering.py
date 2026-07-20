@@ -12,5 +12,3 @@ def drawDottedLine(surface:pygame.Surface, color:pygame.Color, start:np.ndarray,
         pygame.draw.line(surface, color, curStart.tolist(), curEnd.tolist(), width)
         curStart = curEnd + drawDir * segLen
         drawDist -= segLen * 2.0
-    
-    

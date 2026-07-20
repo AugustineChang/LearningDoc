@@ -1,8 +1,7 @@
 import pygame
 import numpy as np
-from .common import epsilon, precision_type, getRandomColor, getRandomDirection, physicsVectorToPixelVector
+from .common import epsilon, makeArray, getRandomDirection, physicsVectorToPixelVector
 from .objects import PhyObject, PhySphere, PhyAlignedBox, PhyParticle
-from .rendering import drawDottedLine
 
 ################################# Collision Handler #################################
 
@@ -19,7 +18,7 @@ class PhyCollision:
         self.restitution = min(self.objA.restitution, self.objB.restitution)
 
     def calcSeparateVelocity(self):
-        rela_velo = self.objB.velocity - self.objA.velocity
+        rela_velo = self.objB.getVelocity() - self.objA.getVelocity()
         return -np.dot(rela_velo, self.normal)
     
     def calcSeparateAcceleration(self):
@@ -79,10 +78,10 @@ class CollisionGenerator:
         pass
 
 class Cable(CollisionGenerator):
-    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float):
+    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color):
         super().__init__(objA, objB)
         self.length = len
-        self.color = getRandomColor()
+        self.color = color
         self.restitution = restitution
 
     def simulate(self, dt:float) -> PhyCollision:
@@ -107,10 +106,10 @@ class Cable(CollisionGenerator):
         pygame.draw.line(surface, self.color.premul_alpha(), pixelPosA, pixelPosB, width=2)   
 
 class Rod(CollisionGenerator):
-    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float):
+    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color):
         super().__init__(objA, objB)
-        self.length = len
-        self.color = getRandomColor()
+        self.length = len if len is not None else np.linalg.norm(objA.position - objB.position)
+        self.color = color
         self.restitution = restitution
 
     def simulate(self, dt:float) -> PhyCollision:
@@ -171,9 +170,9 @@ def sphere_vs_abox(sphereA:PhySphere, aboxB:PhyAlignedBox):
             vec_local = sphereA.position - aboxB.position
             dxy = aboxB.size*0.5 - np.abs(vec_local)
             if dxy[0] < dxy[1]:
-                normal = np.array([np.sign(vec_local[0]), 0.0], dtype=precision_type)
+                normal = makeArray([np.sign(vec_local[0]), 0.0])
             else:
-                normal = np.array([0.0, np.sign(vec_local[1])], dtype=precision_type)
+                normal = makeArray([0.0, np.sign(vec_local[1])])
             position = sphereA.position + normal * dxy
             penetration = sphereA.radius + min(dxy[0], dxy[1])
         
@@ -194,9 +193,9 @@ def particle_vs_abox(particleA:PhyParticle, aboxB:PhyAlignedBox):
         vec_local = particleA.position - aboxB.position
         dxy = aboxB.size*0.5 - np.abs(vec_local)
         if dxy[0] < dxy[1]:
-            normal = np.array([np.sign(vec_local[0]), 0.0], dtype=precision_type)
+            normal = makeArray([np.sign(vec_local[0]), 0.0])
         else:
-            normal = np.array([0.0, np.sign(vec_local[1])], dtype=precision_type)
+            normal = makeArray([0.0, np.sign(vec_local[1])])
         position = particleA.position + normal * dxy
         penetration = min(dxy[0], dxy[1])
         
@@ -239,6 +238,20 @@ def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision])
         hit = particle_vs_sphere(objA, objB)
     elif objAType == 'sphere' and objBType == 'particle':
         hit = particle_vs_sphere(objB, objA)
+    elif objAType == 'box' and objBType == 'box':
+        pass
+    elif objAType == 'box' and objBType == 'sphere':
+        pass
+    elif objAType == 'sphere' and objBType == 'box':
+        pass
+    elif objAType == 'box' and objBType == 'abox':
+        pass
+    elif objAType == 'abox' and objBType == 'box':
+        pass
+    elif objAType == 'box' and objBType == 'particle':
+        pass
+    elif objAType == 'particle' and objBType == 'box':
+        pass
 
     if hit is not None:
         outList.append(hit)

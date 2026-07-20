@@ -1,7 +1,8 @@
 import pygame
+import numpy as np
 from .objects import PhyParticle
 from .forces import ForceGenerator
-from .common import getRandomColor
+from .common import zero_vector, getRandomColor
 
 ################################# Particle System #################################
 
@@ -15,7 +16,7 @@ class PartcleSystem:
         self.deadSpawns = 5
 
         for idx in range(self.initSpawns):
-            self.create_to_alive(0.0, 0.0)
+            self.create_to_alive(zero_vector)
 
     def remove_to_dead(self, idx:int):
         dead_par = self.listAlive[idx]
@@ -24,24 +25,26 @@ class PartcleSystem:
         self.listAlive[idx] = self.listAlive[-1]
         self.listAlive.pop()
 
-    def create_to_alive(self, x:float, y:float, vx:float=0.0, vy:float=0.0):
+    def create_to_alive(self, pos:np.ndarray, velo:np.ndarray=None):
         if len(self.listAlive) >= self.maxParticles:
             return
 
         if len(self.listDead) > 0:
             reuse_particle = self.listDead.pop()
-            reuse_particle.__init__(x, y, 0.02, getRandomColor())
-            reuse_particle.velocity[:] += [vx,vy]
+            reuse_particle.__init__(pos, 0.02, getRandomColor())
+            if velo is not None:
+                reuse_particle.velocity[:] += velo
             self.listAlive.append(reuse_particle)
         else:
-            new_particle = PhyParticle(x, y, 0.02, getRandomColor())
-            new_particle.velocity[:] += [vx,vy]
+            new_particle = PhyParticle(pos, 0.02, getRandomColor())
+            if velo is not None:
+                new_particle.velocity[:] += velo
             self.listAlive.append(new_particle)
 
     def simulate(self, dt:float, forces:list[ForceGenerator]):
         for par in self.listAlive:
             for force in forces:
-                force.addForce(par)
+                force.applyForce(par)
             par.simulate(dt)       
 
         # spawn lifetime
@@ -55,7 +58,7 @@ class PartcleSystem:
         
         for pos, velo in spawnParams:
             for idx in range(self.deadSpawns):
-                self.create_to_alive(pos[0], pos[1], velo[0], velo[1])
+                self.create_to_alive(pos, velo)
 
     def draw(self, surface:pygame.Surface):
         for par in self.listAlive:

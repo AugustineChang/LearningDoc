@@ -2,12 +2,12 @@ import pygame
 import numpy as np
 from simple_physics import *
 
-def particle_main():
+def main():
     # 1. Initialize & Setup
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
 
-    objects:list[PhyObject] = [PhyAlignedBox(0.0, -4.0, 6.0, 0.5, getRandomColor())]
+    objects:list[PhyObject] = [PhyAlignedBox.from_xy(0.0, -4.0, 6.0, 0.5, getRandomColor())]
     forces:list[ForceGenerator] = [GravityForce()]
     particleSys = PartcleSystem()
     usrCtrl = UserController(None, particleSys)
@@ -39,4 +39,4 @@ def particle_main():
     pygame.quit()
     
 if __name__ == "__main__":
-    particle_main()
+    main()
