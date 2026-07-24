@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from .objects import PhyObject, PhySphere
+from .objects import PhyObjType, PhyObject, PhySphere
 from .particleSys import PartcleSystem
 from .common import epsilon, getRandomColor, getRandomDirection, getRandomFloatRange, pixelVectorToPhysicsVector
 
@@ -78,13 +78,13 @@ class UserController:
 
         downPos = pixelVectorToPhysicsVector(mousePos[0], mousePos[1])
         for obj in self.allObjects:
-            if obj.objType == 'sphere' and obj.status == 1:
+            if obj.objType == PhyObjType.SPHERE and obj.status == 1:
                 obj2Click = downPos - obj.position
                 if np.dot(obj2Click, obj2Click) <= obj.radius * obj.radius:
                     self.leftDownPos = downPos
                     self.leftClickPos = obj.worldToLocal(downPos)
                     self.leftClickObj = obj
-            elif obj.objType == 'box' and obj.status == 1:
+            elif obj.objType == PhyObjType.BOX and obj.status == 1:
                 obj2Click = obj.worldToLocal(downPos)
                 if (np.abs(obj2Click) <= obj.size * 0.5).all():
                     self.leftDownPos = downPos

@@ -6,16 +6,16 @@ def init_spring_one(objects:list[PhyObject], forces:list[ForceGenerator]):
     fixPos = PhyObject.from_xy(0.0, 3.0)
     
     objects.append(PhySphere.from_xy(0.0, 2.0, 0.5, getRandomColor()))
-    forces.append(SpringForce(fixPos, objects[0], 0.8, 3.0, None, None, 0.08))
+    forces.append(SpringForce(fixPos, objects[0], 2, 50.0, None, None, 0.15))
 
 def init_spring_three(objects:list[PhyObject], forces:list[ForceGenerator]):
     objects.append(PhySphere.from_xy(2.0, 0.0, 0.1, getRandomColor()))
     objects.append(PhySphere.from_xy(0.0, 2.0, 0.1, getRandomColor()))
     objects.append(PhySphere.from_xy(0.0, 0.0, 0.1, getRandomColor()))
 
-    forces.append(SpringForce(objects[0], objects[1], 0.8, 1000.0, None, None, 0.08))
-    forces.append(SpringForce(objects[1], objects[2], 0.8, 1000.0, None, None, 0.08))
-    forces.append(SpringForce(objects[2], objects[0], 0.8, 1000.0, None, None, 0.08))
+    forces.append(SpringForce(objects[0], objects[1], 0.8, 1000.0, None, None, 0.15))
+    forces.append(SpringForce(objects[1], objects[2], 0.8, 1000.0, None, None, 0.15))
+    forces.append(SpringForce(objects[2], objects[0], 0.8, 1000.0, None, None, 0.15))
 
 def init_spring_net(objects:list[PhyObject], forces:list[ForceGenerator]):
     # init objects
@@ -75,7 +75,7 @@ def init_stack_spheres2(objects:list[PhyObject], forces:list[ForceGenerator]):
     objects.append(PhySphere.from_xy(0.0,-1.0, 0.2, getRandomColor()))
     objects.append(PhySphere.from_xy(0.0,-1.5, 0.2, getRandomColor()))
 
-    objects.append(PhyAlignedBox( 0.0, -2.0, 6.0, 0.5, getRandomColor()))
+    objects.append(PhyAlignedBox.from_xy(0.0, -2.0, 6.0, 0.5, getRandomColor()))
 
 def init_links(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
     forces.pop()
@@ -83,7 +83,7 @@ def init_links(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     objects.append(PhySphere.from_xy(0.0, 2.0, 0.5, getRandomColor()))
     objects.append(PhySphere.from_xy(2.0, 2.0, 0.3, getRandomColor()))
     objects.append(PhySphere.from_xy(2.0, 3.0, 0.2, getRandomColor()))
-    links.append(Cable(objects[0], objects[1], 2.0, 0.5, getRandomColor()))
+    links.append(Cable(objects[0], objects[1], 1.5, 0.5, getRandomColor()))
     links.append(Rod(objects[1], objects[2], 2.0, 0.5, getRandomColor()))
     links.append(Rod(objects[2], objects[3], 1.0, 0.5, getRandomColor()))
 
@@ -132,7 +132,7 @@ def main():
     screen = pygame.display.set_mode((screenWidth, screenHeight))
 
     objects:list[PhyObject] = []
-    forces:list[ForceGenerator] = [GravityForce(), DragForce()]
+    forces:list[ForceGenerator] = [GravityForce(), AeroForce(0.01)]
     links:list[CollisionGenerator] = []
     #init_spring_one(objects, forces)
     #init_spring_three(objects, forces)
@@ -140,9 +140,9 @@ def main():
     #init_collision(objects, forces)
     #init_stack_spheres(objects, forces)
     #init_stack_spheres2(objects, forces)
-    #init_links(objects, forces, links)
+    init_links(objects, forces, links)
     #init_bridge_demo(objects, forces, links)
-    init_wheel_demo(objects, forces, links)
+    #init_wheel_demo(objects, forces, links)
 
     usrCtrl = UserController(objects)
 

@@ -21,6 +21,26 @@ one_vector = makeArray([1, 1])
 def lerp(a:np.ndarray|float, b:np.ndarray|float, alpha:float):
     return a + alpha * (b - a)
 
+def cross(a:np.ndarray, b:np.ndarray) -> float:
+    return a[0] * b[1] - a[1] * b[0]
+
+def clip(v1, v2, plane_n:np.ndarray, plane_p:np.ndarray):
+    d1 = np.dot(plane_n, v1-plane_p) 
+    d2 = np.dot(plane_n, v2-plane_p)
+    result = []
+    if d1 >= 0: result.append(v1)
+    if d2 >= 0: result.append(v2)
+    if d1 * d2 < 0:# 一内一外,加交点
+        t = d1 / (d1 - d2)
+        result.append(lerp(v1,v2,t))
+    return result
+
+def localToWorld(vec:np.ndarray, rotMat:np.ndarray, translation:np.ndarray=None):
+    return (rotMat @ vec) if translation is None else (translation + rotMat @ vec)
+
+def worldToLocal(vec:np.ndarray, invRotMat:np.ndarray, translation:np.ndarray=None):
+    return (invRotMat @ vec) if translation is None else (invRotMat @ (vec - translation))
+
 def physicsVectorToPixelVector(physicsPos:np.ndarray, isPoint:bool = True, tolist:bool = True):
     pixelPos = physicsPos * makeArray([meterPerPixel, -meterPerPixel])
     if isPoint:

@@ -1,8 +1,8 @@
 import pygame
 import numpy as np
-from .common import epsilon, makeArray, lerp, arcAreaAndL, polygonAreaAndCenter
+from .common import epsilon, zero_vector, makeArray, lerp, arcAreaAndL, polygonAreaAndCenter
 from .common import physicsVectorToPixelVector, getSceneSize, getRandomColor, getRandomDirection
-from .objects import PhyObject
+from .objects import PhyObjType, PhyObject
 from .rendering import drawDottedLine
 
 ################################# Force Types #################################
@@ -29,21 +29,21 @@ class GravityForce(ForceGenerator):
         obj.addForce(self.gAccleration * obj.mass)
 
 class AeroForce(ForceGenerator):
-    def __init__(self, density:float, windVelo:np.ndarray):
+    def __init__(self, density:float, windVelo:np.ndarray=zero_vector):
         super().__init__()
         self.density = density
-        self.windVelocity = windVelo
+        self.windVelocity = windVelo.copy()
         self.k1 = 0.05
 
     def applyForce(self, obj:PhyObject):
         relativeVelo = obj.getVelocity() - self.windVelocity
         relativeSpeed = np.linalg.norm(relativeVelo)
         if relativeSpeed > epsilon:
-            if obj.objType == "sphere":
+            if obj.objType == PhyObjType.SPHERE:
                 frontal_area = 2.0 * obj.radius
                 k2 = 0.5 * self.density * frontal_area * 0.47
 
-            elif obj.objType == "box":
+            elif obj.objType == PhyObjType.BOX:
                 normal = makeArray([-relativeVelo[1], relativeVelo[0]])
                 normal /= relativeSpeed
 
@@ -54,7 +54,7 @@ class AeroForce(ForceGenerator):
 
                 k2 = 0.5 * self.density * frontal_area * 1.05
 
-            elif obj.objType == "particle":
+            elif obj.objType == PhyObjType.PARTICLE:
                 frontal_area = 1.0
                 k2 = 0.5 * self.density * frontal_area * 0.47
             else:
@@ -102,7 +102,7 @@ class BuoyancyForce(ForceGenerator):
         pygame.draw.line(surface, self.color, startPos, endPos, width=2)
 
     def applyForce(self, obj:PhyObject):
-        if obj.objType == "sphere":
+        if obj.objType == PhyObjType.SPHERE:
             toLevel = self.liquidLevel - obj.position[1]
             dist = np.abs(toLevel)
 
@@ -140,7 +140,7 @@ class BuoyancyForce(ForceGenerator):
                 dragforce = -0.5 * self.density * frontal_area * 0.47 * speed * obj.getVelocity()
                 obj.addForce(dragforce)
 
-        elif obj.objType == "box":
+        elif obj.objType == PhyObjType.BOX:
             
             rotMat = obj.getRotationMatrix()
             points = obj.position + obj.corners @ rotMat.T
@@ -225,8 +225,8 @@ class SpringForce(ForceGenerator):
         self.isRope = isRope
         self.endA:PhyObject = endA
         self.endB:PhyObject = endB
-        self.offsetA = offsetA
-        self.offsetB = offsetB
+        self.offsetA = offsetA.copy() if offsetA is not None else offsetA
+        self.offsetB = offsetB.copy() if offsetB is not None else offsetB
         self.color = getRandomColor()
         self.restLength = restLen
         self.maxLength = restLen * springConst * 0.3

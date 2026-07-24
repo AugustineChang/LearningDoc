@@ -10,7 +10,7 @@ def init_demo(objects:list[PhyObject], forces:list[ForceGenerator], links:list[C
     forces.append(SpringForce(objects[0], objects[1], 3.0, 100.0, None, offset, 0.1, True))
 
 def init_demo2(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
-    objects.append(PhySphere.from_xy(3.0, 0.0, 0.7, getRandomColor()))
+    objects.append(PhySphere.from_xy(5.0, 0.0, 0.7, getRandomColor()))
     
     objects.append(PhyBoat.from_xy(4.0, 0.0, 1.5, 0.5, getRandomColor()))
     #objects.append(PhySail.from_xy(4.0, 0.85, 1.0, getRandomColor()))
@@ -23,6 +23,15 @@ def init_demo2(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
 
     forces.append(BuoyancyForce(30.0, -4.0))
     forces.append(AeroForce(0.1, makeArray([-2.0, 0.0])))
+
+def init_demo3(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
+    objects.append(PhyAlignedBox.from_xy(0.0, -4.0, 8.0, 0.5, getRandomColor()))
+    objects.append(PhyBox.from_xy(1.0, 0.0, 1.0, 0.5, getRandomColor()))
+    objects.append(PhyBox.from_xy(-1.0, 0.0, 0.5, 1.0, getRandomColor()))
+    objects[1].angularVelocity = np.pi * 0.1666
+
+    forces.append(GravityForce())
+    forces.append(AeroForce(0.1))
 
 def main():
     # 1. Initialize & Setup

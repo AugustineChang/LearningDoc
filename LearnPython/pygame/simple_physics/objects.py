@@ -1,13 +1,21 @@
 import pygame
 import numpy as np
-from .common import zero_vector, makeArray, physicsVectorToPixelVector, physicsScalarToPixelScalar
+from enum import IntEnum
+from .common import zero_vector, cross, localToWorld, worldToLocal, makeArray
+from .common import physicsVectorToPixelVector, physicsScalarToPixelScalar
 from .common import screenWidth, screenHeight, getRandomDirection, getRandomFloatRange, getRandomIntRange
 
 ################################# Object Types #################################
+class PhyObjType(IntEnum):
+    Base = 0
+    SPHERE = 1
+    BOX = 2
+    ALIGNEDBOX = 3
+    PARTICLE = 4
 
 class PhyObject:
     def __init__(self, pos:np.ndarray):
-        self.objType = ''
+        self.objType = PhyObjType.Base
         self.position = pos.copy()
         self.velocity = zero_vector.copy()
         self.acceleration = zero_vector.copy()
@@ -23,9 +31,11 @@ class PhyObject:
         self.invInertia = 0.0
 
         self.status = 1
+        self.boundingRadius = 0.0
         self.density = 10.0
         self.damping = 0.8
         self.restitution = 0.8
+        self.fraction = 0.5
 
     @classmethod
     def from_xy(cls, x:float, y:float):
@@ -71,9 +81,9 @@ class PhyObject:
         self.mass = mass
         self.invMass = 1.0 / self.mass if self.mass > 0.0 else 0.0
 
-        if self.objType == "sphere":
+        if self.objType == PhyObjType.SPHERE:
             self.inertia = 0.5*self.mass*self.radius*self.radius
-        elif self.objType == "box":
+        elif self.objType == PhyObjType.BOX:
             self.inertia = 0.08333*self.mass*np.dot(self.size, self.size)
         self.invInertia = 1.0 / self.inertia if self.inertia > 0.0 else 0.0
 
@@ -81,7 +91,7 @@ class PhyObject:
         self.forceAccum += force
         if pos is not None:
             toPos = pos - self.position
-            self.torqueAccum += toPos[0] * force[1] - toPos[1] * force[0]
+            self.torqueAccum += cross(toPos, force)
 
     def getVelocity(self, pos:np.ndarray = None):
         if pos is not None:
@@ -100,15 +110,13 @@ class PhyObject:
         sin_theta = np.sin(self.orientation)
         return makeArray([[cos_theta, -sin_theta], [sin_theta, cos_theta]])
 
-    def localToWorld(self, vec:np.ndarray, rotMat=None):
-        if rotMat is None:
-            rotMat = self.getRotationMatrix()
-        return self.position + rotMat @ vec
+    def localToWorld(self, vec:np.ndarray, isVec:bool=False):
+        rotMat = self.getRotationMatrix()
+        return localToWorld(vec, rotMat, None if isVec else self.position)
 
-    def worldToLocal(self, vec:np.ndarray, invRotMat=None):
-        if invRotMat is None:
-            invRotMat = self.getRotationMatrix().T
-        return invRotMat @ (vec - self.position)
+    def worldToLocal(self, vec:np.ndarray, isVec:bool=False):
+        invRotMat = self.getRotationMatrix().T
+        return worldToLocal(vec, invRotMat, None if isVec else self.position)
 
     def keyDown(self, keyType:int):
         pass
@@ -118,9 +126,10 @@ class PhyObject:
 class PhySphere(PhyObject):
     def __init__(self, pos:np.ndarray, radius:float, color:pygame.Color):
         super().__init__(pos)
-        self.objType = 'sphere'
+        self.objType = PhyObjType.SPHERE
         self.color = color
         self.radius = radius
+        self.boundingRadius = radius
         self.setMass(np.pi * radius * radius * self.density)
 
         self.markPoint = makeArray([radius, 0.0])
@@ -147,9 +156,10 @@ class PhySphere(PhyObject):
 class PhyBox(PhyObject):
     def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color):
         super().__init__(pos)
-        self.objType = 'box'
+        self.objType = PhyObjType.BOX
         self.color = color
         self.size = makeArray([width, height])
+        self.boundingRadius = np.sqrt(width*width+height*height)*0.5
         self.setMass(width * height * self.density)
 
         extent = self.size * 0.5
@@ -237,9 +247,10 @@ class PhySail(PhyBox):
 class PhyAlignedBox(PhyObject):
     def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color):
         super().__init__(pos)
-        self.objType = 'abox'
+        self.objType = PhyObjType.ALIGNEDBOX
         self.color = color
         self.size = makeArray([width, height])
+        self.boundingRadius = np.sqrt(width*width+height*height)*0.5
 
     @classmethod
     def from_xy(cls, x:float, y:float, width:float, height:float, color:pygame.Color):
@@ -261,7 +272,7 @@ class PhyAlignedBox(PhyObject):
 class PhyParticle(PhyObject):
     def __init__(self, pos:np.ndarray, radius:float, color:pygame.Color):
         super().__init__(pos)
-        self.objType = 'particle'
+        self.objType = PhyObjType.PARTICLE
         self.color = color
         self.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
         self.radius = radius
