@@ -1,3 +1,4 @@
+import copy
 import pygame
 import numpy as np
 from enum import IntEnum
@@ -12,6 +13,7 @@ class PhyObjType(IntEnum):
     BOX = 2
     ALIGNEDBOX = 3
     PARTICLE = 4
+    COMBINED = 5
 
 class PhyObject:
     def __init__(self, pos:np.ndarray):
@@ -77,14 +79,11 @@ class PhyObject:
 
         return screenPos[0] < 0 or screenPos[0] >= screenWidth or screenPos[1] < 0 or screenPos[1] >= screenHeight
 
-    def setMass(self, mass:float):
+    def setMass(self, mass:float, inertia:float):
         self.mass = mass
         self.invMass = 1.0 / self.mass if self.mass > 0.0 else 0.0
 
-        if self.objType == PhyObjType.SPHERE:
-            self.inertia = 0.5*self.mass*self.radius*self.radius
-        elif self.objType == PhyObjType.BOX:
-            self.inertia = 0.08333*self.mass*np.dot(self.size, self.size)
+        self.inertia = inertia * self.mass
         self.invInertia = 1.0 / self.inertia if self.inertia > 0.0 else 0.0
 
     def addForce(self, force:np.ndarray, pos:np.ndarray=None, source:str=None):
@@ -130,7 +129,7 @@ class PhySphere(PhyObject):
         self.color = color
         self.radius = radius
         self.boundingRadius = radius
-        self.setMass(np.pi * radius * radius * self.density)
+        self.setMass(np.pi*radius*radius*self.density, 0.5*radius*radius)
 
         self.markPoint = makeArray([radius, 0.0])
 
@@ -160,7 +159,7 @@ class PhyBox(PhyObject):
         self.color = color
         self.size = makeArray([width, height])
         self.boundingRadius = np.sqrt(width*width+height*height)*0.5
-        self.setMass(width * height * self.density)
+        self.setMass(width*height*self.density, 0.08333*np.dot(self.size, self.size))
 
         extent = self.size * 0.5
         self.corners = makeArray([
@@ -276,7 +275,7 @@ class PhyParticle(PhyObject):
         self.color = color
         self.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
         self.radius = radius
-        self.setMass(np.pi * radius * radius * 10.0)
+        self.setMass(np.pi * radius * radius * self.density, 0.0)
         
         self.maxAge = 3.0
         self.age = self.maxAge
@@ -298,3 +297,57 @@ class PhyParticle(PhyObject):
         drawCol = pygame.Color(self.color)
         drawCol.a = int(255.0 * self.age / self.maxAge + 0.5)
         pygame.draw.circle(surface, drawCol.premul_alpha(), pixelPos, pixelRadius)
+
+class PhyCombinedObj(PhyObject):
+    def __init__(self, pos:np.ndarray, subObjs:list[PhyObject]):
+        super().__init__(pos)
+        self.objType = PhyObjType.COMBINED
+        self.localSubObjects = subObjs
+        self.subObjects = copy.deepcopy(subObjs)
+        self.boundingRadius = 0.0
+
+        totalMass = 0.0
+        massOrigin = zero_vector.copy()
+        for obj in self.localSubObjects:
+            totalMass += obj.mass
+            massOrigin += obj.mass * obj.position
+
+        if totalMass > 0.0:
+            massOrigin /= totalMass
+            for obj in self.localSubObjects:
+                obj.position -= massOrigin
+            self.position += massOrigin
+
+        totalInertia = 0.0
+        for obj in self.localSubObjects:
+            d2 = np.dot(obj.position, obj.position)
+            totalInertia += obj.inertia + obj.mass * d2
+
+            curR = np.sqrt(d2) + obj.boundingRadius
+            self.boundingRadius = max(self.boundingRadius, curR)
+
+        self.setMass(totalMass, totalInertia/totalMass)
+
+    @classmethod
+    def from_xy(cls, x:float, y:float, subObjs:list[PhyObject]):
+        return cls(makeArray([x, y]), subObjs)
+
+    def syncChildren(self):
+        rotMat = self.getRotationMatrix()
+        for cached, obj in zip(self.localSubObjects, self.subObjects):            
+            obj.position = self.position + rotMat @ cached.position
+            obj.orientation = cached.orientation + self.orientation
+            if obj.objType == PhyObjType.COMBINED:
+                obj.syncChildren()
+
+    def simulate(self, dt:float):
+        if self.status != 1: return
+        super().simulate(dt)
+
+        self.syncChildren()
+    
+    def draw(self, surface:pygame.Surface):
+        if self.status != 1: return
+
+        for obj in self.subObjects:
+            obj.draw(surface)

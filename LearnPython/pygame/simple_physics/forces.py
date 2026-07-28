@@ -2,7 +2,7 @@ import pygame
 import numpy as np
 from .common import epsilon, zero_vector, makeArray, lerp, arcAreaAndL, polygonAreaAndCenter
 from .common import physicsVectorToPixelVector, getSceneSize, getRandomColor, getRandomDirection
-from .objects import PhyObjType, PhyObject
+from .objects import PhyObjType, PhyObject, PhyBox, PhySphere, PhyParticle, PhyCombinedObj
 from .rendering import drawDottedLine
 
 ################################# Force Types #################################
@@ -35,32 +35,52 @@ class AeroForce(ForceGenerator):
         self.windVelocity = windVelo.copy()
         self.k1 = 0.05
 
-    def applyForce(self, obj:PhyObject):
-        relativeVelo = obj.getVelocity() - self.windVelocity
+    def applyParticleForce(self, shape:PhyParticle, body:PhyObject):
+        relativeVelo = body.getVelocity(shape.position) - self.windVelocity
         relativeSpeed = np.linalg.norm(relativeVelo)
         if relativeSpeed > epsilon:
-            if obj.objType == PhyObjType.SPHERE:
-                frontal_area = 2.0 * obj.radius
-                k2 = 0.5 * self.density * frontal_area * 0.47
+            frontal_area = 1.0
+            k2 = 0.5 * self.density * frontal_area * 0.47
 
-            elif obj.objType == PhyObjType.BOX:
-                normal = makeArray([-relativeVelo[1], relativeVelo[0]])
-                normal /= relativeSpeed
+            body.addForce(-k2 * relativeSpeed * relativeVelo - self.k1 * relativeVelo, shape.position)
 
-                rotMat = obj.getRotationMatrix()
-                points = obj.position + obj.corners @ rotMat.T
-                projections = np.dot(points, normal)
-                frontal_area = np.max(projections) - np.min(projections)
+    def applySphereForce(self, shape:PhySphere, body:PhyObject):
+        relativeVelo = body.getVelocity(shape.position) - self.windVelocity
+        relativeSpeed = np.linalg.norm(relativeVelo)
+        if relativeSpeed > epsilon:
+            frontal_area = 2.0 * shape.radius
+            k2 = 0.5 * self.density * frontal_area * 0.47
 
-                k2 = 0.5 * self.density * frontal_area * 1.05
+            body.addForce(-k2 * relativeSpeed * relativeVelo - self.k1 * relativeVelo, shape.position)
 
-            elif obj.objType == PhyObjType.PARTICLE:
-                frontal_area = 1.0
-                k2 = 0.5 * self.density * frontal_area * 0.47
-            else:
-                return
+    def applyBoxForce(self, shape:PhyBox, body:PhyObject):
+        relativeVelo = body.getVelocity(shape.position) - self.windVelocity
+        relativeSpeed = np.linalg.norm(relativeVelo)
+        if relativeSpeed > epsilon:
+            normal = makeArray([-relativeVelo[1], relativeVelo[0]])
+            normal /= relativeSpeed
 
-            obj.addForce(-k2 * relativeSpeed * relativeVelo - self.k1 * relativeVelo)
+            rotMat = shape.getRotationMatrix()
+            points = shape.position + shape.corners @ rotMat.T
+            projections = np.dot(points, normal)
+            frontal_area = np.max(projections) - np.min(projections)
+
+            k2 = 0.5 * self.density * frontal_area * 1.05
+
+            body.addForce(-k2 * relativeSpeed * relativeVelo - self.k1 * relativeVelo, shape.position)
+
+    def applyForce(self, shape:PhyObject, body:PhyObject=None):
+        if body is None: body = shape
+
+        if shape.objType == PhyObjType.SPHERE:
+            self.applySphereForce(shape, body)
+        elif shape.objType == PhyObjType.BOX:
+            self.applyBoxForce(shape, body)
+        elif shape.objType == PhyObjType.PARTICLE:
+            self.applyParticleForce(shape, body)
+        elif shape.objType == PhyObjType.COMBINED:
+            for sub in shape.subObjects:
+                self.applyForce(sub, body)
 
 class RoundWindForce(ForceGenerator):
     def __init__(self):
@@ -101,121 +121,130 @@ class BuoyancyForce(ForceGenerator):
 
         pygame.draw.line(surface, self.color, startPos, endPos, width=2)
 
-    def applyForce(self, obj:PhyObject):
-        if obj.objType == PhyObjType.SPHERE:
-            toLevel = self.liquidLevel - obj.position[1]
-            dist = np.abs(toLevel)
+    def applySphereForce(self, shape:PhySphere, body:PhyObject):
+        toLevel = self.liquidLevel - shape.position[1]
+        dist = np.abs(toLevel)
 
-            area = 0.0
-            arcMaxW = 0.0
-            if toLevel <= -obj.radius:
-                return
-            elif toLevel <= 0.0:
-                area, l = arcAreaAndL(dist, obj.radius)
-                arcMaxW = l
-            elif toLevel < obj.radius:
-                arcArea, _ = arcAreaAndL(dist, obj.radius)
-                area = np.pi * obj.radius * obj.radius - arcArea
-                arcMaxW = 2.0 * obj.radius
+        area = 0.0
+        arcMaxW = 0.0
+        if toLevel <= -shape.radius:
+            return
+        elif toLevel <= 0.0:
+            area, l = arcAreaAndL(dist, shape.radius)
+            arcMaxW = l
+        elif toLevel < shape.radius:
+            arcArea, _ = arcAreaAndL(dist, shape.radius)
+            area = np.pi * shape.radius * shape.radius - arcArea
+            arcMaxW = 2.0 * shape.radius
+        else:
+            area = np.pi * shape.radius * shape.radius
+
+        body.addForce(self.force * area, shape.position)
+
+        # water drag
+        velocity = body.getVelocity(shape.position)
+        speed = np.linalg.norm(velocity)
+        if speed > epsilon:
+            absNormalizedVelo = np.abs(velocity / speed)
+
+            if toLevel <= 0.0:
+                spanVec = makeArray([arcMaxW, shape.radius - dist])
+                frontal_area = min(np.dot(spanVec, absNormalizedVelo), shape.radius*2.0)
+            elif toLevel < shape.radius:
+                spanVec = makeArray([arcMaxW, shape.radius + dist])
+                frontal_area = min(np.dot(spanVec, absNormalizedVelo), shape.radius*2.0)
             else:
-                area = np.pi * obj.radius * obj.radius
+                frontal_area = 2.0 * shape.radius
 
-            obj.addForce(self.force * area)
+            dragforce = -0.5 * self.density * frontal_area * 0.47 * speed * velocity
+            body.addForce(dragforce, shape.position)
 
-            # water drag
-            speed = np.linalg.norm(obj.getVelocity())
-            if speed > epsilon:
-                absNormalizedVelo = np.abs(obj.getVelocity() / speed)
+    def applyBoxForce(self, shape:PhyBox, body:PhyObject):
+        rotMat = shape.getRotationMatrix()
+        points = shape.position + shape.corners @ rotMat.T
 
-                if toLevel <= 0.0:
-                    spanVec = makeArray([arcMaxW, obj.radius - dist])
-                    frontal_area = min(np.dot(spanVec, absNormalizedVelo), obj.radius*2.0)
-                elif toLevel < obj.radius:
-                    spanVec = makeArray([arcMaxW, obj.radius + dist])
-                    frontal_area = min(np.dot(spanVec, absNormalizedVelo), obj.radius*2.0)
-                else:
-                    area = np.pi * obj.radius * obj.radius
-                    frontal_area = 2.0 * obj.radius
+        isSubmerged = points[:, 1] < self.liquidLevel 
+        if not any(isSubmerged):
+            return
 
-                dragforce = -0.5 * self.density * frontal_area * 0.47 * speed * obj.getVelocity()
-                obj.addForce(dragforce)
-
-        elif obj.objType == PhyObjType.BOX:
+        submergedPoints = []
+        numCorners = len(shape.corners)
+        for idx in range(numCorners):
+            n_idx = (idx + 1) % numCorners
+            if isSubmerged[idx]:
+                submergedPoints.append(points[idx])
             
-            rotMat = obj.getRotationMatrix()
-            points = obj.position + obj.corners @ rotMat.T
+            if isSubmerged[idx] != isSubmerged[n_idx]:
+                alpha = (self.liquidLevel - points[idx][1]) / (points[n_idx][1] - points[idx][1])
+                submergedPoints.append(lerp(points[idx], points[n_idx], alpha))
+        submergedPoints = makeArray(submergedPoints)
 
-            isSubmerged = points[:, 1] < self.liquidLevel 
-            if not any(isSubmerged):
-                return
+        area, center = polygonAreaAndCenter(submergedPoints)
+        body.addForce(self.force * area, center)
 
-            submergedPoints = []
-            numCorners = len(obj.corners)
-            for idx in range(numCorners):
-                n_idx = (idx + 1) % numCorners
-                if isSubmerged[idx]:
-                    submergedPoints.append(points[idx])
-                
-                if isSubmerged[idx] != isSubmerged[n_idx]:
-                    alpha = (self.liquidLevel - points[idx][1]) / (points[n_idx][1] - points[idx][1])
-                    submergedPoints.append(lerp(points[idx], points[n_idx], alpha))
-            submergedPoints = makeArray(submergedPoints)
+        # water drag
+        rolledPoints = np.roll(submergedPoints, -1, axis=0)
+        edgeVecs = rolledPoints - submergedPoints
+        
+        ## edge mask
+        edgeLens = np.linalg.norm(edgeVecs, axis=1)
+        mask = edgeLens > epsilon
+        edgeLens = edgeLens[mask]
+        edgeVecs = edgeVecs[mask]
+        submergedPoints = submergedPoints[mask]
+        
+        ## calc sample times
+        sampleTimes = np.maximum(1, np.round(edgeLens / 0.25)).astype(np.int32)
 
-            area, center = polygonAreaAndCenter(submergedPoints)
-            obj.addForce(self.force * area, center)
+        ## calc sample ratios
+        groupIndices = np.arange(sampleTimes.sum())
+        starts = np.zeros_like(sampleTimes)
+        starts[1:] = np.cumsum(sampleTimes)[:-1]
+        groupStarts = np.repeat(starts, sampleTimes)
+        numerators = groupIndices - groupStarts + 1
+        denominators = np.repeat(sampleTimes + 1, sampleTimes)
+        sampleRatios = numerators / denominators
+        sampleRatios = sampleRatios[:, np.newaxis]
 
-            # water drag
-            rolledPoints = np.roll(submergedPoints, -1, axis=0)
-            edgeVecs = rolledPoints - submergedPoints
-            
-            ## edge mask
-            edgeLens = np.linalg.norm(edgeVecs, axis=1)
-            mask = edgeLens > epsilon
-            edgeLens = edgeLens[mask]
-            edgeVecs = edgeVecs[mask]
-            submergedPoints = submergedPoints[mask]
-            
-            ## calc sample times
-            sampleTimes = np.maximum(1, np.round(edgeLens / 0.25)).astype(np.int32)
+        ## calc sample indices 
+        sampleIndices = np.arange(len(submergedPoints))
+        sampleIndices = np.repeat(sampleIndices, sampleTimes)
 
-            ## calc sample ratios
-            groupIndices = np.arange(sampleTimes.sum())
-            starts = np.zeros_like(sampleTimes)
-            starts[1:] = np.cumsum(sampleTimes)[:-1]
-            groupStarts = np.repeat(starts, sampleTimes)
-            numerators = groupIndices - groupStarts + 1
-            denominators = np.repeat(sampleTimes + 1, sampleTimes)
-            sampleRatios = numerators / denominators
-            sampleRatios = sampleRatios[:, np.newaxis]
+        ## calc sample points
+        samplePoints = submergedPoints[sampleIndices, :] + edgeVecs[sampleIndices, :] * sampleRatios
 
-            ## calc sample indices 
-            sampleIndices = np.arange(len(submergedPoints))
-            sampleIndices = np.repeat(sampleIndices, sampleTimes)
+        ## velocity mask
+        sampleVelos = body.getVelocity(samplePoints)
+        speed = np.linalg.norm(sampleVelos, axis=1)
+        mask = speed > epsilon
+        samplePoints = samplePoints[mask]
+        sampleVelos = sampleVelos[mask]
+        speed = speed[mask]
+        sampleIndices = sampleIndices[mask]
 
-            ## calc sample points
-            samplePoints = submergedPoints[sampleIndices, :] + edgeVecs[sampleIndices, :] * sampleRatios
+        edgeNormals = edgeVecs[:, [1, 0]] / sampleTimes[:, np.newaxis]
+        edgeNormals[:, 0] *= -1
 
-            ## velocity mask
-            sampleVelos = obj.getVelocity(samplePoints)
-            speed = np.linalg.norm(sampleVelos, axis=1)
-            mask = speed > epsilon
-            samplePoints = samplePoints[mask]
-            sampleVelos = sampleVelos[mask]
-            speed = speed[mask]
-            sampleIndices = sampleIndices[mask]
+        projections = np.sum(edgeNormals[sampleIndices, :]*sampleVelos, axis=1)
+        frontal_area = np.maximum(projections, 0.0) / speed
+        frontal_area = frontal_area[:, np.newaxis]
+        speed = speed[:, np.newaxis]
 
-            edgeNormals = edgeVecs[:, [1, 0]] / sampleTimes[:, np.newaxis]
-            edgeNormals[:, 0] *= -1
+        dragforce = -0.5 * self.density * frontal_area * 1.05 * speed * sampleVelos
 
-            projections = np.sum(edgeNormals[sampleIndices, :]*sampleVelos, axis=1)
-            frontal_area = np.maximum(projections, 0.0) / speed
-            frontal_area = frontal_area[:, np.newaxis]
-            speed = speed[:, np.newaxis]
+        for idx in range(len(dragforce)):
+            body.addForce(dragforce[idx,:], samplePoints[idx,:])
 
-            dragforce = -0.5 * self.density * frontal_area * 1.05 * speed * sampleVelos
+    def applyForce(self, shape:PhyObject, body:PhyObject=None):
+        if body is None: body = shape
 
-            for idx in range(len(dragforce)):
-                obj.addForce(dragforce[idx,:], samplePoints[idx,:])
+        if shape.objType == PhyObjType.SPHERE:
+            self.applySphereForce(shape, body)
+        elif shape.objType == PhyObjType.BOX:
+            self.applyBoxForce(shape, body)
+        elif shape.objType == PhyObjType.COMBINED:
+            for sub in shape.subObjects:
+                self.applyForce(sub, body)
 
 class SpringForce(ForceGenerator):
     def __init__(self, endA:PhyObject, endB:PhyObject, restLen:float, springConst:float, 

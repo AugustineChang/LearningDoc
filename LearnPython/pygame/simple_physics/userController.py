@@ -1,8 +1,8 @@
 import pygame
 import numpy as np
-from .objects import PhyObjType, PhyObject, PhySphere
+from .objects import PhyObjType, PhyObject, PhySphere, PhyBox
 from .particleSys import PartcleSystem
-from .common import epsilon, getRandomColor, getRandomDirection, getRandomFloatRange, pixelVectorToPhysicsVector
+from .common import rng, epsilon, getRandomColor, getRandomDirection, getRandomFloatRange, pixelVectorToPhysicsVector
 
 ################################# User Control #################################
 
@@ -125,9 +125,14 @@ class UserController:
         if self.allObjects is None: return
 
         pos = pixelVectorToPhysicsVector(mousePos[0], mousePos[1])
-        radius = 0.1 + self.rightClickStart * 0.1
-        newObj = PhySphere(pos, radius, getRandomColor())
-        print(f"create sphere({pos},{radius})!")
+        radius = 0.1 + self.rightClickStart * 0.3
+        if rng.choice([True, False]):
+            newObj = PhySphere(pos, radius, getRandomColor())
+            print(f"create sphere({pos},{radius})!")
+        else:
+            rand01 = rng.random()
+            newObj = PhyBox(pos, radius, radius*rand01, getRandomColor())
+            print(f"create box({pos},{radius},{radius*rand01})!")
         newObj.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
         self.allObjects.append(newObj)
 

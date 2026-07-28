@@ -8,6 +8,7 @@ def init_demo(objects:list[PhyObject], forces:list[ForceGenerator], links:list[C
 
     offset = makeArray([0.5, 0.25])
     forces.append(SpringForce(objects[0], objects[1], 3.0, 100.0, None, offset, 0.1, True))
+    forces.append(GravityForce())
 
 def init_demo2(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
     objects.append(PhySphere.from_xy(5.0, 0.0, 0.7, getRandomColor()))
@@ -21,6 +22,7 @@ def init_demo2(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     #forces.append(SpringForce(objects[2], objects[1], 0.7, 300.0, None, offset1, 0.1))
     #forces.append(SpringForce(objects[2], objects[1], 0.7, 300.0, None, offset2, 0.1))
 
+    forces.append(GravityForce())
     forces.append(BuoyancyForce(30.0, -4.0))
     forces.append(AeroForce(0.1, makeArray([-2.0, 0.0])))
 
@@ -33,18 +35,47 @@ def init_demo3(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     forces.append(GravityForce())
     forces.append(AeroForce(0.1))
 
+def init_demo4(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
+
+    obj1 = PhyBox.from_xy(0.25, 0.0, 1.0, 0.5, getRandomColor())
+    #obj2 = PhyBox.from_xy(-1.0, 0.0, 1.0, 0.5, getRandomColor())
+    obj2 = PhySphere.from_xy(-0.5, 0.0, 0.5, getRandomColor())
+    obj1.orientation = np.pi * 0.5
+
+    objects.append(PhyCombinedObj.from_xy(0.0, 0.0, [obj1, obj2]))
+    #objects.append(PhySphere.from_xy(0.0, 0.0, 0.5, getRandomColor()))
+    objects[0].angularVelocity = np.pi * 0.1666
+
+    objects.append(PhyAlignedBox.from_xy(-1.0, -3.0, 4.0, 0.5, getRandomColor()))
+
+    forces.append(GravityForce())
+    forces.append(BuoyancyForce(30.0, -4.0))
+    forces.append(AeroForce(0.1))
+
+def init_boat_demo(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
+
+    forces.append(GravityForce())
+    forces.append(BuoyancyForce(30.0, 0.0))       # 水线 y=0
+    forces.append(AeroForce(0.1, makeArray([-6.0, 0.0])))
+
+    boat = PhyBoat(makeArray([0.0, 0.5]), 1.0, 0.4, getRandomColor())
+    sail = PhySail(makeArray([0.0, 1.0]), 1.0, getRandomColor())
+    combo = PhyCombinedObj.from_xy(4.0, 0.0, [boat, sail])
+    combo.angularVelocity = 2.0
+    objects.append(combo)
+
 def main():
     # 1. Initialize & Setup
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
 
     objects:list[PhyObject] = []
-    forces:list[ForceGenerator] = [GravityForce()]
+    forces:list[ForceGenerator] = []
     links:list[CollisionGenerator] = []
-    init_demo2(objects, forces, links)
+    init_boat_demo(objects, forces, links)
 
     usrCtrl = UserController(objects)
-    usrCtrl.registerPawn(objects[1])
+    #usrCtrl.registerPawn(objects[1])
 
     # 2. Main Game Loop
     while usrCtrl.isRunning():

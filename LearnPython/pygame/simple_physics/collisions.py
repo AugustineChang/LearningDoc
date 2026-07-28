@@ -415,6 +415,13 @@ def particle_vs_box(particleA:PhyParticle, boxB:PhyBox, outList:list[PhyCollisio
         hit = PhyCollision(particleA, boxB, position, normal, penetration)
         outList.append(hit)
 
+def flatten_combined_objects(obj:PhyObject, root:PhyObject, out:list[PhyObject]):
+    if obj.objType == PhyObjType.COMBINED:
+        for subObj in obj.subObjects:
+            flatten_combined_objects(subObj, root, out)
+    else:
+        out.append((obj, root))
+
 def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision]):
     objAType = objA.objType
     objBType = objB.objType
@@ -427,6 +434,24 @@ def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision])
     rB = objB.boundingRadius
     delta = objB.position - objA.position
     if np.dot(delta, delta) > (rA + rB)**2:
+        return
+
+    if objAType == PhyObjType.COMBINED or objBType == PhyObjType.COMBINED:
+        subobjectsA = []
+        flatten_combined_objects(objA, objA, subobjectsA)
+        subobjectsB = []
+        flatten_combined_objects(objB, objB, subobjectsB)
+
+        objToRoot = { obj : root for (obj, root) in subobjectsA + subobjectsB }
+
+        subHits:list[PhyCollision] = []
+        for subA, _ in subobjectsA:
+            for subB, _ in subobjectsB:
+                collision_detect(subA, subB, subHits)
+        for hit in subHits:
+            hit.objA = objToRoot[hit.objA]
+            hit.objB = objToRoot[hit.objB]
+            outList.append(hit)
         return
 
     if objAType == PhyObjType.SPHERE and objBType == PhyObjType.SPHERE:
