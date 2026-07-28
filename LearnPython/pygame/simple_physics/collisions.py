@@ -10,10 +10,11 @@ Velocity_Iter = 4
 Position_Iter = 2
 
 class PhyCollision:
-    def __init__(self, objA:PhyObject, objB:PhyObject, position:np.ndarray, normal:np.ndarray, penetration:float):
+    def __init__(self, objA:PhyObject, objB:PhyObject, positionA:np.ndarray, positionB:np.ndarray, normal:np.ndarray, penetration:float):
         self.objA = objA
         self.objB = objB
-        self.position = position.copy() if position is not None else position
+        self.positionA = positionA.copy() if positionA is not None else positionA
+        self.positionB = positionB.copy() if positionB is not None else self.positionA
         self.normal = normal.copy()
         self.tangent = makeArray([-normal[1], normal[0]])
         self.penetration = penetration # collision depth
@@ -21,7 +22,7 @@ class PhyCollision:
         self.fraction = min(self.objA.fraction, self.objB.fraction) # friction factor
 
     def calcSeparateVelocity(self):
-        rela_velo = self.objB.getVelocity(self.position) - self.objA.getVelocity(self.position)
+        rela_velo = self.objB.getVelocity(self.positionB) - self.objA.getVelocity(self.positionA)
         return -np.dot(rela_velo, self.normal)
     
     def calcSeparateAcceleration(self):
@@ -29,7 +30,7 @@ class PhyCollision:
         return -np.dot(rela_accel, self.normal)
 
     def calcFrictionVelocity(self):
-        rela_velo = self.objB.getVelocity(self.position) - self.objA.getVelocity(self.position)
+        rela_velo = self.objB.getVelocity(self.positionB) - self.objA.getVelocity(self.positionA)
         return -np.dot(rela_velo, self.tangent)
 
     def resolveVelocity(self, dt:float):
@@ -51,30 +52,25 @@ class PhyCollision:
 
         deltaVelo = newSeparateVelo - separateVelo
 
-        hasCollisionPos = self.position is not None
-        if hasCollisionPos:
-            rA = self.position - self.objA.position
-            rB = self.position - self.objB.position
-            rA_x_n = cross(rA, self.normal)
-            rB_x_n = cross(rB, self.normal)
+        rA = self.positionA - self.objA.position
+        rB = self.positionB - self.objB.position
+        rA_x_n = cross(rA, self.normal)
+        rB_x_n = cross(rB, self.normal)
 
-            denom = totalInvMass + rA_x_n*rA_x_n*self.objA.invInertia + rB_x_n*rB_x_n*self.objB.invInertia
-        else:
-            denom = totalInvMass
-
+        denom = totalInvMass + rA_x_n*rA_x_n*self.objA.invInertia + rB_x_n*rB_x_n*self.objB.invInertia
         impulseIntensity = deltaVelo / denom
         impulse = impulseIntensity * self.normal
         
         # apply impulse
         self.objA.velocity += impulse * self.objA.invMass
         self.objB.velocity -= impulse * self.objB.invMass
+        
+        # angular impulse
+        self.objA.angularVelocity += cross(rA, impulse) * self.objA.invInertia
+        self.objB.angularVelocity -= cross(rB, impulse) * self.objB.invInertia
 
-        if hasCollisionPos:
-            # angular impulse
-            self.objA.angularVelocity += cross(rA, impulse) * self.objA.invInertia
-            self.objB.angularVelocity -= cross(rB, impulse) * self.objB.invInertia
-
-            # friction
+        # friction
+        if self.fraction > 0.0:
             frictionVelo = self.calcFrictionVelocity()
 
             rA_x_t = cross(rA, self.tangent)
@@ -92,8 +88,8 @@ class PhyCollision:
             self.objA.angularVelocity += cross(rA, tanImpulse) * self.objA.invInertia
             self.objB.angularVelocity -= cross(rB, tanImpulse) * self.objB.invInertia
 
-            # rolling
-            # todo.....
+        # rolling
+        # todo.....
 
     def resolvePosition(self, step:float=1.0):
         totalInvMass = self.objA.invMass + self.objB.invMass
@@ -113,9 +109,16 @@ class PhyCollision:
         self.objB.position -= movement * self.objB.invMass
 
 class CollisionGenerator:
-    def __init__(self, objA:PhyObject, objB:PhyObject):
+    def __init__(self, objA:PhyObject, objB:PhyObject, offsetA:np.ndarray, offsetB:np.ndarray):
         self.objA = objA
         self.objB = objB
+        self.offsetA = offsetA.copy() if offsetA is not None else None
+        self.offsetB = offsetB.copy() if offsetB is not None else None
+
+    def getEndPosition(self, isEndA:bool):
+        obj = self.objA if isEndA else self.objB
+        offset = self.offsetA if isEndA else self.offsetB
+        return obj.localToWorld(offset) if offset is not None else obj.position
 
     def simulate(self, dt:float) -> PhyCollision:
         pass
@@ -124,58 +127,65 @@ class CollisionGenerator:
         pass
 
 class Cable(CollisionGenerator):
-    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color):
-        super().__init__(objA, objB)
+    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color, offsetA:np.ndarray, offsetB:np.ndarray):
+        super().__init__(objA, objB, offsetA, offsetB)
         self.length = len
         self.color = color
         self.restitution = restitution
-
+    
     def simulate(self, dt:float) -> PhyCollision:
-        vec_a2b = self.objB.position - self.objA.position
+        posA = self.getEndPosition(True)
+        posB = self.getEndPosition(False)
+        vec_a2b = posB - posA
         dist_a2b = np.linalg.norm(vec_a2b)
         self.color.a = int(np.clip(dist_a2b/self.length, 0, 1)*255.0)
 
         if dist_a2b > self.length:
-            position = None
             normal = vec_a2b / dist_a2b
             penetration = dist_a2b - self.length 
-            pc = PhyCollision(self.objA, self.objB, position, normal, penetration)
+            pc = PhyCollision(self.objA, self.objB, posA, posB, normal, penetration)
             pc.restitution = self.restitution
+            pc.fraction = 0.0
             return pc
         else:
             return None
 
     def draw(self, surface:pygame.Surface):
-        pixelPosA = physicsVectorToPixelVector(self.objA.position)
-        pixelPosB = physicsVectorToPixelVector(self.objB.position)
+        pixelPosA = physicsVectorToPixelVector(self.getEndPosition(True))
+        pixelPosB = physicsVectorToPixelVector(self.getEndPosition(False))
 
         pygame.draw.line(surface, self.color.premul_alpha(), pixelPosA, pixelPosB, width=2)   
 
 class Rod(CollisionGenerator):
-    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color):
-        super().__init__(objA, objB)
-        self.length = len if len is not None else np.linalg.norm(objA.position - objB.position)
+    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color, offsetA:np.ndarray, offsetB:np.ndarray):
+        super().__init__(objA, objB, offsetA, offsetB)
+        if len is not None:
+            self.length = len
+        else:
+            self.length = np.linalg.norm(self.getEndPosition(True) - self.getEndPosition(False))
         self.color = color
         self.restitution = restitution
 
     def simulate(self, dt:float) -> PhyCollision:
-        vec_a2b = self.objB.position - self.objA.position
+        posA = self.getEndPosition(True)
+        posB = self.getEndPosition(False)
+        vec_a2b = posB - posA
         dist_a2b = np.linalg.norm(vec_a2b)
 
         deltaLen = dist_a2b - self.length
         if np.abs(deltaLen) > epsilon:
-            position = None
             normal = vec_a2b / dist_a2b * np.sign(deltaLen)
             penetration = np.abs(deltaLen)
-            pc = PhyCollision(self.objA, self.objB, position, normal, penetration)
+            pc = PhyCollision(self.objA, self.objB, posA, posB, normal, penetration)
             pc.restitution = self.restitution
+            pc.fraction = 0.0
             return pc
         else:
             return None
 
     def draw(self, surface:pygame.Surface):
-        pixelPosA = physicsVectorToPixelVector(self.objA.position)
-        pixelPosB = physicsVectorToPixelVector(self.objB.position)
+        pixelPosA = physicsVectorToPixelVector(self.getEndPosition(True))
+        pixelPosB = physicsVectorToPixelVector(self.getEndPosition(False))
 
         pygame.draw.line(surface, self.color, pixelPosA, pixelPosB, width=4)
 
@@ -196,7 +206,7 @@ def sphere_vs_sphere(sphereA:PhySphere, sphereB:PhySphere, outList:list[PhyColli
         position = sphereB.position + normal * sphereB.radius
         penetration = total_r - dist_a2b
 
-        hit = PhyCollision(sphereA, sphereB, position, normal, penetration)
+        hit = PhyCollision(sphereA, sphereB, position, None, normal, penetration)
         outList.append(hit)
 
 def sphere_vs_abox(sphereA:PhySphere, aboxB:PhyAlignedBox, outList:list[PhyCollision]):
@@ -224,7 +234,7 @@ def sphere_vs_abox(sphereA:PhySphere, aboxB:PhyAlignedBox, outList:list[PhyColli
             position = sphereA.position + normal * dxy
             penetration = sphereA.radius + min(dxy[0], dxy[1])
         
-        hit = PhyCollision(sphereA, aboxB, position, normal, penetration)
+        hit = PhyCollision(sphereA, aboxB, position, None, normal, penetration)
         outList.append(hit)
 
 def particle_vs_abox(particleA:PhyParticle, aboxB:PhyAlignedBox, outList:list[PhyCollision]):
@@ -247,7 +257,7 @@ def particle_vs_abox(particleA:PhyParticle, aboxB:PhyAlignedBox, outList:list[Ph
         position = particleA.position + normal * dxy
         penetration = min(dxy[0], dxy[1])
         
-        hit = PhyCollision(particleA, aboxB, position, normal, penetration)
+        hit = PhyCollision(particleA, aboxB, position, None, normal, penetration)
         outList.append(hit)
 
 def particle_vs_sphere(particleA:PhyParticle, sphereB:PhySphere, outList:list[PhyCollision]):
@@ -264,7 +274,7 @@ def particle_vs_sphere(particleA:PhyParticle, sphereB:PhySphere, outList:list[Ph
         position = sphereB.position + normal * sphereB.radius
         penetration = sphereB.radius - dist_a2b
 
-        hit = PhyCollision(particleA, sphereB, position, normal, penetration)
+        hit = PhyCollision(particleA, sphereB, position, None, normal, penetration)
         outList.append(hit)
 
 def convex_collision_detail(referencePoints:np.ndarray, incidentPoints:np.ndarray, 
@@ -353,7 +363,7 @@ def box_vs_box(boxA:PhyBox, boxB:PhyBox|PhyAlignedBox, outList:list[PhyCollision
         incidentPoints = pointsB if isRefA else pointsA
         hitPositions = convex_collision_detail(referencePoints, incidentPoints, refEdge, refNormal)
         for hitPos in hitPositions:
-            hit = PhyCollision(boxA, boxB, hitPos, normalOut, minOverlap)
+            hit = PhyCollision(boxA, boxB, hitPos, None, normalOut, minOverlap)
             outList.append(hit)
 
 def sphere_vs_box(sphereA:PhySphere, boxB:PhyBox, outList:list[PhyCollision]):
@@ -385,7 +395,7 @@ def sphere_vs_box(sphereA:PhySphere, boxB:PhyBox, outList:list[PhyCollision]):
 
         normal = localToWorld(normal, rotMat)
         position = localToWorld(position, rotMat, boxB.position)
-        hit = PhyCollision(sphereA, boxB, position, normal, penetration)
+        hit = PhyCollision(sphereA, boxB, position, None, normal, penetration)
         outList.append(hit)
 
 def particle_vs_box(particleA:PhyParticle, boxB:PhyBox, outList:list[PhyCollision]):
@@ -412,7 +422,7 @@ def particle_vs_box(particleA:PhyParticle, boxB:PhyBox, outList:list[PhyCollisio
 
         normal = localToWorld(normal, rotMat)
         position = localToWorld(position, rotMat, boxB.position)
-        hit = PhyCollision(particleA, boxB, position, normal, penetration)
+        hit = PhyCollision(particleA, boxB, position, None, normal, penetration)
         outList.append(hit)
 
 def flatten_combined_objects(obj:PhyObject, root:PhyObject, out:list[PhyObject]):

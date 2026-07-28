@@ -83,9 +83,18 @@ def init_links(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     objects.append(PhySphere.from_xy(0.0, 2.0, 0.5, getRandomColor()))
     objects.append(PhySphere.from_xy(2.0, 2.0, 0.3, getRandomColor()))
     objects.append(PhySphere.from_xy(2.0, 3.0, 0.2, getRandomColor()))
-    links.append(Cable(objects[0], objects[1], 1.5, 0.5, getRandomColor()))
-    links.append(Rod(objects[1], objects[2], 2.0, 0.5, getRandomColor()))
-    links.append(Rod(objects[2], objects[3], 1.0, 0.5, getRandomColor()))
+
+    offsetA = zero_vector.copy()
+    offsetB = makeArray([0.0, 0.5])
+    links.append(Cable(objects[0], objects[1], 1.5, 0.5, getRandomColor(), offsetA, offsetB))
+
+    offsetA = makeArray([0.5, 0.0])
+    offsetB = makeArray([-0.3, 0.0])
+    links.append(Rod(objects[1], objects[2], 2.0, 0.5, getRandomColor(), offsetA, offsetB))
+
+    offsetA = makeArray([0.0, 0.3])
+    offsetB = makeArray([0.0,-0.2])
+    links.append(Rod(objects[2], objects[3], 1.0, 0.5, getRandomColor(), offsetA, offsetB))
 
 def init_bridge_demo(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
     bridgeSeg = 16
@@ -101,7 +110,12 @@ def init_bridge_demo(objects:list[PhyObject], forces:list[ForceGenerator], links
     objects.append(PhyObject.from_xy(bridgeLen*0.5, 0.0))
 
     for s in range(bridgeSeg-1):
-        links.append(Cable(objects[s], objects[s+1], segStep+0.05, 0.8, bridgeColor2))
+        obj = objects[s]
+        objN = objects[s+1]
+
+        offsetA = None if obj.objType == PhyObjType.Base else makeArray([0.05, 0.0])
+        offsetB = None if objN.objType == PhyObjType.Base else makeArray([-0.05, 0.0])
+        links.append(Cable(objects[s], objects[s+1], segStep+0.05, 0.8, bridgeColor2, offsetA, offsetB))
 
     objects.append(PhySphere.from_xy(-bridgeLen*0.5+segStep, 1.0, 0.2, getRandomColor()))
 
@@ -119,10 +133,19 @@ def init_wheel_demo(objects:list[PhyObject], forces:list[ForceGenerator], links:
         objects.append(PhySphere.from_xy(posX, posY, 0.1, wheelColor1))
 
     for s in range(wheelSeg):
-        links.append(Rod(objects[0], objects[s+1], None, 0.8, wheelColor2))
-    for s in range(wheelSeg-1):
-        links.append(Rod(objects[s+1], objects[s+2], None, 0.8, wheelColor2))
-    links.append(Rod(objects[wheelSeg], objects[1], None, 0.8, wheelColor2))
+        offsetB = objects[s+1].position * -0.1/wheelRadius
+        links.append(Rod(objects[0], objects[s+1], None, 0.8, wheelColor2, None, offsetB))
+    for s in range(wheelSeg):
+        idxN = (s+2) if (s+2 <= wheelSeg) else (s+2 - wheelSeg)
+        objA = objects[s+1]
+        objB = objects[idxN]
+        vecAB = objB.position - objA.position
+        vecLen = np.linalg.norm(vecAB)
+        vecAB /= vecLen
+
+        offsetA = vecAB * 0.1
+        offsetB = vecAB * -0.1
+        links.append(Rod(objA, objB, None, 0.8, wheelColor2, offsetA, offsetB))
 
     objects.append(PhySphere.from_xy(wheelRadius*0.7, 2.0, 0.2, getRandomColor()))
 
@@ -140,9 +163,9 @@ def main():
     #init_collision(objects, forces)
     #init_stack_spheres(objects, forces)
     #init_stack_spheres2(objects, forces)
-    init_links(objects, forces, links)
+    #init_links(objects, forces, links)
     #init_bridge_demo(objects, forces, links)
-    #init_wheel_demo(objects, forces, links)
+    init_wheel_demo(objects, forces, links)
 
     usrCtrl = UserController(objects)
 
