@@ -113,8 +113,8 @@ def init_bridge_demo(objects:list[PhyObject], forces:list[ForceGenerator], links
         obj = objects[s]
         objN = objects[s+1]
 
-        offsetA = None if obj.objType == PhyObjType.Base else makeArray([0.05, 0.0])
-        offsetB = None if objN.objType == PhyObjType.Base else makeArray([-0.05, 0.0])
+        offsetA = None if obj.objType == PhyObjType.BASE else makeArray([0.05, 0.0])
+        offsetB = None if objN.objType == PhyObjType.BASE else makeArray([-0.05, 0.0])
         links.append(Cable(objects[s], objects[s+1], segStep+0.05, 0.8, bridgeColor2, offsetA, offsetB))
 
     objects.append(PhySphere.from_xy(-bridgeLen*0.5+segStep, 1.0, 0.2, getRandomColor()))

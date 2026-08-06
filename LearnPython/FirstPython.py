@@ -60,7 +60,7 @@ def Exercise1():
 def SplitWords():
     word = input("Input Word:")
     wordList = word.split()
-    for oneChar in nnumpyumpy:
+    for oneChar in wordList:
         print(oneChar)
     
 #SplitWords()

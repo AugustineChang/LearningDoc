@@ -2,22 +2,27 @@ import copy
 import pygame
 import numpy as np
 from enum import IntEnum
-from .common import zero_vector, cross, localToWorld, worldToLocal, makeArray
-from .common import physicsVectorToPixelVector, physicsScalarToPixelScalar
-from .common import screenWidth, screenHeight, getRandomDirection, getRandomFloatRange, getRandomIntRange
+from .common import zero_vector, cross, makeRotationMatrix, localToWorld, worldToLocal
+from .common import makeArray, physicsVectorToPixelVector, physicsScalarToPixelScalar
+from .common import screenWidth, screenHeight, pixelPerMeter, getRandomDirection, getRandomFloatRange, getRandomIntRange
+from .rendering import drawShadowedLine, drawGradientLine
 
 ################################# Object Types #################################
 class PhyObjType(IntEnum):
-    Base = 0
-    SPHERE = 1
-    BOX = 2
-    ALIGNEDBOX = 3
-    PARTICLE = 4
-    COMBINED = 5
+    BASE = 0
+    PLANE = 1
+    SPHERE = 2
+    BOX = 3
+    ALIGNEDBOX = 4
+    PARTICLE = 5
+    COMBINED = 6
+
+def isStaticType(inType:PhyObjType):
+    return inType == PhyObjType.BASE or inType == PhyObjType.PLANE or inType == PhyObjType.ALIGNEDBOX
 
 class PhyObject:
     def __init__(self, pos:np.ndarray):
-        self.objType = PhyObjType.Base
+        self.objType = PhyObjType.BASE
         self.position = pos.copy()
         self.velocity = zero_vector.copy()
         self.acceleration = zero_vector.copy()
@@ -105,9 +110,7 @@ class PhyObject:
             return self.velocity
 
     def getRotationMatrix(self):
-        cos_theta = np.cos(self.orientation)
-        sin_theta = np.sin(self.orientation)
-        return makeArray([[cos_theta, -sin_theta], [sin_theta, cos_theta]])
+        return makeRotationMatrix(self.orientation)
 
     def localToWorld(self, vec:np.ndarray, isVec:bool=False):
         rotMat = self.getRotationMatrix()
@@ -121,6 +124,39 @@ class PhyObject:
         pass
     def keyUp(self, keyType:int):
         pass
+
+class PhyPlane(PhyObject):
+    def __init__(self, pos:np.ndarray, orient:float, color:pygame.Color):
+        super().__init__(pos)
+        self.objType = PhyObjType.PLANE
+        self.color = color
+        self.orientation = np.deg2rad(orient)
+        self.boundingRadius = float('inf')
+
+        rotMat = self.getRotationMatrix()
+        self.normal = rotMat @ makeArray([0.0, 1.0])
+
+    @classmethod
+    def from_xy(cls, x:float, y:float, orient:float, color:pygame.Color):
+        return cls(makeArray([x, y]), orient, color)
+
+    def simulate(self, dt:float):
+        pass
+
+    def draw(self, surface:pygame.Surface):
+        if self.status != 1: return
+        pixelPos = physicsVectorToPixelVector(self.position, True, False)
+
+        planeVec = self.normal[[1, 0]]
+        planeVec[0] *= -1
+        pixelPlaneVec = physicsVectorToPixelVector(planeVec, False, False) / pixelPerMeter
+        pixelNormal = physicsVectorToPixelVector(self.normal, False, False) / pixelPerMeter
+
+        halfLen = np.sqrt(screenWidth*screenWidth+screenHeight*screenHeight)*0.5
+        startPos = pixelPos - pixelPlaneVec*halfLen
+        endPos = pixelPos + pixelPlaneVec*halfLen
+
+        drawShadowedLine(surface, self.color, startPos, endPos, -pixelNormal, 2)
 
 class PhySphere(PhyObject):
     def __init__(self, pos:np.ndarray, radius:float, color:pygame.Color):

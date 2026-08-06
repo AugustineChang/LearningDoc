@@ -4,7 +4,7 @@ import numpy as np
 ################################# GlobalCommon #################################
 screenWidth = 1024
 screenHeight = 1024
-meterPerPixel = 100.0
+pixelPerMeter = 100.0
 epsilon = 1e-6
 
 rng = np.random.default_rng()
@@ -41,18 +41,23 @@ def localToWorld(vec:np.ndarray, rotMat:np.ndarray, translation:np.ndarray=None)
 def worldToLocal(vec:np.ndarray, invRotMat:np.ndarray, translation:np.ndarray=None):
     return (invRotMat @ vec) if translation is None else (invRotMat @ (vec - translation))
 
+def makeRotationMatrix(orientation:float):
+    cos_theta = np.cos(orientation)
+    sin_theta = np.sin(orientation)
+    return makeArray([[cos_theta, -sin_theta], [sin_theta, cos_theta]])
+
 def physicsVectorToPixelVector(physicsPos:np.ndarray, isPoint:bool = True, tolist:bool = True):
-    pixelPos = physicsPos * makeArray([meterPerPixel, -meterPerPixel])
+    pixelPos = physicsPos * makeArray([pixelPerMeter, -pixelPerMeter])
     if isPoint:
         pixelPos += makeArray([screenWidth*0.5, screenHeight*0.5])
 
     if tolist:
-        return np.round(pixelPos).tolist()
+        return pixelPos.tolist()
     else:
-        return np.round(pixelPos)
+        return pixelPos
 
 def physicsScalarToPixelScalar(physicsScalar:float|np.ndarray, tolist:bool = True):
-    result = physicsScalar * meterPerPixel
+    result = physicsScalar * pixelPerMeter
     if tolist:
         return result.tolist() if isinstance(result, np.ndarray) else result
     else:
@@ -62,15 +67,15 @@ def pixelVectorToPhysicsVector(pixelPosX:float|int, pixelPosY:float|int, isPoint
     physicsPos = makeArray([pixelPosX, pixelPosY])
     if isPoint:
         physicsPos -= makeArray([screenWidth*0.5, screenHeight*0.5])
-    physicsPos /= makeArray([meterPerPixel, -meterPerPixel])
+    physicsPos /= makeArray([pixelPerMeter, -pixelPerMeter])
     
     return physicsPos
 
 def pixelScalarToPhysicsScalar(pixelScalar:float|int):
-    return pixelScalar / meterPerPixel
+    return pixelScalar / pixelPerMeter
 
 def getSceneSize():
-    return (screenWidth / meterPerPixel, screenHeight / meterPerPixel)
+    return (screenWidth / pixelPerMeter, screenHeight / pixelPerMeter)
 
 def getRandomColor():
     rand_rgb = rng.integers(0, 256, size=3)
