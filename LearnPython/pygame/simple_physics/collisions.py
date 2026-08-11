@@ -2,7 +2,7 @@ import pygame
 import numpy as np
 from .common import epsilon, cross, clip, makeArray, localToWorld, worldToLocal
 from .common import getRandomDirection, physicsVectorToPixelVector
-from .objects import PhyObjType, PhyObject, PhyPlane, PhySphere, PhyBox, PhyAlignedBox, PhyParticle
+from .objects import PhyObjType, PhyObject, PhyPlane, PhySphere, PhyBox, PhyConvexPolygon, PhyParticle
 from .objects import isStaticType
 
 ################################# Collision Handler #################################
@@ -210,34 +210,6 @@ def sphere_vs_sphere(sphereA:PhySphere, sphereB:PhySphere, outList:list[PhyColli
         hit = PhyCollision(sphereA, sphereB, position, None, normal, penetration)
         outList.append(hit)
 
-def sphere_vs_abox(sphereA:PhySphere, aboxB:PhyAlignedBox, outList:list[PhyCollision]):
-    aboxMin = aboxB.position - aboxB.size*0.5
-    aboxMax = aboxB.position + aboxB.size*0.5
-
-    closest = np.clip(sphereA.position, aboxMin, aboxMax)
-    vec_a2b = closest - sphereA.position
-    dist_a2b = np.linalg.norm(vec_a2b)
-
-    if dist_a2b >= sphereA.radius:
-        return
-    else:
-        if dist_a2b > epsilon: # 圆心在外
-            normal = vec_a2b / -dist_a2b
-            position = closest.copy()
-            penetration = sphereA.radius - dist_a2b
-        else: # 圆心在内
-            vec_local = sphereA.position - aboxB.position
-            dxy = aboxB.size*0.5 - np.abs(vec_local)
-            if dxy[0] < dxy[1]:
-                normal = makeArray([np.sign(vec_local[0]), 0.0])
-            else:
-                normal = makeArray([0.0, np.sign(vec_local[1])])
-            position = sphereA.position + normal * dxy
-            penetration = sphereA.radius + min(dxy[0], dxy[1])
-        
-        hit = PhyCollision(sphereA, aboxB, position, None, normal, penetration)
-        outList.append(hit)
-
 def sphere_vs_box(sphereA:PhySphere, boxB:PhyBox, outList:list[PhyCollision]):
     rotMat = boxB.getRotationMatrix()
     localAPos = worldToLocal(sphereA.position, rotMat.T, boxB.position)
@@ -270,6 +242,38 @@ def sphere_vs_box(sphereA:PhySphere, boxB:PhyBox, outList:list[PhyCollision]):
         hit = PhyCollision(sphereA, boxB, position, None, normal, penetration)
         outList.append(hit)
 
+def sphere_vs_convex(sphereA:PhySphere, convexB:PhyBox, outList:list[PhyCollision]):
+    pointsB = convexB.localToWorld(convexB.corners)
+    centerA = sphereA.position
+
+    edgesB = np.roll(pointsB, -1 , axis=0) - pointsB
+    edgesBLen = np.maximum(np.linalg.norm(edgesB, axis=1, keepdims=True), epsilon)
+    normEdgesB = edgesB / edgesBLen
+    toCenterA = centerA - pointsB
+
+    distOnEdge = np.sum(toCenterA*normEdgesB, axis=1)[:,None]
+    ratioOnEdge = np.clip(distOnEdge / edgesBLen, 0.0, 1.0)
+    closests = pointsB + edgesB * ratioOnEdge
+    dists2 = np.sum((centerA - closests) ** 2, axis=1)
+
+    minIdx = np.argmin(dists2)
+    closest, dist_a2b = closests[minIdx], np.sqrt(dists2[minIdx])
+
+    normal = normEdgesB[minIdx, [1, 0]]
+    normal[0] *= -1
+
+    isOutside = np.dot(toCenterA[minIdx], normal) > 0.0
+
+    if isOutside:
+        if dist_a2b >= sphereA.radius:
+            return
+        penetration = sphereA.radius - dist_a2b
+    else:
+        penetration = sphereA.radius + dist_a2b
+
+    hit = PhyCollision(sphereA, convexB, closest, None, normal, penetration)
+    outList.append(hit)
+
 def sphere_vs_plane(sphereA:PhySphere, planeB:PhyPlane, outList:list[PhyCollision]):
     vec_b2a = sphereA.position - planeB.position
     distToPlane = np.dot(vec_b2a, planeB.normal)
@@ -281,29 +285,6 @@ def sphere_vs_plane(sphereA:PhySphere, planeB:PhyPlane, outList:list[PhyCollisio
         penetration = sphereA.radius - distToPlane
 
         hit = PhyCollision(sphereA, planeB, position, None, normal, penetration)
-        outList.append(hit)
-
-def particle_vs_abox(particleA:PhyParticle, aboxB:PhyAlignedBox, outList:list[PhyCollision]):
-    aboxMin = aboxB.position - aboxB.size*0.5
-    aboxMax = aboxB.position + aboxB.size*0.5
-
-    closest = np.clip(particleA.position, aboxMin, aboxMax)
-    vec_a2b = closest - particleA.position
-    dist_a2b = np.linalg.norm(vec_a2b)
-
-    if dist_a2b > 0.0:
-        return
-    else:
-        vec_local = particleA.position - aboxB.position
-        dxy = aboxB.size*0.5 - np.abs(vec_local)
-        if dxy[0] < dxy[1]:
-            normal = makeArray([np.sign(vec_local[0]), 0.0])
-        else:
-            normal = makeArray([0.0, np.sign(vec_local[1])])
-        position = particleA.position + normal * dxy
-        penetration = min(dxy[0], dxy[1])
-        
-        hit = PhyCollision(particleA, aboxB, position, None, normal, penetration)
         outList.append(hit)
 
 def particle_vs_sphere(particleA:PhyParticle, sphereB:PhySphere, outList:list[PhyCollision]):
@@ -348,6 +329,33 @@ def particle_vs_box(particleA:PhyParticle, boxB:PhyBox, outList:list[PhyCollisio
         normal = localToWorld(normal, rotMat)
         position = localToWorld(position, rotMat, boxB.position)
         hit = PhyCollision(particleA, boxB, position, None, normal, penetration)
+        outList.append(hit)
+
+def particle_vs_convex(particleA:PhyParticle, convexB:PhyBox, outList:list[PhyCollision]):
+    pointsB = convexB.localToWorld(convexB.corners)
+    centerA = particleA.position
+
+    edgesB = np.roll(pointsB, -1 , axis=0) - pointsB
+    edgesBLen = np.maximum(np.linalg.norm(edgesB, axis=1, keepdims=True), epsilon)
+    normEdgesB = edgesB / edgesBLen
+    toCenterA = centerA - pointsB
+
+    distOnEdge = np.sum(toCenterA*normEdgesB, axis=1)[:,None]
+    ratioOnEdge = np.clip(distOnEdge / edgesBLen, 0.0, 1.0)
+    closests = pointsB + edgesB * ratioOnEdge
+    dists2 = np.sum((centerA - closests) ** 2, axis=1)
+
+    minIdx = np.argmin(dists2)
+    closest, penetration = closests[minIdx], np.sqrt(dists2[minIdx])
+
+    normal = normEdgesB[minIdx, [1, 0]]
+    normal[0] *= -1
+
+    isOutside = np.dot(toCenterA[minIdx], normal) > 0.0
+    if isOutside:
+        return
+    else:
+        hit = PhyCollision(particleA, convexB, closest, None, normal, penetration)
         outList.append(hit)
 
 def particle_vs_plane(particleA:PhyParticle, planeB:PhyPlane, outList:list[PhyCollision]):
@@ -397,70 +405,54 @@ def convex_collision_detail(referencePoints:np.ndarray, incidentPoints:np.ndarra
 
     return list(inciEnds[contact_indices]), list(depths[contact_indices])
 
-def box_vs_box(boxA:PhyBox, boxB:PhyBox|PhyAlignedBox, outList:list[PhyCollision]):
-    separationAxis = []
-    rotMatA = boxA.getRotationMatrix()
-    rotMatB = boxB.getRotationMatrix()
-    separationAxis.append(rotMatA[:,0])
-    separationAxis.append(rotMatA[:,1])
-    separationAxis.append(rotMatB[:,0])
-    separationAxis.append(rotMatB[:,1])
-    separationAxis = makeArray(separationAxis)
+def calcConvexNormals(points:np.ndarray) -> np.ndarray:
+    edges = np.roll(points, -1, axis=0) - points
+    normals = edges[:, [1, 0]]
+    normals[:, 0] *= -1
+    normals /= np.maximum(np.linalg.norm(normals, axis=1, keepdims=True), epsilon)
+    return normals
 
-    pointsA = boxA.position + boxA.corners @ rotMatA.T
-    if isinstance(boxB, PhyAlignedBox):
-        extent = boxB.size*0.5
-        pointsB = makeArray([
-            [-extent[0], -extent[1]], [-extent[0],  extent[1]], 
-            [ extent[0],  extent[1]], [ extent[0], -extent[1]]
-        ]) + boxB.position
-    else:
-        pointsB = boxB.position + boxB.corners @ rotMatB.T
+def convex_vs_convex(convexA:PhyBox|PhyConvexPolygon, convexB:PhyBox|PhyConvexPolygon, outList:list[PhyCollision]):
+    pointsA = convexA.localToWorld(convexA.corners)
+    pointsB = convexB.localToWorld(convexB.corners)
 
-    projA = pointsA @ separationAxis.T
-    projB = pointsB @ separationAxis.T
+    normalsA = calcConvexNormals(pointsA)
+    normalsB = calcConvexNormals(pointsB)
 
-    minA = np.min(projA, axis=0)
-    minB = np.min(projB, axis=0)
-    maxA = np.max(projA, axis=0)
-    maxB = np.max(projB, axis=0)
-
-    overlap = np.minimum(maxA, maxB) - np.maximum(minA, minB)
+    overlapA = np.max(pointsA @ normalsA.T, axis=0) - np.min(pointsB @ normalsA.T, axis=0)
+    overlapB = np.max(pointsB @ normalsB.T, axis=0) - np.min(pointsA @ normalsB.T, axis=0)
+    overlap = np.concatenate([overlapA, overlapB])
     if np.any(overlap <= 0.0):
         return 
     else:
         minIdx = np.argmin(overlap)
-        
-        vec_b2a = boxA.position - boxB.position
-        normal = separationAxis[minIdx,:]
-        normalOut = normal * np.sign(np.dot(vec_b2a, normal))
 
-        isRefA = (minIdx < 2)
-        referenceObj = boxA if isRefA else boxB
-        incidentObj = boxB if isRefA else boxA
-
-        vecR2I = incidentObj.position - referenceObj.position
-        normalSign = np.sign(np.dot(vecR2I, normal)).astype(np.int32)
-        refEdge = (2 - (minIdx % 2) + 2*min(normalSign, 0)*-1) % 4
-        refNormal = normal*normalSign
+        numA = len(overlapA)
+        isRefA = (minIdx < numA)
+        if isRefA:
+            refEdge = minIdx
+            refNormal = normalsA[refEdge,:]
+            normalOut = -refNormal
+        else:
+            refEdge = minIdx - numA
+            refNormal = normalsB[refEdge,:]
+            normalOut = refNormal
 
         referencePoints = pointsA if isRefA else pointsB
         incidentPoints = pointsB if isRefA else pointsA
         hitPositions, hitDepths = convex_collision_detail(referencePoints, incidentPoints, refEdge, refNormal)
         for hitPos, hitDep in zip(hitPositions, hitDepths):
-            hit = PhyCollision(boxA, boxB, hitPos, None, normalOut, hitDep)
+            hit = PhyCollision(convexA, convexB, hitPos, None, normalOut, hitDep)
             outList.append(hit)
 
-def box_vs_plane(boxA:PhyBox, planeB:PhyPlane, outList:list[PhyCollision]):
-    vec_b2a = boxA.position - planeB.position
+def convex_vs_plane(convexA:PhyBox|PhyConvexPolygon, planeB:PhyPlane, outList:list[PhyCollision]):
+    vec_b2a = convexA.position - planeB.position
     distToPlane = np.dot(vec_b2a, planeB.normal)
-    if distToPlane >= boxA.boundingRadius:
+    if distToPlane >= convexA.boundingRadius:
         return
     else:
         normal = planeB.normal
-
-        rotMatA = boxA.getRotationMatrix()
-        pointsA = boxA.position + boxA.corners @ rotMatA.T
+        pointsA = convexA.localToWorld(convexA.corners)
 
         vecs_b2a = pointsA - planeB.position
         dists = np.sum(vecs_b2a*planeB.normal, axis=1)
@@ -468,7 +460,7 @@ def box_vs_plane(boxA:PhyBox, planeB:PhyPlane, outList:list[PhyCollision]):
         hitPositions = list(pointsA[hitIndices])
         hitDepths = list(dists[hitIndices])
         for position, depth in zip(hitPositions, hitDepths):
-            hit = PhyCollision(boxA, planeB, position, None, normal, -depth)
+            hit = PhyCollision(convexA, planeB, position, None, normal, -depth)
             outList.append(hit)
 
 def flatten_combined_objects(obj:PhyObject, root:PhyObject, out:list[PhyObject]):
@@ -481,7 +473,7 @@ def flatten_combined_objects(obj:PhyObject, root:PhyObject, out:list[PhyObject])
 def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision]):
     objAType = objA.objType
     objBType = objB.objType
-    if (isStaticType(objAType) and isStaticType(objBType)) or \
+    if (isStaticType(objA.mass) and isStaticType(objB.mass)) or \
         (objAType == PhyObjType.PARTICLE and objBType == PhyObjType.PARTICLE):
         return
 
@@ -510,12 +502,11 @@ def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision])
             outList.append(hit)
         return
 
+    isObjAConvex = objAType in (PhyObjType.BOX, PhyObjType.CONVEX)
+    isObjBConvex = objBType in (PhyObjType.BOX, PhyObjType.CONVEX)
+
     if objAType == PhyObjType.SPHERE and objBType == PhyObjType.SPHERE:
         sphere_vs_sphere(objA, objB, outList)
-    elif objAType == PhyObjType.SPHERE and objBType == PhyObjType.ALIGNEDBOX:
-        sphere_vs_abox(objA, objB, outList)
-    elif objAType == PhyObjType.ALIGNEDBOX and objBType == PhyObjType.SPHERE:
-        sphere_vs_abox(objB, objA, outList)
     elif objAType == PhyObjType.SPHERE and objBType == PhyObjType.PLANE:
         sphere_vs_plane(objA, objB, outList)
     elif objAType == PhyObjType.PLANE and objBType == PhyObjType.SPHERE:
@@ -524,10 +515,10 @@ def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision])
         sphere_vs_box(objA, objB, outList)
     elif objAType == PhyObjType.BOX and objBType == PhyObjType.SPHERE:
         sphere_vs_box(objB, objA, outList)
-    elif objAType == PhyObjType.PARTICLE and objBType == PhyObjType.ALIGNEDBOX:
-        particle_vs_abox(objA, objB, outList)
-    elif objAType == PhyObjType.ALIGNEDBOX and objBType == PhyObjType.PARTICLE:
-        particle_vs_abox(objB, objA, outList)
+    elif objAType == PhyObjType.SPHERE and objBType == PhyObjType.CONVEX:
+        sphere_vs_convex(objA, objB, outList)
+    elif objAType == PhyObjType.CONVEX and objBType == PhyObjType.SPHERE:
+        sphere_vs_convex(objB, objA, outList)
     elif objAType == PhyObjType.PARTICLE and objBType == PhyObjType.SPHERE:
         particle_vs_sphere(objA, objB, outList)
     elif objAType == PhyObjType.SPHERE and objBType == PhyObjType.PARTICLE:
@@ -536,20 +527,20 @@ def collision_detect(objA:PhyObject, objB:PhyObject, outList:list[PhyCollision])
         particle_vs_box(objA, objB, outList)
     elif objAType == PhyObjType.BOX and objBType == PhyObjType.PARTICLE:
         particle_vs_box(objB, objA, outList)
+    elif objAType == PhyObjType.PARTICLE and objBType == PhyObjType.CONVEX:
+        particle_vs_convex(objA, objB, outList)
+    elif objAType == PhyObjType.CONVEX and objBType == PhyObjType.PARTICLE:
+        particle_vs_convex(objB, objA, outList)
     elif objAType == PhyObjType.PARTICLE and objBType == PhyObjType.PLANE:
         particle_vs_plane(objA, objB, outList)
     elif objAType == PhyObjType.PLANE and objBType == PhyObjType.PARTICLE:
         particle_vs_plane(objB, objA, outList)
-    elif objAType == PhyObjType.BOX and objBType == PhyObjType.BOX:
-        box_vs_box(objA, objB, outList)
-    elif objAType == PhyObjType.BOX and objBType == PhyObjType.ALIGNEDBOX:
-        box_vs_box(objA, objB, outList)
-    elif objAType == PhyObjType.ALIGNEDBOX and objBType == PhyObjType.BOX:
-        box_vs_box(objB, objA, outList)
-    elif objAType == PhyObjType.BOX and objBType == PhyObjType.PLANE:
-        box_vs_plane(objA, objB, outList)
-    elif objAType == PhyObjType.PLANE and objBType == PhyObjType.BOX:
-        box_vs_plane(objB, objA, outList)
+    elif isObjAConvex and isObjBConvex:
+        convex_vs_convex(objA, objB, outList)
+    elif isObjAConvex and objBType == PhyObjType.PLANE:
+        convex_vs_plane(objA, objB, outList)
+    elif objAType == PhyObjType.PLANE and isObjBConvex:
+        convex_vs_plane(objB, objA, outList)
 
 def collision_detect_all(dt:float, objects:list[PhyObject], particles:list[PhyParticle] = None, 
                          links:list[CollisionGenerator] = None):

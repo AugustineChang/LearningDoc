@@ -36,10 +36,10 @@ def clip(v1, v2, plane_n:np.ndarray, plane_p:np.ndarray):
     return result
 
 def localToWorld(vec:np.ndarray, rotMat:np.ndarray, translation:np.ndarray=None):
-    return (rotMat @ vec) if translation is None else (translation + rotMat @ vec)
+    return (vec @ rotMat.T) if translation is None else (translation + vec @ rotMat.T)
 
 def worldToLocal(vec:np.ndarray, invRotMat:np.ndarray, translation:np.ndarray=None):
-    return (invRotMat @ vec) if translation is None else (invRotMat @ (vec - translation))
+    return (vec @ invRotMat.T) if translation is None else ((vec - translation) @ invRotMat.T)
 
 def makeRotationMatrix(orientation:float):
     cos_theta = np.cos(orientation)

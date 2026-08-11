@@ -29,7 +29,7 @@ def init_demo2(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     forces.append(AeroForce(0.1, makeArray([-2.0, 0.0])))
 
 def init_demo3(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
-    objects.append(PhyAlignedBox.from_xy(0.0, -4.0, 8.0, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy(0.0, -4.0, 8.0, 0.5, getRandomColor()))
     objects.append(PhyBox.from_xy(1.0, 0.0, 1.0, 0.5, getRandomColor()))
     objects.append(PhyBox.from_xy(-1.0, 0.0, 0.5, 1.0, getRandomColor()))
     objects[1].angularVelocity = np.pi * 0.1666
@@ -48,7 +48,7 @@ def init_demo4(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
     #objects.append(PhySphere.from_xy(0.0, 0.0, 0.5, getRandomColor()))
     objects[0].angularVelocity = np.pi * 0.1666
 
-    objects.append(PhyAlignedBox.from_xy(-1.0, -3.0, 4.0, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy(-1.0, -3.0, 4.0, 0.5, getRandomColor()))
 
     forces.append(GravityForce())
     forces.append(BuoyancyForce(30.0, -4.0))
@@ -62,6 +62,8 @@ def init_demo5(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
 
     objects.append(PhyBox.from_xy(1.0, 0.0, 1.0, 0.5, getRandomColor()))
     objects.append(PhySphere.from_xy(-1.0, 0.0, 0.5, getRandomColor()))
+
+    objects.append(PhyRegularPolygon(0.0, 0.0, 6, 0.5, getRandomColor()))
 
     forces.append(GravityForce())
     forces.append(AeroForce(0.1))

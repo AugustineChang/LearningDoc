@@ -46,10 +46,10 @@ def init_collision(objects:list[PhyObject], forces:list[ForceGenerator]):
     
     sceneW, sceneH = getSceneSize()
     aboxThick = 0.5
-    objects.append(PhyAlignedBox.from_xy( 0.0, (sceneH-aboxThick)*0.5, sceneW, aboxThick, getRandomColor()))
-    objects.append(PhyAlignedBox.from_xy( 0.0,-(sceneH-aboxThick)*0.5, sceneW, aboxThick, getRandomColor()))
-    objects.append(PhyAlignedBox.from_xy( (sceneW-aboxThick)*0.5, 0.0, aboxThick, sceneH - 2.0*aboxThick, getRandomColor()))
-    objects.append(PhyAlignedBox.from_xy(-(sceneW-aboxThick)*0.5, 0.0, aboxThick, sceneH - 2.0*aboxThick, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy( 0.0, (sceneH-aboxThick)*0.5, sceneW, aboxThick, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy( 0.0,-(sceneH-aboxThick)*0.5, sceneW, aboxThick, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy( (sceneW-aboxThick)*0.5, 0.0, aboxThick, sceneH - 2.0*aboxThick, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy(-(sceneW-aboxThick)*0.5, 0.0, aboxThick, sceneH - 2.0*aboxThick, getRandomColor()))
 
     objects[0].velocity[1] = -2.0 
     objects[1].velocity[0] = -2.5 
@@ -64,9 +64,9 @@ def init_stack_spheres(objects:list[PhyObject], forces:list[ForceGenerator]):
 
     objects.append(PhySphere.from_xy( 0.0,-0.5, 0.1, getRandomColor()))
 
-    objects.append(PhyAlignedBox.from_xy( 0.0, -2.0, 6.0, 0.5, getRandomColor()))
-    objects.append(PhyAlignedBox.from_xy( 0.90, -1.5, 0.5, 0.5, getRandomColor()))
-    objects.append(PhyAlignedBox.from_xy(-0.90, -1.5, 0.5, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy( 0.0, -2.0, 6.0, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy( 0.90, -1.5, 0.5, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy(-0.90, -1.5, 0.5, 0.5, getRandomColor()))
 
 def init_stack_spheres2(objects:list[PhyObject], forces:list[ForceGenerator]):
     objects.append(PhySphere.from_xy(0.0, 0.5, 0.2, getRandomColor()))
@@ -75,7 +75,7 @@ def init_stack_spheres2(objects:list[PhyObject], forces:list[ForceGenerator]):
     objects.append(PhySphere.from_xy(0.0,-1.0, 0.2, getRandomColor()))
     objects.append(PhySphere.from_xy(0.0,-1.5, 0.2, getRandomColor()))
 
-    objects.append(PhyAlignedBox.from_xy(0.0, -2.0, 6.0, 0.5, getRandomColor()))
+    objects.append(PhyStaticBox.from_xy(0.0, -2.0, 6.0, 0.5, getRandomColor()))
 
 def init_links(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
     forces.pop()

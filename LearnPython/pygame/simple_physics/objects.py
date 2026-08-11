@@ -2,23 +2,23 @@ import copy
 import pygame
 import numpy as np
 from enum import IntEnum
-from .common import zero_vector, cross, makeRotationMatrix, localToWorld, worldToLocal
+from .common import zero_vector, cross, makeRotationMatrix, localToWorld, worldToLocal, polygonAreaAndCenter
 from .common import makeArray, physicsVectorToPixelVector, physicsScalarToPixelScalar
 from .common import screenWidth, screenHeight, pixelPerMeter, getRandomDirection, getRandomFloatRange, getRandomIntRange
-from .rendering import drawShadowedLine, drawGradientLine
+from .rendering import drawShadowedLine
 
 ################################# Object Types #################################
 class PhyObjType(IntEnum):
     BASE = 0
     PLANE = 1
     SPHERE = 2
-    BOX = 3
-    ALIGNEDBOX = 4
-    PARTICLE = 5
+    PARTICLE = 3
+    BOX = 4
+    CONVEX = 5
     COMBINED = 6
 
-def isStaticType(inType:PhyObjType):
-    return inType == PhyObjType.BASE or inType == PhyObjType.PLANE or inType == PhyObjType.ALIGNEDBOX
+def isStaticType(inMass:float):
+    return inMass <= 0.0
 
 class PhyObject:
     def __init__(self, pos:np.ndarray):
@@ -188,6 +188,36 @@ class PhySphere(PhyObject):
         markPixelPoint = physicsVectorToPixelVector(rotatedMarkPoint)
         pygame.draw.circle(surface, 'white', markPixelPoint, 1)
 
+class PhyParticle(PhyObject):
+    def __init__(self, pos:np.ndarray, radius:float, color:pygame.Color):
+        super().__init__(pos)
+        self.objType = PhyObjType.PARTICLE
+        self.color = color
+        self.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
+        self.radius = radius
+        self.setMass(np.pi * radius * radius * self.density, 0.0)
+        
+        self.maxAge = 3.0
+        self.age = self.maxAge
+
+    def simulate(self, dt:float):
+        if self.status != 1: return
+        super().simulate(dt)
+        self.age -= dt
+
+        # 0-dead 1-alive 2-spawn
+        if self.status != 0 and self.age <= 0.0: 
+            self.status = 2 if getRandomIntRange(0, 2) == 0 else 0
+
+    def draw(self, surface:pygame.Surface):
+        if self.status != 1: return
+        pixelPos = physicsVectorToPixelVector(self.position)
+        pixelRadius = physicsScalarToPixelScalar(self.radius)
+
+        drawCol = pygame.Color(self.color)
+        drawCol.a = int(255.0 * self.age / self.maxAge + 0.5)
+        pygame.draw.circle(surface, drawCol.premul_alpha(), pixelPos, pixelRadius)
+
 class PhyBox(PhyObject):
     def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color):
         super().__init__(pos)
@@ -214,13 +244,138 @@ class PhyBox(PhyObject):
     def draw(self, surface:pygame.Surface):
         if self.status != 1: return
         
-        rotMat = self.getRotationMatrix()
-        rotatedCorners = self.position + self.corners @ rotMat.T
+        rotatedCorners = self.localToWorld(self.corners)
         points = []
         for idx in range(len(rotatedCorners)):
             points.append(physicsVectorToPixelVector(rotatedCorners[idx,:]))
 
         pygame.draw.polygon(surface, self.color, points)
+
+class PhyStaticBox(PhyBox):
+    def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color, orient:float=0.0):
+        super().__init__(pos, width, height, color)
+        self.orientation = np.deg2rad(orient)
+        self.setMass(0.0, 0.0)
+
+    @classmethod
+    def from_xy(cls, x:float, y:float, width:float, height:float, color:pygame.Color, orient:float=0.0):
+        return cls(makeArray([x, y]), width, height, color, orient)
+
+    def simulate(self, dt:float):
+        pass
+    
+    def draw(self, surface:pygame.Surface):
+        if np.abs(self.orientation) < 1e-6:
+            pixelPos = physicsVectorToPixelVector(self.position, True, False)
+            pixelSize = physicsScalarToPixelScalar(self.size, False)
+            pixelLT = pixelPos - pixelSize*0.5
+            pixelLT = pixelLT.tolist()
+            pixelSize = pixelSize.tolist()
+
+            rect = pygame.Rect(pixelLT[0], pixelLT[1], pixelSize[0], pixelSize[1])
+            pygame.draw.rect(surface, self.color, rect)
+        else:
+            super().draw(surface)
+
+class PhyConvexPolygon(PhyObject):
+    def __init__(self, pos:np.ndarray, corners:np.ndarray, color:pygame.Color):
+        super().__init__(pos)
+        self.objType = PhyObjType.CONVEX
+        self.color = color
+
+        area, center = polygonAreaAndCenter(corners)
+        self.corners = corners - center
+        
+        cornersN = np.roll(self.corners, -1, axis=0)
+        cross = self.corners[:,0] * cornersN[:,1] - cornersN[:,0] * self.corners[:,1]
+        r2 = np.sum(self.corners*self.corners, axis=1) + np.sum(self.corners*cornersN, axis=1) + np.sum(cornersN*cornersN, axis=1)
+        self.setMass(area*self.density, np.sum(cross*r2) / (6.0*np.sum(cross)))
+
+        if np.sum(cross) > 0.0:
+            self.corners = self.corners[::-1]
+
+        distances = np.linalg.norm(self.corners, axis=1) 
+        self.boundingRadius = float(np.max(distances))
+
+    def simulate(self, dt:float):
+        if self.status != 1: return
+        super().simulate(dt)
+
+    def draw(self, surface:pygame.Surface):
+        if self.status != 1: return
+        
+        rotatedCorners = self.localToWorld(self.corners)
+        points = []
+        for idx in range(len(rotatedCorners)):
+            points.append(physicsVectorToPixelVector(rotatedCorners[idx,:]))
+        
+        pygame.draw.polygon(surface, self.color, points)
+
+class PhyRegularPolygon(PhyConvexPolygon):
+    def __init__(self, x:float, y:float, numEdge:int, radius:float, color:pygame.Color):
+        numEdge = np.clip(numEdge, 3, 50)
+        corners = []
+        for idx in range(numEdge):
+            angle = -np.pi * 2.0 * (idx / numEdge) # 生成CW顶点 和PhyBox保持一致
+            corners.append([radius * np.cos(angle), radius * np.sin(angle)])
+        
+        super().__init__(makeArray([x,y]), makeArray(corners), color)
+
+class PhyCombinedObj(PhyObject):
+    def __init__(self, pos:np.ndarray, subObjs:list[PhyObject]):
+        super().__init__(pos)
+        self.objType = PhyObjType.COMBINED
+        self.localSubObjects = subObjs
+        self.subObjects = copy.deepcopy(subObjs)
+        self.boundingRadius = 0.0
+
+        totalMass = 0.0
+        massOrigin = zero_vector.copy()
+        for obj in self.localSubObjects:
+            totalMass += obj.mass
+            massOrigin += obj.mass * obj.position
+
+        if totalMass > 0.0:
+            massOrigin /= totalMass
+            for obj in self.localSubObjects:
+                obj.position -= massOrigin
+            self.position += massOrigin
+
+        totalInertia = 0.0
+        for obj in self.localSubObjects:
+            d2 = np.dot(obj.position, obj.position)
+            totalInertia += obj.inertia + obj.mass * d2
+
+            curR = np.sqrt(d2) + obj.boundingRadius
+            self.boundingRadius = max(self.boundingRadius, curR)
+
+        self.setMass(totalMass, totalInertia/totalMass)
+
+    @classmethod
+    def from_xy(cls, x:float, y:float, subObjs:list[PhyObject]):
+        return cls(makeArray([x, y]), subObjs)
+
+    def syncChildren(self):
+        rotMat = self.getRotationMatrix()
+        for cached, obj in zip(self.localSubObjects, self.subObjects):            
+            obj.position = self.position + rotMat @ cached.position
+            obj.orientation = cached.orientation + self.orientation
+            if obj.objType == PhyObjType.COMBINED:
+                obj.syncChildren()
+
+    def simulate(self, dt:float):
+        if self.status != 1: return
+        super().simulate(dt)
+
+        self.syncChildren()
+    
+    def draw(self, surface:pygame.Surface):
+        if self.status != 1: return
+
+        for obj in self.subObjects:
+            obj.draw(surface)
+
+#########################################################################################
 
 class PhyBoat(PhyBox):
     def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color):
@@ -278,112 +433,3 @@ class PhySail(PhyBox):
             self.orientation += self.rotDir * self.rotSpeed
         
         super().simulate(dt)
-
-class PhyAlignedBox(PhyObject):
-    def __init__(self, pos:np.ndarray, width:float, height:float, color:pygame.Color):
-        super().__init__(pos)
-        self.objType = PhyObjType.ALIGNEDBOX
-        self.color = color
-        self.size = makeArray([width, height])
-        self.boundingRadius = np.sqrt(width*width+height*height)*0.5
-
-    @classmethod
-    def from_xy(cls, x:float, y:float, width:float, height:float, color:pygame.Color):
-        return cls(makeArray([x, y]), width, height, color)
-
-    def simulate(self, dt:float):
-        pass
-
-    def draw(self, surface:pygame.Surface):
-        pixelPos = physicsVectorToPixelVector(self.position, True, False)
-        pixelSize = physicsScalarToPixelScalar(self.size, False)
-        pixelLT = pixelPos - pixelSize*0.5
-        pixelLT = pixelLT.tolist()
-        pixelSize = pixelSize.tolist()
-
-        rect = pygame.Rect(pixelLT[0], pixelLT[1], pixelSize[0], pixelSize[1])
-        pygame.draw.rect(surface, self.color, rect)
-
-class PhyParticle(PhyObject):
-    def __init__(self, pos:np.ndarray, radius:float, color:pygame.Color):
-        super().__init__(pos)
-        self.objType = PhyObjType.PARTICLE
-        self.color = color
-        self.velocity = getRandomDirection() * getRandomFloatRange(0.5, 2.0)
-        self.radius = radius
-        self.setMass(np.pi * radius * radius * self.density, 0.0)
-        
-        self.maxAge = 3.0
-        self.age = self.maxAge
-
-    def simulate(self, dt:float):
-        if self.status != 1: return
-        super().simulate(dt)
-        self.age -= dt
-
-        # 0-dead 1-alive 2-spawn
-        if self.status != 0 and self.age <= 0.0: 
-            self.status = 2 if getRandomIntRange(0, 2) == 0 else 0
-
-    def draw(self, surface:pygame.Surface):
-        if self.status != 1: return
-        pixelPos = physicsVectorToPixelVector(self.position)
-        pixelRadius = physicsScalarToPixelScalar(self.radius)
-
-        drawCol = pygame.Color(self.color)
-        drawCol.a = int(255.0 * self.age / self.maxAge + 0.5)
-        pygame.draw.circle(surface, drawCol.premul_alpha(), pixelPos, pixelRadius)
-
-class PhyCombinedObj(PhyObject):
-    def __init__(self, pos:np.ndarray, subObjs:list[PhyObject]):
-        super().__init__(pos)
-        self.objType = PhyObjType.COMBINED
-        self.localSubObjects = subObjs
-        self.subObjects = copy.deepcopy(subObjs)
-        self.boundingRadius = 0.0
-
-        totalMass = 0.0
-        massOrigin = zero_vector.copy()
-        for obj in self.localSubObjects:
-            totalMass += obj.mass
-            massOrigin += obj.mass * obj.position
-
-        if totalMass > 0.0:
-            massOrigin /= totalMass
-            for obj in self.localSubObjects:
-                obj.position -= massOrigin
-            self.position += massOrigin
-
-        totalInertia = 0.0
-        for obj in self.localSubObjects:
-            d2 = np.dot(obj.position, obj.position)
-            totalInertia += obj.inertia + obj.mass * d2
-
-            curR = np.sqrt(d2) + obj.boundingRadius
-            self.boundingRadius = max(self.boundingRadius, curR)
-
-        self.setMass(totalMass, totalInertia/totalMass)
-
-    @classmethod
-    def from_xy(cls, x:float, y:float, subObjs:list[PhyObject]):
-        return cls(makeArray([x, y]), subObjs)
-
-    def syncChildren(self):
-        rotMat = self.getRotationMatrix()
-        for cached, obj in zip(self.localSubObjects, self.subObjects):            
-            obj.position = self.position + rotMat @ cached.position
-            obj.orientation = cached.orientation + self.orientation
-            if obj.objType == PhyObjType.COMBINED:
-                obj.syncChildren()
-
-    def simulate(self, dt:float):
-        if self.status != 1: return
-        super().simulate(dt)
-
-        self.syncChildren()
-    
-    def draw(self, surface:pygame.Surface):
-        if self.status != 1: return
-
-        for obj in self.subObjects:
-            obj.draw(surface)

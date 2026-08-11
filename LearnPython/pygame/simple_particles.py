@@ -7,7 +7,7 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((screenWidth, screenHeight))
 
-    objects:list[PhyObject] = [PhyAlignedBox.from_xy(0.0, -4.0, 6.0, 0.5, getRandomColor())]
+    objects:list[PhyObject] = [PhyStaticBox.from_xy(0.0, -4.0, 6.0, 0.5, getRandomColor())]
     forces:list[ForceGenerator] = [GravityForce()]
     particleSys = PartcleSystem()
     usrCtrl = UserController(None, particleSys)

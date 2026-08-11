@@ -2,7 +2,7 @@ import pygame
 import numpy as np
 from .common import epsilon, zero_vector, makeArray, lerp, arcAreaAndL, polygonAreaAndCenter
 from .common import physicsVectorToPixelVector, getSceneSize, getRandomColor, getRandomDirection
-from .objects import PhyObjType, PhyObject, PhyBox, PhySphere, PhyParticle, PhyCombinedObj
+from .objects import PhyObjType, PhyObject, PhyBox, PhySphere, PhyParticle
 from .rendering import drawDottedLine
 
 ################################# Force Types #################################
@@ -59,9 +59,8 @@ class AeroForce(ForceGenerator):
         if relativeSpeed > epsilon:
             normal = makeArray([-relativeVelo[1], relativeVelo[0]])
             normal /= relativeSpeed
-
-            rotMat = shape.getRotationMatrix()
-            points = shape.position + shape.corners @ rotMat.T
+            
+            points = shape.localToWorld(shape.corners)
             projections = np.dot(points, normal)
             frontal_area = np.max(projections) - np.min(projections)
 
@@ -160,8 +159,7 @@ class BuoyancyForce(ForceGenerator):
             body.addForce(dragforce, shape.position)
 
     def applyBoxForce(self, shape:PhyBox, body:PhyObject):
-        rotMat = shape.getRotationMatrix()
-        points = shape.position + shape.corners @ rotMat.T
+        points = shape.localToWorld(shape.corners)
 
         isSubmerged = points[:, 1] < self.liquidLevel 
         if not any(isSubmerged):
