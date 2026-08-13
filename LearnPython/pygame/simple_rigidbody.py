@@ -56,17 +56,23 @@ def init_demo4(objects:list[PhyObject], forces:list[ForceGenerator], links:list[
 
 def init_demo5(objects:list[PhyObject], forces:list[ForceGenerator], links:list[CollisionGenerator]):
     objects.append(PhyPlane.from_xy(0.0, -4.0, 0.0, getRandomColor()))
-    objects.append(PhyPlane.from_xy(4.0, 0.0, 90.0, getRandomColor()))
-    objects.append(PhyPlane.from_xy(0.0, 4.0, 180.0, getRandomColor()))
-    objects.append(PhyPlane.from_xy(-4.0, 0.0, -90.0, getRandomColor()))
 
-    objects.append(PhyBox.from_xy(1.0, 0.0, 1.0, 0.5, getRandomColor()))
-    objects.append(PhySphere.from_xy(-1.0, 0.0, 0.5, getRandomColor()))
+    objects.append(PhyObject.from_xy(0.0, 4.0))
+    objects.append(PhySphere.from_xy(0.0, 5.0, 0.2, getRandomColor()))
+    objects.append(PhyRegularPolygon(1.0, 5.0, 6, 0.2, getRandomColor()))
+    links.append(PhyRod(objects[1], objects[2], 1.0, getRandomColor(), None, None))
+    links.append(PhyRod(objects[2], objects[3], 1.0, getRandomColor(), None, makeArray([-0.15, 0.0])))
 
-    objects.append(PhyRegularPolygon(0.0, 0.0, 6, 0.5, getRandomColor()))
 
+    objects.append(PhyRegularPolygon(-1.0, 0.0, 3, 1.0, getRandomColor()))
+    objects.append(PhyRegularPolygon(1.0, 0.0, 3, 1.0, getRandomColor()))
+    objects[4].orientation = np.pi * -0.16667
+    objects[5].orientation = np.pi * -0.16667
+    objects[4].setMass(0.0, 0.0)
+    objects[5].setMass(0.0, 0.0)
+    
     forces.append(GravityForce())
-    forces.append(AeroForce(0.1))
+    #forces.append(AeroForce(0.1))
 
 def main():
     # 1. Initialize & Setup

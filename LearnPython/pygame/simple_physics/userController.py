@@ -90,6 +90,12 @@ class UserController:
                     self.leftDownPos = downPos
                     self.leftClickPos = obj2Click
                     self.leftClickObj = obj
+            if obj.objType == PhyObjType.CONVEX and obj.status == 1:
+                obj2Click = downPos - obj.position
+                if np.dot(obj2Click, obj2Click) <= obj.boundingRadius * obj.boundingRadius:
+                    self.leftDownPos = downPos
+                    self.leftClickPos = obj.worldToLocal(downPos)
+                    self.leftClickObj = obj
 
         self.leftClickStart = 0.0
 

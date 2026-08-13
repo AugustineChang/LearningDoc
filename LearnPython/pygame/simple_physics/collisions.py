@@ -127,7 +127,7 @@ class CollisionGenerator:
     def draw(self, surface:pygame.Surface):
         pass
 
-class Cable(CollisionGenerator):
+class PhyCable(CollisionGenerator):
     def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color, offsetA:np.ndarray, offsetB:np.ndarray):
         super().__init__(objA, objB, offsetA, offsetB)
         self.length = len
@@ -157,15 +157,15 @@ class Cable(CollisionGenerator):
 
         pygame.draw.line(surface, self.color.premul_alpha(), pixelPosA, pixelPosB, width=2)   
 
-class Rod(CollisionGenerator):
-    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, restitution:float, color:pygame.Color, offsetA:np.ndarray, offsetB:np.ndarray):
+class PhyRod(CollisionGenerator):
+    def __init__(self, objA:PhyObject, objB:PhyObject, len:float, color:pygame.Color, offsetA:np.ndarray, offsetB:np.ndarray):
         super().__init__(objA, objB, offsetA, offsetB)
         if len is not None:
             self.length = len
         else:
             self.length = np.linalg.norm(self.getEndPosition(True) - self.getEndPosition(False))
         self.color = color
-        self.restitution = restitution
+        self.restitution = 0.0
 
     def simulate(self, dt:float) -> PhyCollision:
         posA = self.getEndPosition(True)
